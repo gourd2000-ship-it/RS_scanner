@@ -1,0 +1,40 @@
+[project]
+name = "rs-scanner"
+version = "0.1.0"
+description = "IBD-style relative strength scanner for KOSPI and KOSDAQ"
+requires-python = ">=3.12"
+dependencies = [
+  "alembic>=1.13",
+  "beautifulsoup4>=4.12",
+  "fastapi>=0.115",
+  "httpx>=0.28",
+  "lxml>=5.3",
+  "psycopg[binary]>=3.2",
+  "pydantic>=2.10",
+  "pydantic-settings>=2.6",
+  "python-dateutil>=2.9",
+  "python-dotenv>=1.0",
+  "sqlalchemy>=2.0",
+  "uvicorn>=0.32",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*", "tests*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

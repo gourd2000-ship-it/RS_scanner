@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    container_name: rs_scanner_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rs_scanner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rs_scanner_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-rs_scanner}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rs_scanner}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rs_scanner_network
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rs_scanner_api
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-rs_scanner}:${POSTGRES_PASSWORD:-rs_scanner_dev}@postgres:5432/${POSTGRES_DB:-rs_scanner}
+      APP_ENV: ${APP_ENV:-production}
+      NAVER_REQUEST_TIMEOUT: ${NAVER_REQUEST_TIMEOUT:-30}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - rs_scanner_network
+    restart: unless-stopped
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 5 &&
+        echo 'Running migrations...' &&
+        alembic upgrade head &&
+        echo 'Starting API server...' &&
+        uvicorn app.main_api:app --host 0.0.0.0 --port 8000
+      "
+
+volumes:
+  postgres_data:
+
+networks:
+  rs_scanner_network:
+    driver: bridge

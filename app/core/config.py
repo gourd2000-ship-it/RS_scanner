@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -25,6 +26,16 @@ class Settings(BaseSettings):
 
     batch_timezone: str = Field(default="Asia/Seoul", alias="BATCH_TIMEZONE")
     batch_market_close_hour: int = Field(default=17, alias="BATCH_MARKET_CLOSE_HOUR")
+
+    # 알림 설정
+    notification_webhook_url: Optional[str] = Field(default=None, alias="NOTIFICATION_WEBHOOK_URL")
+    notification_enabled: bool = Field(default=False, alias="NOTIFICATION_ENABLED")
+    notification_on_success: bool = Field(default=False, alias="NOTIFICATION_ON_SUCCESS")
+
+    # 텔레그램 알림 설정
+    telegram_bot_token: Optional[str] = Field(default=None, alias="TELEGRAM_BOT_TOKEN")
+    telegram_chat_id: Optional[str] = Field(default=None, alias="TELEGRAM_CHAT_ID")
+    telegram_enabled: bool = Field(default=False, alias="TELEGRAM_ENABLED")
 
 
 @lru_cache

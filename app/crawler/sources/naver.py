@@ -31,7 +31,7 @@ class NaverPriceSource(PriceSource):
             for row in parsed:
                 if since_date is not None and row.trade_date <= since_date:
                     should_stop = True
-                    continue
+                    break  # 날짜가 내림차순이므로 즉시 중단
                 if row.trade_date in seen_dates:
                     continue
                 seen_dates.add(row.trade_date)
@@ -56,7 +56,7 @@ class NaverPriceSource(PriceSource):
             for row in parsed:
                 if since_date is not None and row.trade_date <= since_date:
                     should_stop = True
-                    continue
+                    break  # 날짜가 내림차순이므로 즉시 중단
                 if row.trade_date in seen_dates:
                     continue
                 seen_dates.add(row.trade_date)

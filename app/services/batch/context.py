@@ -2,9 +2,11 @@ from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
+from app.repositories.batch_checkpoint_repository import BatchCheckpointRepository
 from app.repositories.benchmark_repository import BenchmarkRepository
 from app.repositories.crawl_failure_repository import CrawlFailureRepository
 from app.repositories.crawl_job_repository import CrawlJobRepository
+from app.repositories.memory_batch_checkpoint_repository import MemoryBatchCheckpointRepository
 from app.repositories.memory_benchmark_repository import MemoryBenchmarkRepository
 from app.repositories.memory_crawl_failure_repository import MemoryCrawlFailureRepository
 from app.repositories.memory_crawl_job_repository import MemoryCrawlJobRepository
@@ -24,6 +26,7 @@ class BatchContext:
     rs_repository: object
     crawl_job_repository: object | None = None
     crawl_failure_repository: object | None = None
+    checkpoint_repository: object | None = None
     session: Session | None = None
 
 
@@ -35,6 +38,7 @@ def build_db_batch_context(session: Session) -> BatchContext:
         rs_repository=RsRepository(session),
         crawl_job_repository=CrawlJobRepository(session),
         crawl_failure_repository=CrawlFailureRepository(session),
+        checkpoint_repository=BatchCheckpointRepository(session),
         session=session,
     )
 
@@ -47,4 +51,5 @@ def build_memory_batch_context() -> BatchContext:
         rs_repository=MemoryRsRepository(),
         crawl_job_repository=MemoryCrawlJobRepository(),
         crawl_failure_repository=MemoryCrawlFailureRepository(),
+        checkpoint_repository=MemoryBatchCheckpointRepository(),
     )

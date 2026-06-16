@@ -10,7 +10,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-rs_scanner}
       POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

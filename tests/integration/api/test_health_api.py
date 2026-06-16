@@ -21,7 +21,14 @@ class TestHealthAPI:
         data = response.json()
 
         # 응답 구조 검증
-        assert_field_exists(data, "status", "db_connected", "cache")
+        assert_field_exists(
+            data,
+            "status",
+            "db_connected",
+            "cache",
+            "last_batch_at",
+            "last_batch_status",
+        )
 
         # DB 연결 상태
         assert data["status"] == "ok"
@@ -93,3 +100,62 @@ class TestHealthAPI:
 
         # cache는 딕셔너리
         assert isinstance(data["cache"], dict)
+
+    def test_health_check_batch_info_when_no_jobs(
+        self,
+        client: TestClient,
+    ):
+        """배치 작업 이력이 없을 때 null 확인."""
+        response = client.get("/api/v1/health")
+        assert_response_success(response)
+
+        data = response.json()
+
+        # 배치 정보 필드 존재 확인
+        assert "last_batch_at" in data
+        assert "last_batch_status" in data
+
+        # 배치 이력이 없으면 None
+        assert data["last_batch_at"] is None
+        assert data["last_batch_status"] is None
+
+    def test_health_check_batch_info_with_jobs(
+        self,
+        client: TestClient,
+        sample_crawl_jobs,
+    ):
+        """배치 작업 이력이 있을 때 정보 확인."""
+        response = client.get("/api/v1/health")
+        assert_response_success(response)
+
+        data = response.json()
+
+        # 배치 정보 필드 존재 확인
+        assert "last_batch_at" in data
+        assert "last_batch_status" in data
+
+        # 배치 이력이 있으면 값이 존재
+        if sample_crawl_jobs:
+            # last_batch_at은 datetime 문자열 또는 None
+            # last_batch_status는 문자열 또는 None
+            if data["last_batch_at"] is not None:
+                assert isinstance(data["last_batch_at"], str)
+            if data["last_batch_status"] is not None:
+                assert isinstance(data["last_batch_status"], str)
+                assert data["last_batch_status"] in ["running", "completed", "failed"]
+
+    def test_health_check_batch_info_types(
+        self,
+        client: TestClient,
+    ):
+        """배치 정보 필드 타입 검증."""
+        response = client.get("/api/v1/health")
+        assert_response_success(response)
+
+        data = response.json()
+
+        # last_batch_at은 문자열 또는 None
+        assert data["last_batch_at"] is None or isinstance(data["last_batch_at"], str)
+
+        # last_batch_status는 문자열 또는 None
+        assert data["last_batch_status"] is None or isinstance(data["last_batch_status"], str)

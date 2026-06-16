@@ -26,6 +26,7 @@ class RsSortField(str, Enum):
     RETURN_6M = "return_6m"
     RETURN_9M = "return_9m"
     RETURN_12M = "return_12m"
+    RELATIVE_RETURN_SCORE = "relative_return_score"
 
 
 class PaginationParams(BaseModel):

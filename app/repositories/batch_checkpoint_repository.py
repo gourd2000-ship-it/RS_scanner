@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 from sqlalchemy import select
@@ -119,3 +120,60 @@ class BatchCheckpointRepository:
         """단계 완료 여부 확인"""
         checkpoint = self.get_checkpoint(job_id, step_name)
         return checkpoint is not None and checkpoint.status == "completed"
+
+    def update_chunk_progress(
+        self,
+        job_id: int,
+        step_name: str,
+        chunk_index: int,
+        total_chunks: int,
+        chunk_size: int,
+        items_processed_this_chunk: int,
+    ) -> BatchCheckpoint:
+        """청크 완료 시 메타데이터 업데이트"""
+        checkpoint = self.get_checkpoint(job_id, step_name)
+        if not checkpoint:
+            raise ValueError(f"Checkpoint not found: job_id={job_id}, step_name={step_name}")
+
+        # 기존 메타데이터 파싱
+        if checkpoint.step_metadata:
+            try:
+                metadata = json.loads(checkpoint.step_metadata)
+            except json.JSONDecodeError:
+                metadata = {}
+        else:
+            metadata = {}
+
+        # 청크 진행 정보 업데이트
+        if "chunks_completed" not in metadata:
+            metadata["chunks_completed"] = []
+        if "chunk_size" not in metadata:
+            metadata["chunk_size"] = chunk_size
+        if "total_chunks" not in metadata:
+            metadata["total_chunks"] = total_chunks
+
+        # 현재 청크를 완료 목록에 추가 (중복 방지)
+        if chunk_index not in metadata["chunks_completed"]:
+            metadata["chunks_completed"].append(chunk_index)
+        metadata["last_completed_chunk"] = chunk_index
+
+        # JSON 직렬화
+        checkpoint.step_metadata = json.dumps(metadata)
+
+        # 전체 진행률 업데이트
+        checkpoint.items_processed = checkpoint.items_processed + items_processed_this_chunk
+
+        self.session.flush()
+        return checkpoint
+
+    def get_completed_chunks(self, job_id: int, step_name: str) -> set[int]:
+        """완료된 청크 인덱스 목록 반환"""
+        checkpoint = self.get_checkpoint(job_id, step_name)
+        if not checkpoint or not checkpoint.step_metadata:
+            return set()
+
+        try:
+            metadata = json.loads(checkpoint.step_metadata)
+            return set(metadata.get("chunks_completed", []))
+        except json.JSONDecodeError:
+            return set()

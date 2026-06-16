@@ -16,6 +16,7 @@ import type { RankingItem } from '@/types/api';
 export default function HomePage() {
   const [market, setMarket] = useState<'KOSPI' | 'KOSDAQ'>('KOSPI');
   const [selectedSector, setSelectedSector] = useState('all');
+  const [excludeEtf, setExcludeEtf] = useState(true);
   const [period, setPeriod] = useState('12M');
   const [sortType, setSortType] = useState('representative');
   const [minMarketCap, setMinMarketCap] = useState('2000');
@@ -40,6 +41,8 @@ export default function HomePage() {
           size: pageSize,
           sort_by: sortBy,
           order: sortOrder,
+          exclude_etf: excludeEtf,
+          sector: selectedSector !== 'all' ? selectedSector : undefined,
         });
         setRankings(response.items);
         setTotalCount(response.total_count);
@@ -52,10 +55,15 @@ export default function HomePage() {
     };
 
     fetchRankings();
-  }, [market, currentPage, pageSize, sortBy, sortOrder]);
+  }, [market, currentPage, pageSize, sortBy, sortOrder, excludeEtf, selectedSector]);
 
   const handleRetry = () => {
     setError(null);
+    setCurrentPage(1);
+  };
+
+  const handleSectorChange = (sectorId: string) => {
+    setSelectedSector(sectorId);
     setCurrentPage(1);
   };
 
@@ -81,7 +89,7 @@ export default function HomePage() {
       <SectorRsBar sectors={sectorData} loading={sectorLoading} />
 
       {/* 섹터 필터 버튼 */}
-      <SectorFilter selectedSector={selectedSector} onSectorChange={setSelectedSector} />
+      <SectorFilter selectedSector={selectedSector} onSectorChange={handleSectorChange} />
 
       {/* 필터 컨트롤 */}
       <FilterControls
@@ -94,6 +102,8 @@ export default function HomePage() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         totalCount={totalCount}
+        excludeEtf={excludeEtf}
+        onExcludeEtfChange={setExcludeEtf}
       />
 
       {/* 랭킹 테이블 */}

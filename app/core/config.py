@@ -26,6 +26,7 @@ class Settings(BaseSettings):
 
     batch_timezone: str = Field(default="Asia/Seoul", alias="BATCH_TIMEZONE")
     batch_market_close_hour: int = Field(default=17, alias="BATCH_MARKET_CLOSE_HOUR")
+    batch_chunk_size: int = Field(default=200, alias="BATCH_CHUNK_SIZE")
 
     # 알림 설정
     notification_webhook_url: Optional[str] = Field(default=None, alias="NOTIFICATION_WEBHOOK_URL")

@@ -28,6 +28,7 @@ class BatchContext:
     crawl_failure_repository: object | None = None
     checkpoint_repository: object | None = None
     session: Session | None = None
+    job_id: int | None = None
 
 
 def build_db_batch_context(session: Session) -> BatchContext:

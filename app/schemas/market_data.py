@@ -8,6 +8,7 @@ class SymbolPayload(BaseModel):
     code: str
     name: str
     market: str
+    symbol_type: str = "stock"
 
 
 class DailyPricePayload(BaseModel):

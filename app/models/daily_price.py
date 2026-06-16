@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Date, DateTime, ForeignKey, Index, Numeric, String, UniqueConstraint
+from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Index, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base import Base
@@ -21,7 +21,7 @@ class DailyPrice(Base):
     high: Mapped[Decimal] = mapped_column(Numeric(18, 4))
     low: Mapped[Decimal] = mapped_column(Numeric(18, 4))
     close: Mapped[Decimal] = mapped_column(Numeric(18, 4))
-    volume: Mapped[int] = mapped_column()
+    volume: Mapped[int] = mapped_column(BigInteger)
     change_rate: Mapped[Decimal] = mapped_column(Numeric(10, 4))
     source: Mapped[str] = mapped_column(String(50), default="naver")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

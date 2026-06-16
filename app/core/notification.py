@@ -408,6 +408,119 @@ class NotificationService:
             logger.error(f"Unexpected error sending telegram success notification: {e}")
             return False
 
+    def send_step_completed_sync(
+        self,
+        step_name: str,
+        items_count: int,
+        duration_seconds: float,
+    ) -> bool:
+        """단계 완료 알림 전송 (동기).
+
+        Args:
+            step_name: 단계명 (예: "symbols", "benchmarks", "prices", "rs")
+            items_count: 처리 건수
+            duration_seconds: 소요 시간 (초)
+
+        Returns:
+            알림 전송 성공 여부
+        """
+        if not self.telegram_enabled:
+            logger.debug("Telegram not enabled, skipping step notification")
+            return False
+
+        try:
+            # 단계별 한글명 매핑
+            step_names_kr = {
+                "symbols": "종목 동기화",
+                "benchmarks": "벤치마크 동기화",
+                "prices": "가격 데이터 동기화",
+                "rs": "RS 계산",
+            }
+            step_kr = step_names_kr.get(step_name, step_name)
+
+            message = (
+                f"✅ *[{step_kr}] 완료*\n\n"
+                f"*처리 건수*: {items_count:,}개\n"
+                f"*소요 시간*: {duration_seconds:.1f}초"
+            )
+
+            url = f"https://api.telegram.org/bot{self.telegram_bot_token}/sendMessage"
+            payload = {
+                "chat_id": self.telegram_chat_id,
+                "text": message,
+                "parse_mode": "Markdown",
+            }
+
+            with httpx.Client(timeout=10.0) as client:
+                response = client.post(url, json=payload)
+                response.raise_for_status()
+
+            logger.info(f"Step completed notification sent (telegram): {step_name}")
+            return True
+
+        except httpx.HTTPError as e:
+            logger.error(f"Failed to send telegram step notification: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error sending telegram step notification: {e}")
+            return False
+
+    def send_chunk_completed_sync(
+        self,
+        step_name: str,
+        chunk_index: int,
+        total_chunks: int,
+        items_synced: int,
+        items_failed: int,
+    ) -> bool:
+        """청크 완료 알림 전송 (동기).
+
+        Args:
+            step_name: 단계명 (예: "prices")
+            chunk_index: 청크 인덱스 (0-based)
+            total_chunks: 전체 청크 수
+            items_synced: 성공 건수
+            items_failed: 실패 건수
+
+        Returns:
+            알림 전송 성공 여부
+        """
+        if not self.telegram_enabled:
+            logger.debug("Telegram not enabled, skipping chunk notification")
+            return False
+
+        try:
+            # 진행률 계산
+            progress = ((chunk_index + 1) / total_chunks) * 100
+
+            message = (
+                f"📦 *청크 {chunk_index + 1}/{total_chunks} 완료*\n\n"
+                f"*성공*: {items_synced:,}개\n"
+                f"*실패*: {items_failed:,}개\n"
+                f"*진행률*: {progress:.1f}%"
+            )
+
+            url = f"https://api.telegram.org/bot{self.telegram_bot_token}/sendMessage"
+            payload = {
+                "chat_id": self.telegram_chat_id,
+                "text": message,
+                "parse_mode": "Markdown",
+            }
+
+            with httpx.Client(timeout=10.0) as client:
+                response = client.post(url, json=payload)
+                response.raise_for_status()
+
+            logger.info(f"Chunk completed notification sent (telegram): chunk {chunk_index + 1}/{total_chunks}")
+            return True
+
+        except httpx.HTTPError as e:
+            logger.error(f"Failed to send telegram chunk notification: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error sending telegram chunk notification: {e}")
+            return False
+
 
 # 전역 notification service 인스턴스
 _notification_service: Optional[NotificationService] = None

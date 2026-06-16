@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  postgres_test:
+    image: timescale/timescaledb:latest-pg16
+    container_name: rs_scanner_test_db
+    environment:
+      POSTGRES_USER: rs_scanner_test
+      POSTGRES_PASSWORD: rs_scanner_test_pass
+      POSTGRES_DB: rs_scanner_test
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rs_scanner_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - rs_scanner_test_network
+
+networks:
+  rs_scanner_test_network:
+    driver: bridge

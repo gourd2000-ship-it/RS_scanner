@@ -14,16 +14,18 @@ def parse_benchmark_prices(html: str, *, market: str, benchmark_code: str) -> li
         if len(cells) < 5 or not cells[0]:
             continue
         try:
+            close = Decimal(cells[1])
+            change_rate = Decimal(cells[3].replace("%", "").replace("+", "")) / 100 if len(cells) > 3 and cells[3] else Decimal("0")
             rows.append(
                 BenchmarkPricePayload(
                     benchmark_code=benchmark_code,
                     market=market,
                     trade_date=parse_date(cells[0]).date(),
-                    close=Decimal(cells[1]),
-                    change_rate=Decimal("0"),
-                    open=Decimal(cells[1]),
-                    high=Decimal(cells[1]),
-                    low=Decimal(cells[1]),
+                    close=close,
+                    change_rate=change_rate,
+                    open=close,
+                    high=close,
+                    low=close,
                 )
             )
         except Exception:  # noqa: BLE001

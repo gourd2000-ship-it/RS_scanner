@@ -13,10 +13,21 @@ class NaverPriceSource(PriceSource):
         self.max_symbol_pages = max_symbol_pages
         self.max_price_pages = max_price_pages
 
+    _ETF_API_URL = "https://finance.naver.com/api/sise/etfItemList.naver"
+
     def fetch_symbols(self):
         kospi = self._fetch_market_symbols("KOSPI", sosok=0)
         kosdaq = self._fetch_market_symbols("KOSDAQ", sosok=1)
         return kospi + kosdaq
+
+    def fetch_etf_codes(self) -> set[str]:
+        """Naver ETF JSON API에서 ETF 종목 코드 set을 반환. 실패 시 빈 set."""
+        from app.crawler.parsers.symbols import parse_etf_codes
+        try:
+            json_text = self.client.get(self._ETF_API_URL)
+            return parse_etf_codes(json_text)
+        except Exception:
+            return set()
 
     def fetch_daily_prices(self, code: str, since_date: date | None = None):
         rows: list = []
@@ -42,13 +53,18 @@ class NaverPriceSource(PriceSource):
 
         return sorted(rows, key=lambda row: row.trade_date)
 
+    # Naver Finance URL 코드와 내부 benchmark_code 매핑
+    _NAVER_INDEX_CODES = {"KOSPI": "KOSPI", "KOSDAQ": "KOSDAQ"}
+    _INTERNAL_BENCHMARK_CODES = {"KOSPI": "KOSPI_INDEX", "KOSDAQ": "KOSDAQ_INDEX"}
+
     def fetch_benchmark_prices(self, market: str, since_date: date | None = None):
-        benchmark_code = "KOSPI_INDEX" if market == "KOSPI" else "KOSDAQ_INDEX"
+        naver_code = self._NAVER_INDEX_CODES[market]
+        internal_code = self._INTERNAL_BENCHMARK_CODES[market]
         rows: list = []
         seen_dates: set[date] = set()
         for page in range(1, self.max_price_pages + 1):
-            html = self.client.get(f"https://finance.naver.com/sise/sise_index_day.naver?code={benchmark_code}&page={page}")
-            parsed = parse_benchmark_prices(html, market=market, benchmark_code=benchmark_code)
+            html = self.client.get(f"https://finance.naver.com/sise/sise_index_day.naver?code={naver_code}&page={page}")
+            parsed = parse_benchmark_prices(html, market=market, benchmark_code=internal_code)
             if not parsed:
                 break
 

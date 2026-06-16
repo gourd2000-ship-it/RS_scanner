@@ -131,5 +131,6 @@ class HealthResponse(BaseModel):
     """헬스체크 응답."""
     status: str = Field(description="서비스 상태 (ok/degraded/error)")
     db_connected: bool = Field(description="DB 연결 상태")
+    cache: dict = Field(description="캐시 통계")
     last_batch_at: datetime | None = Field(default=None, description="최근 배치 실행 시각")
     last_batch_status: str | None = Field(default=None, description="최근 배치 상태")

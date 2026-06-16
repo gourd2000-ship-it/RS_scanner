@@ -70,6 +70,8 @@ export interface RankingQueryParams {
   sort_by?: 'rank_in_market' | 'rs_rating' | 'return_3m' | 'return_6m' | 'return_9m' | 'return_12m' | 'relative_return_score';
   order?: 'asc' | 'desc';
   trade_date?: string;
+  exclude_etf?: boolean;
+  sector?: string;
 }
 
 export interface SectorData {

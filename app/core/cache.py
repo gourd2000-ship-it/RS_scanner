@@ -87,19 +87,51 @@ _stock_detail_cache = TTLCache(ttl_seconds=_cache_config.stock_detail_ttl)
 def cached_rankings(func: Callable) -> Callable:
     """랭킹 API 캐싱 데코레이터.
 
-    market, page, size를 키로 사용합니다.
+    market, page, size, min_rs, max_rs, sort_by, order, trade_date를 키로 사용합니다.
     """
     @functools.wraps(func)
-    def wrapper(market: str, page: int = 1, size: int = 100, **kwargs):
+    def wrapper(
+        market: str,
+        page: int = 1,
+        size: int = 100,
+        min_rs: int | None = None,
+        max_rs: int | None = None,
+        sort_by: str = "rank_in_market",
+        order: str = "asc",
+        trade_date = None,
+        **kwargs
+    ):
         if not _cache_config.is_enabled():
-            return func(market=market, page=page, size=size, **kwargs)
+            return func(
+                market=market,
+                page=page,
+                size=size,
+                min_rs=min_rs,
+                max_rs=max_rs,
+                sort_by=sort_by,
+                order=order,
+                trade_date=trade_date,
+                **kwargs
+            )
 
-        cache_key = make_cache_key("rankings", market, page, size)
+        cache_key = make_cache_key(
+            "rankings", market, page, size, min_rs, max_rs, sort_by, order, trade_date
+        )
         cached_result = _rankings_cache.get(cache_key)
         if cached_result is not None:
             return cached_result
 
-        result = func(market=market, page=page, size=size, **kwargs)
+        result = func(
+            market=market,
+            page=page,
+            size=size,
+            min_rs=min_rs,
+            max_rs=max_rs,
+            sort_by=sort_by,
+            order=order,
+            trade_date=trade_date,
+            **kwargs
+        )
         _rankings_cache.set(cache_key, result)
         return result
 

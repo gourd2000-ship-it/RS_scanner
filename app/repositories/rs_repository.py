@@ -1,7 +1,7 @@
 from collections.abc import Iterable
 from datetime import date
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.benchmark import Benchmark
@@ -73,7 +73,7 @@ class RsRepository:
                 row.rank_in_market = payload.rank_in_market
 
         self.session.flush()
-        return self.list_market(market)
+        return incoming
 
     def list_market(self, market: str, trade_date: date | None = None, limit: int = 100) -> list[RsResultPayload]:
         target_trade_date = trade_date or self.session.scalar(
@@ -107,10 +107,47 @@ class RsRepository:
             for row, code in rows
         ]
 
+    # 섹터별 종목명 키워드 매핑
+    _SECTOR_KEYWORDS: dict[str, list[str]] = {
+        "semiconductor": ["%반도체%", "%웨이퍼%", "%파운드리%", "%팹리스%"],
+        "auto": ["%자동차%", "%모빌리티%"],
+        "energy": ["%전력%", "%에너지%", "%태양광%", "%풍력%", "%원전%"],
+        "machinery": ["%기계%", "%장비%"],
+        "battery": ["%2차전지%", "%배터리%", "%리튬%"],
+        "infra": ["%건설%", "%시공%", "%인프라%"],
+        "consumer": ["%유통%", "%식품%", "%의류%", "%패션%"],
+        "finance": ["%금융%", "%은행%", "%증권%", "%보험%", "%카드%", "%저축%"],
+        "it": ["%소프트웨어%", "%클라우드%", "%플랫폼%"],
+        "defense": ["%방산%", "%항공%", "%방위%"],
+        "chemicals": ["%화학%", "%소재%", "%섬유%"],
+        "shipping": ["%조선%", "%해운%", "%물류%", "%항만%"],
+        "bio": ["%바이오%", "%제약%", "%의료%", "%헬스%", "%생명%"],
+    }
+
     def list_market_with_prices(
-        self, market: str, trade_date: date | None = None, page: int = 1, size: int = 100
+        self,
+        market: str,
+        trade_date: date | None = None,
+        page: int = 1,
+        size: int = 100,
+        min_rs: int | None = None,
+        max_rs: int | None = None,
+        sort_by: str = "rank_in_market",
+        order: str = "asc",
+        exclude_etf: bool = False,
+        sector: str | None = None,
     ) -> tuple[list[dict], int, date | None]:
         """시장별 RS 랭킹 조회 (종목명, 최신 가격 포함).
+
+        Args:
+            market: 시장 구분 (KOSPI/KOSDAQ)
+            trade_date: 기준일 (None이면 최신 거래일)
+            page: 페이지 번호 (1부터 시작)
+            size: 페이지 크기
+            min_rs: 최소 RS Rating (1~99)
+            max_rs: 최대 RS Rating (1~99)
+            sort_by: 정렬 기준 컬럼명
+            order: 정렬 순서 (asc/desc)
 
         Returns:
             (items, total_count, target_trade_date)
@@ -124,25 +161,56 @@ class RsRepository:
         if target_trade_date is None:
             return [], 0, None
 
-        # 전체 개수 조회
-        total_count = self.session.scalar(
-            select(func.count())
-            .select_from(RsScore)
-            .where(RsScore.market == market, RsScore.trade_date == target_trade_date)
-        ) or 0
+        # 필터 조건 구성
+        filters = [RsScore.market == market, RsScore.trade_date == target_trade_date]
+        if min_rs is not None:
+            filters.append(RsScore.rs_rating >= min_rs)
+        if max_rs is not None:
+            filters.append(RsScore.rs_rating <= max_rs)
+        if exclude_etf:
+            filters.append(Symbol.symbol_type == "stock")
+        if sector and sector != "all":
+            keywords = self._SECTOR_KEYWORDS.get(sector, [])
+            if keywords:
+                filters.append(or_(*[Symbol.name.ilike(kw) for kw in keywords]))
 
-        # 최신 가격의 서브쿼리 (각 종목의 최신 가격)
+        # 전체 개수 조회 (Symbol 필터가 있을 경우 JOIN 필요)
+        count_q = select(func.count()).select_from(RsScore).join(Symbol, Symbol.id == RsScore.symbol_id).where(*filters)
+        total_count = self.session.scalar(count_q) or 0
+
+        # 최신 가격 서브쿼리: LAG로 등락율 동적 계산 (저장된 change_rate가 0이라 계산 대체)
+        _prev_close = func.lag(DailyPrice.close).over(
+            partition_by=DailyPrice.symbol_id,
+            order_by=DailyPrice.trade_date.asc(),
+        )
         latest_price_subq = (
             select(
                 DailyPrice.symbol_id,
                 DailyPrice.close,
-                DailyPrice.change_rate,
+                (
+                    (DailyPrice.close - _prev_close)
+                    / func.nullif(_prev_close, 0)
+                    * 100
+                ).label("change_rate"),
                 func.row_number()
                 .over(partition_by=DailyPrice.symbol_id, order_by=DailyPrice.trade_date.desc())
                 .label("rn"),
             )
             .subquery()
         )
+
+        # 정렬 컬럼 매핑 (SQL injection 방지)
+        SORT_COLUMN_MAP = {
+            "rank_in_market": RsScore.rank_in_market,
+            "rs_rating": RsScore.rs_rating,
+            "return_3m": RsScore.return_3m,
+            "return_6m": RsScore.return_6m,
+            "return_9m": RsScore.return_9m,
+            "return_12m": RsScore.return_12m,
+            "relative_return_score": RsScore.relative_return_score,
+        }
+        sort_column = SORT_COLUMN_MAP.get(sort_by, RsScore.rank_in_market)
+        order_by_clause = sort_column.desc() if order == "desc" else sort_column.asc()
 
         # 메인 쿼리: RsScore + Symbol + 최신 가격 JOIN
         offset = (page - 1) * size
@@ -159,8 +227,8 @@ class RsRepository:
                 latest_price_subq,
                 (latest_price_subq.c.symbol_id == RsScore.symbol_id) & (latest_price_subq.c.rn == 1),
             )
-            .where(RsScore.market == market, RsScore.trade_date == target_trade_date)
-            .order_by(RsScore.rank_in_market)
+            .where(*filters)
+            .order_by(order_by_clause)
             .limit(size)
             .offset(offset)
         ).all()

@@ -38,3 +38,6 @@ include = ["app*", "tests*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+    "e2e: End-to-end integration tests with PostgreSQL (run with docker-compose.test.yml)",
+]

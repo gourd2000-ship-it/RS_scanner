@@ -14,6 +14,175 @@ from tests.helpers.api_helpers import (
 class TestStocksAPI:
     """Stocks API 테스트."""
 
+    def test_list_stocks_success(
+        self,
+        client: TestClient,
+        sample_symbols,
+    ):
+        """종목 목록 조회 성공."""
+        response = client.get("/api/v1/stocks?page=1&size=10")
+        assert_response_success(response)
+
+        data = response.json()
+
+        # 페이지네이션 응답 검증
+        assert_pagination_response(data)
+        assert data["page"] == 1
+        assert data["size"] == 10
+
+        # 아이템 구조 검증
+        if data["items"]:
+            item = data["items"][0]
+            assert_field_exists(
+                item,
+                "code",
+                "name",
+                "market",
+                "sector",
+                "industry",
+                "is_active",
+                "listed_at",
+            )
+
+    def test_list_stocks_filter_by_market(
+        self,
+        client: TestClient,
+        sample_symbols,
+    ):
+        """시장별 필터링 테스트."""
+        # KOSPI 종목만
+        response = client.get("/api/v1/stocks?market=KOSPI")
+        assert_response_success(response)
+
+        data = response.json()
+
+        # 모든 아이템이 KOSPI인지 확인
+        for item in data["items"]:
+            assert item["market"] == "KOSPI"
+
+        # KOSDAQ 종목만
+        response = client.get("/api/v1/stocks?market=KOSDAQ")
+        assert_response_success(response)
+
+        data = response.json()
+
+        # 모든 아이템이 KOSDAQ인지 확인
+        for item in data["items"]:
+            assert item["market"] == "KOSDAQ"
+
+    def test_list_stocks_filter_by_is_active(
+        self,
+        client: TestClient,
+        sample_symbols,
+    ):
+        """상장 여부 필터링 테스트."""
+        # 상장 종목만
+        response = client.get("/api/v1/stocks?is_active=true")
+        assert_response_success(response)
+
+        data = response.json()
+
+        # 모든 아이템이 is_active=true인지 확인
+        for item in data["items"]:
+            assert item["is_active"] is True
+
+    def test_list_stocks_search_by_name(
+        self,
+        client: TestClient,
+        sample_symbols,
+    ):
+        """종목명 검색 테스트."""
+        # "삼성" 검색
+        response = client.get("/api/v1/stocks?search=삼성")
+        assert_response_success(response)
+
+        data = response.json()
+
+        # 검색 결과에 "삼성"이 포함되는지 확인
+        for item in data["items"]:
+            assert "삼성" in item["name"] or "삼성" in item["code"]
+
+    def test_list_stocks_search_by_code(
+        self,
+        client: TestClient,
+        sample_symbols,
+    ):
+        """종목코드 검색 테스트."""
+        # "0059" 검색 (삼성전자: 005930)
+        response = client.get("/api/v1/stocks?search=0059")
+        assert_response_success(response)
+
+        data = response.json()
+
+        # 검색 결과 확인
+        assert len(data["items"]) >= 1
+        # 검색 결과에 005930이 포함되는지 확인
+        found = any(item["code"] == "005930" for item in data["items"])
+        assert found
+
+    def test_list_stocks_combined_filters(
+        self,
+        client: TestClient,
+        sample_symbols,
+    ):
+        """복합 필터 테스트."""
+        # KOSPI + "삼성" 검색
+        response = client.get("/api/v1/stocks?market=KOSPI&search=삼성")
+        assert_response_success(response)
+
+        data = response.json()
+
+        # 모든 아이템이 KOSPI이면서 "삼성" 포함
+        for item in data["items"]:
+            assert item["market"] == "KOSPI"
+            assert "삼성" in item["name"] or "삼성" in item["code"]
+
+    def test_list_stocks_pagination(
+        self,
+        client: TestClient,
+        sample_symbols,
+    ):
+        """페이지네이션 동작 확인."""
+        # 첫 페이지
+        response1 = client.get("/api/v1/stocks?page=1&size=2")
+        assert_response_success(response1)
+        data1 = response1.json()
+
+        assert data1["page"] == 1
+        assert data1["size"] == 2
+        assert len(data1["items"]) <= 2
+
+        # 두 번째 페이지
+        response2 = client.get("/api/v1/stocks?page=2&size=2")
+        assert_response_success(response2)
+        data2 = response2.json()
+
+        assert data2["page"] == 2
+        assert data2["size"] == 2
+
+        # 첫 페이지와 두 번째 페이지의 아이템이 다른지 확인
+        if data1["items"] and data2["items"]:
+            assert data1["items"][0]["code"] != data2["items"][0]["code"]
+
+    def test_list_stocks_max_size_limit(
+        self,
+        client: TestClient,
+        sample_symbols,
+    ):
+        """size 파라미터 최대값 제한 확인."""
+        # 최대값 500
+        response = client.get("/api/v1/stocks?size=500")
+        assert_response_success(response)
+
+        # 최대값 초과 시 422 에러
+        response = client.get("/api/v1/stocks?size=501")
+        assert_response_error(response, 422, "VALIDATION_ERROR")
+
+    def test_list_stocks_invalid_market(self, client: TestClient):
+        """잘못된 market 파라미터로 요청 시 422 에러."""
+        response = client.get("/api/v1/stocks?market=INVALID")
+        assert_response_error(response, 422, "VALIDATION_ERROR")
+
     def test_get_stock_detail_success(
         self,
         client: TestClient,

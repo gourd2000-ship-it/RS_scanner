@@ -9,6 +9,8 @@ from app.core.database import get_db_session
 from app.models.daily_price import DailyPrice
 from app.models.rs_score import RsScore
 from app.models.symbol import Symbol
+from app.repositories.symbol_repository import SymbolRepository
+from app.schemas.query import MarketType
 from app.schemas.response import (
     DailyPriceItem,
     PaginatedResponse,
@@ -19,6 +21,41 @@ from app.schemas.response import (
 )
 
 router = APIRouter()
+
+
+@router.get("", response_model=PaginatedResponse[SymbolItem])
+def list_stocks(
+    market: MarketType | None = Query(default=None, description="시장 구분 (KOSPI/KOSDAQ)"),
+    is_active: bool | None = Query(default=None, description="상장 여부"),
+    search: str | None = Query(default=None, min_length=1, max_length=100, description="종목명/코드 검색"),
+    page: int = Query(default=1, ge=1, description="페이지 번호"),
+    size: int = Query(default=100, ge=1, le=500, description="페이지 크기"),
+    session: Session = Depends(get_db_session),
+):
+    """종목 목록 조회.
+
+    시장별, 상장 여부별로 필터링하거나 종목명/코드로 검색할 수 있습니다.
+    페이지네이션을 지원하며, 기본 100개, 최대 500개까지 조회 가능합니다.
+
+    필터링:
+    - market: KOSPI 또는 KOSDAQ
+    - is_active: True(상장), False(상장폐지)
+    - search: 종목명 또는 종목코드에 포함된 문자열 (대소문자 무시)
+    """
+    items, total_count = SymbolRepository(session).list_filtered(
+        market=market.value if market else None,
+        is_active=is_active,
+        search=search,
+        page=page,
+        size=size,
+    )
+
+    return PaginatedResponse(
+        total_count=total_count,
+        page=page,
+        size=size,
+        items=items,
+    )
 
 
 @router.get("/{code}", response_model=SymbolDetailResponse)

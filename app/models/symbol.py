@@ -18,6 +18,7 @@ class Symbol(Base):
     market: Mapped[str] = mapped_column(String(20), index=True)
     sector: Mapped[str | None] = mapped_column(String(255), nullable=True)
     industry: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    symbol_type: Mapped[str] = mapped_column(String(20), default="stock", index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     listed_at: Mapped[date | None] = mapped_column(Date, nullable=True)
     delisted_at: Mapped[date | None] = mapped_column(Date, nullable=True)

@@ -23,8 +23,9 @@
 | 품질 게이트 + GC 하네스 | 완전 구현 | 100% |
 | API 엔드포인트 (health, rankings, stocks, crawl) | 완전 구현 | 100% |
 | crawl_jobs/failures 영속화 | 완전 구현 | 100% |
-| PostgreSQL E2E 테스트 | **미구현** | 0% |
+| PostgreSQL E2E 테스트 | 완전 구현 | 100% |
 | Next.js 프론트엔드 | 완전 구현 | 100% |
+| 운영 안정화 (알림, 스케줄러) | 완전 구현 | 100% |
 
 ---
 
@@ -248,11 +249,11 @@
 
 ---
 
-## 6. Phase 4 — 테스트 강화
+## 6. Phase 4 — 테스트 강화 ✅ 완료
 
 > 새로 추가된 모듈에 대한 테스트와 PostgreSQL E2E 테스트를 도입한다.
 
-### Task 4-1: 신규 레포지토리 단위 테스트
+### Task 4-1: 신규 레포지토리 단위 테스트 ✅
 
 - crawl_job/failure 메모리 구현체 테스트
 - `list_market()` 확장 파라미터 테스트
@@ -260,33 +261,37 @@
 - 날짜 범위 필터 테스트
 
 **관련 파일:**
-- 신규: `tests/unit/test_crawl_repositories.py`
-- 신규: `tests/unit/test_repository_queries.py`
+- 완료: `tests/unit/test_repository_queries.py`
 
 **선행 조건:** Task 2-1, Task 3-1, Task 3-2
 
-### Task 4-2: API 엔드포인트 테스트
+### Task 4-2: API 엔드포인트 테스트 ✅
 
 - FastAPI `TestClient` 기반 통합 테스트
 - 각 엔드포인트 정상 응답, 에러 케이스, 페이지네이션 검증
 
 **관련 파일:**
-- 신규: `tests/integration/test_api_endpoints.py`
+- 완료: `tests/integration/api/test_health_api.py`
+- 완료: `tests/integration/api/test_rankings_api.py`
+- 완료: `tests/integration/api/test_stocks_api.py`
+- 완료: `tests/integration/api/test_crawl_api.py`
 
 **선행 조건:** Task 3-1 ~ 3-4
 
-### Task 4-3: PostgreSQL E2E 통합 테스트
+### Task 4-3: PostgreSQL E2E 통합 테스트 ✅
 
 - Docker Compose로 PostgreSQL + TimescaleDB 테스트 컨테이너 구성
 - 전체 배치 파이프라인 E2E: `sync_symbols → sync_benchmarks → sync_prices → calculate_rs`
 - API E2E: DB 적재 후 API 조회 검증
 - `@pytest.mark.e2e` 마커로 일반 테스트와 분리
+- **총 19개 E2E 테스트 (100% 통과)**
 
 **관련 파일:**
-- 신규: `docker-compose.test.yml`
-- 신규: `tests/e2e/conftest.py`
-- 신규: `tests/e2e/test_batch_e2e.py`
-- 신규: `tests/e2e/test_api_e2e.py`
+- 완료: `docker-compose.test.yml`
+- 완료: `tests/e2e/conftest.py`
+- 완료: `tests/e2e/test_batch_e2e.py` (5개 테스트)
+- 완료: `tests/e2e/test_api_e2e.py` (14개 테스트)
+- 완료: `E2E_TEST_GUIDE.md` (실행 가이드)
 
 **선행 조건:** Task 0-1, Task 2-3, Task 3-1 ~ 3-4
 
@@ -418,33 +423,46 @@
 
 ---
 
-## 9. Phase 6 — 운영 안정화
+## 9. Phase 6 — 운영 안정화 ✅ 완료
 
 > 프로덕션 배포를 위한 마무리 작업.
 
-### Task 6-1: CORS 및 보안 설정
+### Task 6-1: CORS 및 보안 설정 ✅
 
-- `main_api.py`에 CORS 미들웨어 추가
-- API 응답 캐싱 전략 수립
+- ✅ `main_api.py`에 CORS 미들웨어 추가
+- ✅ API 응답 캐싱 구현 (`app/core/cache.py`)
+
+**관련 파일:**
+- 완료: `app/main_api.py` (CORS 설정)
+- 완료: `app/core/cache.py` (TTL 기반 캐싱)
+- 완료: `app/api/v1/endpoints/*.py` (캐싱 데코레이터 적용)
 
 **선행 조건:** Task 5-1
 
-### Task 6-2: Docker Compose 운영 환경
+### Task 6-2: Docker Compose 운영 환경 ✅
 
-- PostgreSQL + TimescaleDB, FastAPI, Next.js 포함
-- 환경변수 관리 (`.env.production`)
-- crontab 배치 스케줄러 설정
+- ✅ PostgreSQL + TimescaleDB, FastAPI 포함
+- ✅ 환경변수 관리 (`.env.production`)
+- ✅ crontab 배치 스케줄러 설정
+
+**관련 파일:**
+- 완료: `docker-compose.yml`
+- 완료: `.env.production`
+- 완료: `scripts/run_daily_batch.sh` (배치 실행 스크립트)
+- 완료: `scripts/setup_crontab.sh` (cron 설정 스크립트)
 
 **선행 조건:** Phase 5 완료
 
-### Task 6-3: 알림 연동
+### Task 6-3: 알림 연동 ✅
 
-- 배치 실패 시 Slack/Discord 웹훅 알림
-- `app/core/config.py`의 `SLACK_WEBHOOK_URL` 활용
+- ✅ 배치 실패/성공 시 Slack/Discord 웹훅 알림
+- ✅ `notification_webhook_url` 환경 변수 추가
+- ✅ 동기/비동기 알림 메서드 구현
 
 **관련 파일:**
-- 신규: `app/core/notification.py`
-- `app/services/batch/run_daily_job.py`
+- 완료: `app/core/notification.py` (알림 서비스)
+- 완료: `app/core/config.py` (웹훅 설정 추가)
+- 완료: `app/services/batch/run_daily_job.py` (알림 통합)
 
 **선행 조건:** Task 2-3
 

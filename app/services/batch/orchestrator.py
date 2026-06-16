@@ -232,14 +232,30 @@ class BatchOrchestrator:
         elif isinstance(result, dict):
             items_processed = sum(len(v) if isinstance(v, list) else 1 for v in result.values())
 
+        # 소요 시간 계산 (체크포인트에서 started_at 조회)
+        duration_seconds = 0.0
         with session_scope() as session:
             context = build_db_batch_context(session)
             if context.checkpoint_repository:
+                checkpoint = context.checkpoint_repository.get_checkpoint(self.job_id, step_name)
+                if checkpoint and checkpoint.started_at:
+                    duration_seconds = (datetime.utcnow() - checkpoint.started_at).total_seconds()
+
                 context.checkpoint_repository.complete_step(
                     job_id=self.job_id,
                     step_name=step_name,
                     items_processed=items_processed,
                 )
+
+        # 단계 완료 알림 전송
+        try:
+            notification_service.send_step_completed_sync(
+                step_name=step_name,
+                items_count=items_processed,
+                duration_seconds=duration_seconds,
+            )
+        except Exception as e:
+            logger.error(f"Failed to send step completion notification for {step_name}: {e}")
 
     def _fail_step_checkpoint(self, step_name: str, error_message: str) -> None:
         """단계 실패 체크포인트 기록"""
@@ -259,4 +275,5 @@ class BatchOrchestrator:
         """단계 실행 (별도 트랜잭션)"""
         with session_scope() as session:
             context = build_db_batch_context(session)
+            context.job_id = self.job_id
             return step_func(context)

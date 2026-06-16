@@ -13,6 +13,8 @@ interface FilterControlsProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   totalCount: number;
+  excludeEtf: boolean;
+  onExcludeEtfChange: (value: boolean) => void;
 }
 
 const PERIODS = [
@@ -44,6 +46,8 @@ export function FilterControls({
   searchQuery,
   onSearchChange,
   totalCount,
+  excludeEtf,
+  onExcludeEtfChange,
 }: FilterControlsProps) {
   return (
     <div className="flex items-center justify-between gap-4 py-3">
@@ -75,8 +79,18 @@ export function FilterControls({
         ))}
       </div>
 
-      {/* 오른쪽: 시가총액 필터 + 검색 */}
+      {/* 오른쪽: ETF 토글 + 시가총액 필터 + 검색 */}
       <div className="flex items-center gap-2">
+        <button
+          onClick={() => onExcludeEtfChange(!excludeEtf)}
+          className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
+            excludeEtf
+              ? 'bg-blue-50 border-blue-300 text-blue-700'
+              : 'border-gray-300 text-gray-500'
+          }`}
+        >
+          ETF 제외
+        </button>
         <select
           value={minMarketCap}
           onChange={(e) => onMinMarketCapChange(e.target.value)}

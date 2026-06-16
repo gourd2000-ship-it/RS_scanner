@@ -26,6 +26,7 @@
 | PostgreSQL E2E 테스트 | 완전 구현 | 100% |
 | Next.js 프론트엔드 | 완전 구현 | 100% |
 | 운영 안정화 (알림, 스케줄러) | 완전 구현 | 100% |
+| RS 계산 극단치 보정 (winsorize) | 미착수 | 0% |
 
 ---
 
@@ -538,3 +539,35 @@
 | 4 | `pyproject.toml`의 `testpaths` 설정 | 하 | `@pytest.mark.e2e` 마커로 분리 |
 | 5 | 없음 (완전 신규 디렉토리) | — | — |
 | 6 | `main_api.py` 미들웨어 추가 | 하 | 기존 라우터에 영향 없음 |
+| 7 | 표시 return 값과 relative_return_score 간 직접 역산 불일치 | 하 | 의도된 동작으로 문서화, 필요시 디버그용 raw score 노출 검토 |
+
+---
+
+## 12. Phase 7 — RS 계산 품질 개선
+
+> 실 데이터 검증 중 발견된 RS 산식의 부작용(과거 극단적 가격 변동이 장기간 순위를 고정시키는 문제)을 보정한다.
+
+### Task 7-1: 기간별 상대수익률 시장 분포 winsorize 적용
+
+**배경:**
+`025560 미래산업`이 2025년 6~9월 폭등(600원→1만원대) 이력으로 `return_12m`이 6,700%대까지 치솟아, 이 구간이 12개월 윈도우에 포함되는 동안 KOSPI 1위를 고정시키는 현상을 실 데이터로 확인함. `_score()`의 가중합 구조상 한 기간의 극단치가 전체 점수를 압도할 수 있음.
+
+**내용:**
+- `calculate_market_rs()`가 가중합을 계산하기 전, 각 기간(3M/6M/9M/12M)의 상대수익률을 **해당 시장(KOSPI/KOSDAQ)·해당 거래일 전체 종목 분포의 1~99 퍼센타일로 클리핑**한다.
+- 클리핑은 점수 계산에만 적용하고, `return_3m/6m/9m/12m` 표시 필드는 원본(클리핑 전) 값을 그대로 유지한다 (스키마 변경 없음).
+- 퍼센타일 경계는 선형보간 방식으로 직접 계산 (프로젝트에 `numpy`/`pandas` 의존성이 없으므로 `Decimal` 기반 자체 구현).
+- 경계값(`1%`/`99%`)은 환경변수로 조정 가능하게 함 (`RS_WINSORIZE_LOWER_PCT`, `RS_WINSORIZE_UPPER_PCT`).
+
+**관련 파일:**
+- `app/services/rs/calculator.py` — `_percentile()`, `_winsorize_bounds()` 헬퍼 추가, `calculate_market_rs()` 2-pass로 재구성
+- `app/core/config.py` — `rs_winsorize_lower_pct`, `rs_winsorize_upper_pct` 설정 추가
+- `app/services/batch/calculate_rs.py` — `calculate_market_rs()` 호출 시 설정값 전달
+- `tests/unit/test_rs_calculator.py` — 퍼센타일 헬퍼 단위 테스트 + 극단치 회귀 테스트 추가
+- `CLAUDE.md` — "RS Calculation" 섹션에 winsorize 단계 설명 추가
+
+**충돌 확인:**
+- `RsResultPayload`/`RsScore` 스키마 변경 없음 (기존 필드만 사용)
+- `relative_return_score`가 winsorize된 값을 반영하게 되어, 화면에 표시되는 `return_3m~12m` 값을 공식대로 직접 역산하면 표시된 점수와 달라질 수 있음 → 의도된 트레이드오프로 문서화 필요
+- `calculate_market_rs()`에 새 파라미터를 기본값과 함께 추가하므로 기존 호출부(`tests/unit/test_rs_calculator.py`의 기존 테스트 포함)는 영향 없음
+
+**선행 조건:** 없음 (기존 `calculate_rs` 파이프라인에 옵션 파라미터 추가하는 형태)

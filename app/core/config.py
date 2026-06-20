@@ -38,6 +38,13 @@ class Settings(BaseSettings):
     telegram_chat_id: Optional[str] = Field(default=None, alias="TELEGRAM_CHAT_ID")
     telegram_enabled: bool = Field(default=False, alias="TELEGRAM_ENABLED")
 
+    # RS 윈저라이즈 설정 (극단치 클리핑 퍼센타일 경계)
+    rs_winsorize_lower_pct: float = Field(default=1.0, alias="RS_WINSORIZE_LOWER_PCT")
+    rs_winsorize_upper_pct: float = Field(default=99.0, alias="RS_WINSORIZE_UPPER_PCT")
+
+    # 기업 이벤트 감지 임계값 (거래정지 전후 가격 변동 배율)
+    corporate_action_threshold: float = Field(default=3.0, alias="CORPORATE_ACTION_THRESHOLD")
+
 
 @lru_cache
 def get_settings() -> Settings:

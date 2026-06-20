@@ -81,6 +81,7 @@ tests/
 - KOSPI stocks are rated against the KOSPI benchmark only
 - KOSDAQ stocks are rated against the KOSDAQ benchmark only
 - Weighted score: `0.40 * 3M + 0.20 * 6M + 0.20 * 9M + 0.20 * 12M` (relative returns vs benchmark)
+- Winsorize: 점수 계산 전 기간별 상대수익률을 시장 분포의 1~99 퍼센타일로 클리핑 (극단치가 가중합을 왜곡하는 문제 방지, `RS_WINSORIZE_LOWER_PCT`/`RS_WINSORIZE_UPPER_PCT`로 조정 가능)
 - Percentile within same market → RS Rating 1-99
 
 ### Crawler
@@ -111,10 +112,12 @@ tests/
 
 ## Current Status
 
-Backend core (crawler, RS engine, batch orchestration, test harness) is implemented. Remaining work:
+Phase 1~7 구현 완료:
 
-1. API query models and query optimization
-2. crawl_jobs/crawl_failures persistence wiring
-3. RS detail/chart API endpoints
-4. PostgreSQL E2E integration testing
-5. Next.js frontend (not yet started)
+- **API**: health, rankings, stocks (detail/rs-history/prices), crawl monitoring 엔드포인트 + 캐싱 + 페이지네이션
+- **Batch**: sync_symbols → sync_benchmarks → sync_daily_prices → calculate_rs 파이프라인 + BatchOrchestrator (체크포인트, 트랜잭션 격리)
+- **RS Engine**: 2-pass 계산 (윈저라이즈 클리핑 → 가중합 → 퍼센타일 순위)
+- **Crawler**: Naver Finance 크롤러 + 증분 수집 + 회로 차단기
+- **Frontend**: Next.js 대시보드 (RS 랭킹, 종목 상세, 운영 모니터링)
+- **Testing**: 단위/통합/E2E 테스트 (17개 RS calculator 테스트 포함)
+- **Infra**: Docker, GitHub Actions CI, Slack/Discord/Telegram 알림

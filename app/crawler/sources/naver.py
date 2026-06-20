@@ -1,7 +1,8 @@
-from datetime import date
+from datetime import date, timedelta
 
 from app.crawler.client import NaverHttpClient
 from app.crawler.parsers.benchmarks import parse_benchmark_prices
+from app.crawler.parsers.fchart import parse_fchart_prices
 from app.crawler.parsers.prices import parse_daily_prices
 from app.crawler.parsers.symbols import parse_symbols
 from app.crawler.sources.base import PriceSource
@@ -29,29 +30,34 @@ class NaverPriceSource(PriceSource):
         except Exception:
             return set()
 
+    _FCHART_URL = "https://fchart.stock.naver.com/siseJson.naver"
+
     def fetch_daily_prices(self, code: str, since_date: date | None = None):
-        rows: list = []
-        seen_dates: set[date] = set()
-        for page in range(1, self.max_price_pages + 1):
-            html = self.client.get(f"https://finance.naver.com/item/sise_day.naver?code={code}&page={page}")
-            parsed = parse_daily_prices(html)
-            if not parsed:
-                break
+        """수정주가 기반 일봉 데이터 조회 (fchart API)."""
+        if since_date is not None:
+            start_date = since_date + timedelta(days=1)
+        else:
+            start_date = date.today() - timedelta(days=730)
 
-            should_stop = False
-            for row in parsed:
-                if since_date is not None and row.trade_date <= since_date:
-                    should_stop = True
-                    break  # 날짜가 내림차순이므로 즉시 중단
-                if row.trade_date in seen_dates:
-                    continue
-                seen_dates.add(row.trade_date)
-                rows.append(row)
+        end_date = date.today()
+        if start_date > end_date:
+            return []
 
-            if should_stop:
-                break
+        url = (
+            f"{self._FCHART_URL}"
+            f"?symbol={code}"
+            f"&requestType=1"
+            f"&startTime={start_date.strftime('%Y%m%d')}"
+            f"&endTime={end_date.strftime('%Y%m%d')}"
+            f"&timeframe=day"
+        )
+        raw_text = self.client.get(url)
+        rows = parse_fchart_prices(raw_text)
 
-        return sorted(rows, key=lambda row: row.trade_date)
+        if since_date is not None:
+            rows = [r for r in rows if r.trade_date > since_date]
+
+        return sorted(rows, key=lambda r: r.trade_date)
 
     # Naver Finance URL 코드와 내부 benchmark_code 매핑
     _NAVER_INDEX_CODES = {"KOSPI": "KOSPI", "KOSDAQ": "KOSDAQ"}

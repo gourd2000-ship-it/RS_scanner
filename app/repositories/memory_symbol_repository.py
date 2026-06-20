@@ -16,6 +16,9 @@ class MemorySymbolRepository:
     def list_all(self) -> list[SymbolPayload]:
         return list(self._symbols.values())
 
+    def list_stocks_only(self) -> list[SymbolPayload]:
+        return [s for s in self._symbols.values() if s.symbol_type == "stock"]
+
     def list_filtered(
         self,
         market: str | None = None,

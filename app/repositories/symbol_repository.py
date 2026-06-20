@@ -42,6 +42,14 @@ class SymbolRepository:
         rows = self.session.scalars(select(Symbol).order_by(Symbol.market, Symbol.code)).all()
         return [SymbolPayload(code=row.code, name=row.name, market=row.market, symbol_type=row.symbol_type) for row in rows]
 
+    def list_stocks_only(self) -> list[SymbolPayload]:
+        rows = self.session.scalars(
+            select(Symbol)
+            .where(Symbol.symbol_type == "stock")
+            .order_by(Symbol.market, Symbol.code)
+        ).all()
+        return [SymbolPayload(code=row.code, name=row.name, market=row.market, symbol_type=row.symbol_type) for row in rows]
+
     def get_code_to_id_map(self) -> dict[str, int]:
         rows = self.session.scalars(select(Symbol)).all()
         return {row.code: row.id for row in rows}

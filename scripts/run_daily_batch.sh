@@ -21,9 +21,10 @@ LOG_FILE="logs/batch_$(date +%Y%m%d_%H%M%S).log"
 
 echo "===== RS Scanner Daily Batch Started at $(date) =====" | tee -a "$LOG_FILE"
 
+set +e
 python -m app.main_batch 2>&1 | tee -a "$LOG_FILE"
-
-EXIT_CODE=$?
+EXIT_CODE=${PIPESTATUS[0]}
+set -e
 
 if [ $EXIT_CODE -eq 0 ]; then
     echo "===== Batch Completed Successfully at $(date) =====" | tee -a "$LOG_FILE"

@@ -81,6 +81,28 @@ def _score(relative_returns: dict[str, Decimal]) -> Decimal:
     )
 
 
+QUARTER_KEYS = ("q1", "q2", "q3", "q4")
+QUARTER_WEIGHT = Decimal("0.25")
+
+
+def _quarterly_returns(cumulative: dict[str, Decimal]) -> dict[str, Decimal]:
+    """누적수익률에서 비중복 분기수익률을 역산."""
+    one = Decimal("1")
+    q1 = cumulative["3m"]
+    denom_3m = one + cumulative["3m"]
+    q2 = (one + cumulative["6m"]) / denom_3m - one if denom_3m else Decimal("0")
+    denom_6m = one + cumulative["6m"]
+    q3 = (one + cumulative["9m"]) / denom_6m - one if denom_6m else Decimal("0")
+    denom_9m = one + cumulative["9m"]
+    q4 = (one + cumulative["12m"]) / denom_9m - one if denom_9m else Decimal("0")
+    return {"q1": q1, "q2": q2, "q3": q3, "q4": q4}
+
+
+def _quarterly_score(qr: dict[str, Decimal]) -> Decimal:
+    """분기별 수익률의 균등 가중합."""
+    return QUARTER_WEIGHT * (qr["q1"] + qr["q2"] + qr["q3"] + qr["q4"])
+
+
 def calculate_market_rs(
     market: str,
     symbol_series: Iterable[SymbolSeries],
@@ -188,6 +210,108 @@ def calculate_market_rs(
             )
         )
 
+    ordered = sorted(rows, key=lambda row: row.relative_return_score, reverse=True)
+    total = len(ordered)
+    for rank, row in enumerate(ordered, start=1):
+        percentile = Decimal(total - rank + 1) / Decimal(total)
+        rating = max(1, min(99, int((percentile * Decimal("98")).to_integral_value()) + 1))
+        row.rank_in_market = rank
+        row.rs_percentile = percentile
+        row.rs_rating = rating
+    return ordered
+
+
+def calculate_combined_rs(
+    symbol_series_by_market: dict[str, Iterable[SymbolSeries]],
+    target_date: date | None = None,
+    winsorize_lower_pct: Decimal | None = None,
+    winsorize_upper_pct: Decimal | None = None,
+) -> list[RsResultPayload]:
+    """IBD 스타일 통합 RS 계산.
+
+    - 분기별 수익률(Q1~Q4) 균등 가중합으로 종합 점수 산출
+    - KOSPI+KOSDAQ 전체 종목 통합 순위 → 1~99 RS Rating
+    - 벤치마크 대비가 아닌 절대 가격 성과 기준
+    """
+    # --- Pass 1: 종목별 누적수익률 + 분기수익률 수집 ---
+    intermediates: list[tuple[str, str, date, dict[str, Decimal], dict[str, Decimal]]] = []
+    skipped = 0
+
+    for market, series_iter in symbol_series_by_market.items():
+        for series in series_iter:
+            effective_prices = (
+                [p for p in series.prices if p.trade_date <= target_date]
+                if target_date is not None else series.prices
+            )
+            if len(effective_prices) < MIN_REQUIRED_PRICES:
+                skipped += 1
+                continue
+
+            cumulative = {
+                key: _return_over_window(effective_prices, window)
+                for key, window in TRADING_WINDOWS.items()
+            }
+            quarterly = _quarterly_returns(cumulative)
+            trade_dt = target_date if target_date is not None else effective_prices[-1].trade_date
+            intermediates.append((series.code, market, trade_dt, cumulative, quarterly))
+
+    if skipped:
+        logger.warning("통합 RS: %d종목 가격 이력 부족으로 제외 (최소 %d일 필요)", skipped, MIN_REQUIRED_PRICES)
+
+    # --- 윈저라이즈 경계 계산 (분기수익률 대상) ---
+    if (winsorize_lower_pct is None) != (winsorize_upper_pct is None):
+        logger.warning("winsorize_lower_pct와 winsorize_upper_pct 중 하나만 설정됨 — 윈저라이즈 비활성화")
+    apply_winsorize = winsorize_lower_pct is not None and winsorize_upper_pct is not None
+    bounds: dict[str, tuple[Decimal, Decimal]] = {}
+    if apply_winsorize:
+        returns_by_quarter: dict[str, list[Decimal]] = {k: [] for k in QUARTER_KEYS}
+        for _, _, _, _, qr in intermediates:
+            for k in QUARTER_KEYS:
+                returns_by_quarter[k].append(qr[k])
+        bounds = _winsorize_bounds(returns_by_quarter, winsorize_lower_pct, winsorize_upper_pct)
+        clipped_count = 0
+        total_values = len(intermediates) * len(QUARTER_KEYS)
+        for _, _, _, _, qr in intermediates:
+            for k in QUARTER_KEYS:
+                lo, hi = bounds[k]
+                if qr[k] < lo or qr[k] > hi:
+                    clipped_count += 1
+        if clipped_count:
+            logger.info(
+                "통합 RS: winsorize clipped %d/%d values (%.1f%%, bounds=%s~%s pct)",
+                clipped_count, total_values,
+                clipped_count / total_values * 100,
+                winsorize_lower_pct, winsorize_upper_pct,
+            )
+
+    # --- Pass 2: 점수 계산 + RsResultPayload 생성 ---
+    rows: list[RsResultPayload] = []
+    for code, market, trade_dt, cumulative, quarterly in intermediates:
+        if apply_winsorize and bounds:
+            clipped = {
+                k: max(bounds[k][0], min(bounds[k][1], quarterly[k]))
+                for k in QUARTER_KEYS
+            }
+        else:
+            clipped = quarterly
+        score = _quarterly_score(clipped)
+        rows.append(
+            RsResultPayload(
+                code=code,
+                market=market,
+                trade_date=trade_dt,
+                return_3m=cumulative["3m"],
+                return_6m=cumulative["6m"],
+                return_9m=cumulative["9m"],
+                return_12m=cumulative["12m"],
+                relative_return_score=score,
+                rs_percentile=Decimal("0"),
+                rs_rating=0,
+                rank_in_market=0,
+            )
+        )
+
+    # --- 통합 순위 (전체 시장 합산) ---
     ordered = sorted(rows, key=lambda row: row.relative_return_score, reverse=True)
     total = len(ordered)
     for rank, row in enumerate(ordered, start=1):

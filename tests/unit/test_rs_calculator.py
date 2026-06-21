@@ -8,7 +8,9 @@ from app.services.rs.calculator import (
     MIN_WINSORIZE_SAMPLES,
     SymbolSeries,
     _percentile,
+    _quarterly_returns,
     _winsorize_bounds,
+    calculate_combined_rs,
     calculate_market_rs,
 )
 
@@ -242,3 +244,75 @@ class TestWinsorizeIntegration:
 
         for raw, partial in zip(result_none, result_partial):
             assert raw.relative_return_score == partial.relative_return_score
+
+
+# ---------------------------------------------------------------------------
+# 분기별 수익률 단위 테스트
+# ---------------------------------------------------------------------------
+
+class TestQuarterlyReturns:
+    def test_equal_cumulative_returns(self):
+        """누적수익률이 모두 0이면 분기수익률도 모두 0."""
+        cum = {"3m": Decimal("0"), "6m": Decimal("0"), "9m": Decimal("0"), "12m": Decimal("0")}
+        qr = _quarterly_returns(cum)
+        for k in ("q1", "q2", "q3", "q4"):
+            assert qr[k] == Decimal("0")
+
+    def test_steady_growth(self):
+        """매 분기 10%씩 성장한 경우 각 분기 수익률이 동일해야 한다."""
+        q = Decimal("0.10")
+        c3 = (1 + q) - 1
+        c6 = (1 + q) ** 2 - 1
+        c9 = (1 + q) ** 3 - 1
+        c12 = (1 + q) ** 4 - 1
+        cum = {"3m": c3, "6m": c6, "9m": c9, "12m": c12}
+        qr = _quarterly_returns(cum)
+        for k in ("q1", "q2", "q3", "q4"):
+            assert abs(qr[k] - q) < Decimal("0.0001")
+
+    def test_recomposes_to_cumulative(self):
+        """분기수익률로 누적수익률을 복원할 수 있어야 한다."""
+        cum = {"3m": Decimal("0.15"), "6m": Decimal("0.30"), "9m": Decimal("0.50"), "12m": Decimal("0.80")}
+        qr = _quarterly_returns(cum)
+        one = Decimal("1")
+        recomposed_12m = (one + qr["q1"]) * (one + qr["q2"]) * (one + qr["q3"]) * (one + qr["q4"]) - one
+        assert abs(recomposed_12m - cum["12m"]) < Decimal("0.0001")
+
+
+# ---------------------------------------------------------------------------
+# 통합 RS 계산 테스트
+# ---------------------------------------------------------------------------
+
+class TestCombinedRs:
+    def test_combined_ranking_across_markets(self):
+        """KOSPI+KOSDAQ 종목이 하나의 순위로 통합 랭킹된다."""
+        kospi = [
+            SymbolSeries(code="K1", market="KOSPI", prices=make_series(100, 3)),
+            SymbolSeries(code="K2", market="KOSPI", prices=make_series(100, 1)),
+        ]
+        kosdaq = [
+            SymbolSeries(code="D1", market="KOSDAQ", prices=make_series(100, 2)),
+        ]
+        result = calculate_combined_rs({"KOSPI": kospi, "KOSDAQ": kosdaq})
+        assert len(result) == 3
+        assert result[0].code == "K1"
+        assert result[0].rank_in_market == 1
+        assert result[1].code == "D1"
+        assert result[1].rank_in_market == 2
+        assert result[2].code == "K2"
+        assert result[2].rank_in_market == 3
+
+    def test_no_benchmark_needed(self):
+        """통합 RS 계산에는 벤치마크가 불필요하다."""
+        series = [SymbolSeries(code="A", market="KOSPI", prices=make_series(100, 2))]
+        result = calculate_combined_rs({"KOSPI": series})
+        assert len(result) == 1
+        assert result[0].rs_rating == 99
+
+    def test_return_fields_store_cumulative(self):
+        """return_3m~12m 필드는 누적수익률을 저장한다."""
+        series = [SymbolSeries(code="A", market="KOSPI", prices=make_series(100, 2))]
+        result = calculate_combined_rs({"KOSPI": series})
+        r = result[0]
+        assert r.return_3m > 0
+        assert r.return_12m > r.return_3m

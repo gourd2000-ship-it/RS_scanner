@@ -78,11 +78,11 @@ tests/
 
 ### RS Calculation
 
-- KOSPI stocks are rated against the KOSPI benchmark only
-- KOSDAQ stocks are rated against the KOSDAQ benchmark only
-- Weighted score: `0.40 * 3M + 0.20 * 6M + 0.20 * 9M + 0.20 * 12M` (relative returns vs benchmark)
-- Winsorize: 점수 계산 전 기간별 상대수익률을 시장 분포의 1~99 퍼센타일로 클리핑 (극단치가 가중합을 왜곡하는 문제 방지, `RS_WINSORIZE_LOWER_PCT`/`RS_WINSORIZE_UPPER_PCT`로 조정 가능)
-- Percentile within same market → RS Rating 1-99
+- IBD 스타일 통합 순위: KOSPI + KOSDAQ 전체 종목을 하나로 랭킹
+- 분기별 수익률 기반 (Q1=최근 3개월, Q2=3~6개월 전, Q3=6~9개월 전, Q4=9~12개월 전)
+- 균등 가중합: `0.25 * Q1 + 0.25 * Q2 + 0.25 * Q3 + 0.25 * Q4`
+- 절대 가격 성과 기준 (벤치마크 대비가 아닌 순수 주가 수익률)
+- Percentile across all markets → RS Rating 1-99
 
 ### Crawler
 

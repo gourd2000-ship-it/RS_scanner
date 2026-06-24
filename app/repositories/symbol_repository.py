@@ -50,6 +50,12 @@ class SymbolRepository:
         ).all()
         return [SymbolPayload(code=row.code, name=row.name, market=row.market, symbol_type=row.symbol_type) for row in rows]
 
+    def get_by_code(self, code: str) -> SymbolPayload | None:
+        row = self.session.scalar(select(Symbol).where(Symbol.code == code))
+        if row is None:
+            return None
+        return SymbolPayload(code=row.code, name=row.name, market=row.market, symbol_type=row.symbol_type)
+
     def get_code_to_id_map(self) -> dict[str, int]:
         rows = self.session.scalars(select(Symbol)).all()
         return {row.code: row.id for row in rows}

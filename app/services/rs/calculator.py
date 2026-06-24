@@ -213,7 +213,7 @@ def calculate_market_rs(
     ordered = sorted(rows, key=lambda row: row.relative_return_score, reverse=True)
     total = len(ordered)
     for rank, row in enumerate(ordered, start=1):
-        percentile = Decimal(total - rank + 1) / Decimal(total)
+        percentile = Decimal("1") if total <= 1 else Decimal(total - rank) / Decimal(total - 1)
         rating = max(1, min(99, int((percentile * Decimal("98")).to_integral_value()) + 1))
         row.rank_in_market = rank
         row.rs_percentile = percentile
@@ -315,7 +315,7 @@ def calculate_combined_rs(
     ordered = sorted(rows, key=lambda row: row.relative_return_score, reverse=True)
     total = len(ordered)
     for rank, row in enumerate(ordered, start=1):
-        percentile = Decimal(total - rank + 1) / Decimal(total)
+        percentile = Decimal("1") if total <= 1 else Decimal(total - rank) / Decimal(total - 1)
         rating = max(1, min(99, int((percentile * Decimal("98")).to_integral_value()) + 1))
         row.rank_in_market = rank
         row.rs_percentile = percentile

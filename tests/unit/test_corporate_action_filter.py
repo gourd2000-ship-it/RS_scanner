@@ -61,22 +61,29 @@ class TestCorporateActionFilter:
         )
         assert detect_corporate_action(prices) is True
 
-    def test_short_halt_not_flagged(self):
-        """3일 거래정지는 MIN_HALT_DAYS(5) 미만이라 감지 안 됨."""
+    def test_short_halt_with_big_jump_detected_by_price_limit(self):
+        """3일 거래정지라도 가격 10배 점프는 가격제한 초과로 감지."""
         prices = _make_prices(
             days=30, close=1000, halt_start=10, halt_days=3, after_close=10000,
+        )
+        assert detect_corporate_action(prices) is True
+
+    def test_short_halt_with_small_change_not_flagged(self):
+        """3일 거래정지 + 가격제한 이내 변동은 감지 안 됨."""
+        prices = _make_prices(
+            days=30, close=1000, halt_start=10, halt_days=3, after_close=1200,
         )
         assert detect_corporate_action(prices) is False
 
     def test_halt_without_price_jump_not_flagged(self):
-        """거래정지 후 가격 변동이 threshold 미만이면 감지 안 됨."""
+        """거래정지 후 가격 변동이 halt threshold·가격제한 모두 미만이면 감지 안 됨."""
         prices = _make_prices(
-            days=30, close=1000, halt_start=10, halt_days=7, after_close=1500,
+            days=30, close=1000, halt_start=10, halt_days=7, after_close=1250,
         )
         assert detect_corporate_action(prices) is False
 
-    def test_high_volatility_without_halt_not_flagged(self):
-        """거래량 있는 상태에서 큰 변동은 감지 안 됨 (거래정지 없음)."""
+    def test_price_limit_breach_without_halt_detected(self):
+        """거래정지 없이 가격제한(±30%) 초과 변동은 기업 액션으로 감지."""
         start = date(2026, 1, 1)
         rows = []
         for i in range(30):
@@ -86,14 +93,30 @@ class TestCorporateActionFilter:
                 open=Decimal(c), high=Decimal(c), low=Decimal(c), close=Decimal(c),
                 volume=50000, change_rate=Decimal("0"),
             ))
+        assert detect_corporate_action(rows) is True
+
+    def test_gradual_rise_within_limit_not_flagged(self):
+        """매일 25%씩 상승은 가격제한 이내이므로 감지 안 됨."""
+        start = date(2026, 1, 1)
+        rows = []
+        c = 1000
+        for i in range(30):
+            rows.append(DailyPricePayload(
+                trade_date=start + timedelta(days=i),
+                open=Decimal(int(c)), high=Decimal(int(c)), low=Decimal(int(c)),
+                close=Decimal(int(c)), volume=50000, change_rate=Decimal("0"),
+            ))
+            c *= 1.25
         assert detect_corporate_action(rows) is False
 
     def test_custom_threshold(self):
-        """threshold=5 설정 시 4배 변동은 감지 안 됨."""
+        """halt threshold=5 설정 시 4배 변동(거래정지 기반)은 감지 안 되나,
+        가격제한 초과 감지는 항상 동작."""
         prices = _make_prices(
             days=30, close=1000, halt_start=10, halt_days=7, after_close=4000,
         )
-        assert detect_corporate_action(prices, threshold=Decimal("5")) is False
+        # 4배 점프 → 가격제한(±30%) 초과이므로 threshold와 무관하게 감지
+        assert detect_corporate_action(prices, threshold=Decimal("5")) is True
         assert detect_corporate_action(prices, threshold=Decimal("3")) is True
 
     def test_price_decrease_after_halt_detected(self):

@@ -25,6 +25,7 @@ router = APIRouter()
 
 @router.get("", response_model=PaginatedResponse[SymbolItem])
 def list_stocks(
+
     market: MarketType | None = Query(default=None, description="시장 구분 (KOSPI/KOSDAQ)"),
     is_active: bool | None = Query(default=None, description="상장 여부"),
     search: str | None = Query(default=None, min_length=1, max_length=100, description="종목명/코드 검색"),
@@ -61,6 +62,7 @@ def list_stocks(
 @router.get("/{code}", response_model=SymbolDetailResponse)
 @cached_stock_detail
 def get_stock_detail(
+
     code: str,
     session: Session = Depends(get_db_session),
 ):
@@ -198,6 +200,7 @@ def get_stock_detail(
 
 @router.get("/{code}/rs-history", response_model=RsSeriesResponse)
 def get_rs_history(
+
     code: str,
     limit: int = Query(default=90, ge=1, le=365, description="조회할 데이터 개수 (최대 365일)"),
     session: Session = Depends(get_db_session),
@@ -247,6 +250,7 @@ def get_rs_history(
 
 @router.get("/{code}/prices", response_model=PaginatedResponse[DailyPriceItem])
 def get_price_history(
+
     code: str,
     page: int = Query(default=1, ge=1, description="페이지 번호"),
     size: int = Query(default=100, ge=1, le=500, description="페이지 크기"),

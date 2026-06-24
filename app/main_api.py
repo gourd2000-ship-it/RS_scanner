@@ -14,6 +14,7 @@ from app.core.exceptions import (
     validation_exception_handler,
 )
 from app.core.logging import configure_logging
+from app.core.rate_limit import RateLimitMiddleware
 
 
 configure_logging()
@@ -75,17 +76,19 @@ app = FastAPI(
     },
 )
 
+# Rate Limiting (IP 기반, 기본 60req/min, 랭킹/종목 30req/min)
+app.add_middleware(RateLimitMiddleware)
+
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",  # Next.js 개발 서버
-        "http://localhost:8080",  # 기타 로컬 개발
+        "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "http://127.0.0.1:8080",
+        "https://incommutable-subabsolutely-luanne.ngrok-free.dev",
     ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET"],
     allow_headers=["*"],
 )
 

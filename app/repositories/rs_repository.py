@@ -136,6 +136,7 @@ class RsRepository:
         order: str = "asc",
         exclude_etf: bool = False,
         sector: str | None = None,
+        search: str | None = None,
     ) -> tuple[list[dict], int, date | None]:
         """시장별 RS 랭킹 조회 (종목명, 최신 가격 포함).
 
@@ -173,29 +174,42 @@ class RsRepository:
             keywords = self._SECTOR_KEYWORDS.get(sector, [])
             if keywords:
                 filters.append(or_(*[Symbol.name.ilike(kw) for kw in keywords]))
+        if search:
+            search_pattern = f"%{search}%"
+            filters.append(
+                (Symbol.name.ilike(search_pattern)) | (Symbol.code.ilike(search_pattern))
+            )
 
         # 전체 개수 조회 (Symbol 필터가 있을 경우 JOIN 필요)
         count_q = select(func.count()).select_from(RsScore).join(Symbol, Symbol.id == RsScore.symbol_id).where(*filters)
         total_count = self.session.scalar(count_q) or 0
 
-        # 최신 가격 서브쿼리: LAG로 등락율 동적 계산 (저장된 change_rate가 0이라 계산 대체)
-        _prev_close = func.lag(DailyPrice.close).over(
-            partition_by=DailyPrice.symbol_id,
-            order_by=DailyPrice.trade_date.asc(),
-        )
-        latest_price_subq = (
+        # 최신 가격 서브쿼리: 종목별 최근 2일만 추출해서 등락률 계산
+        ranked = (
             select(
                 DailyPrice.symbol_id,
                 DailyPrice.close,
-                (
-                    (DailyPrice.close - _prev_close)
-                    / func.nullif(_prev_close, 0)
-                    * 100
-                ).label("change_rate"),
                 func.row_number()
                 .over(partition_by=DailyPrice.symbol_id, order_by=DailyPrice.trade_date.desc())
                 .label("rn"),
             )
+            .where(DailyPrice.trade_date >= func.current_date() - 5)
+            .subquery()
+        )
+        latest = select(ranked.c.symbol_id, ranked.c.close).where(ranked.c.rn == 1).subquery()
+        prev = select(ranked.c.symbol_id, ranked.c.close.label("prev_close")).where(ranked.c.rn == 2).subquery()
+
+        latest_price_subq = (
+            select(
+                latest.c.symbol_id,
+                latest.c.close,
+                (
+                    (latest.c.close - prev.c.prev_close)
+                    / func.nullif(prev.c.prev_close, 0)
+                    * 100
+                ).label("change_rate"),
+            )
+            .outerjoin(prev, prev.c.symbol_id == latest.c.symbol_id)
             .subquery()
         )
 
@@ -225,7 +239,7 @@ class RsRepository:
             .join(Symbol, Symbol.id == RsScore.symbol_id)
             .outerjoin(
                 latest_price_subq,
-                (latest_price_subq.c.symbol_id == RsScore.symbol_id) & (latest_price_subq.c.rn == 1),
+                latest_price_subq.c.symbol_id == RsScore.symbol_id,
             )
             .where(*filters)
             .order_by(order_by_clause)

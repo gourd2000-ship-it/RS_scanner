@@ -26,6 +26,7 @@ def get_rankings(
     trade_date: date | None = Query(default=None, description="조회 기준일 (기본값: 최신 거래일)"),
     exclude_etf: bool = Query(default=False, description="ETF 제외 여부"),
     sector: str | None = Query(default=None, description="섹터 필터 (semiconductor, auto, energy, ...)"),
+    search: str | None = Query(default=None, min_length=1, max_length=100, description="종목명/코드 검색"),
     session: Session = Depends(get_db_session),
 ):
     """RS 랭킹 조회.
@@ -57,6 +58,7 @@ def get_rankings(
         trade_date=trade_date,
         exclude_etf=exclude_etf,
         sector=sector,
+        search=search,
     )
 
     items = [RsRankingItem(**item) for item in items_data]

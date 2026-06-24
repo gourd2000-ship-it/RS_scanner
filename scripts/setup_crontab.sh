@@ -22,13 +22,13 @@ crontab -l > /tmp/crontab_backup_$(date +%Y%m%d_%H%M%S).txt 2>/dev/null || true
 echo "cron 작업 추가 중..."
 echo ""
 echo "다음 작업이 추가됩니다:"
-echo "  - 평일(월~금) 오후 5시 (17:00)에 배치 실행"
+echo "  - 평일(월~금) 한국시간 오후 6시 (KST 18:00 = UTC 09:00)에 배치 실행"
 echo ""
 
 # 기존 RS Scanner cron 작업 제거 후 추가
 (crontab -l 2>/dev/null | grep -v "run_daily_batch.sh" || true; \
- echo "# RS Scanner Daily Batch - 평일 오후 5시 실행 (정규장 마감 후)"; \
- echo "0 17 * * 1-5 $BATCH_SCRIPT") | crontab -
+ echo "# RS Scanner Daily Batch - 평일 KST 오후 6시 실행 (UTC 09:00, 장 마감 후 저녁 리뷰용)"; \
+ echo "0 9 * * 1-5 $BATCH_SCRIPT") | crontab -
 
 echo "✓ crontab 설정 완료!"
 echo ""

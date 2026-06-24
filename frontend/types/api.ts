@@ -72,6 +72,7 @@ export interface RankingQueryParams {
   trade_date?: string;
   exclude_etf?: boolean;
   sector?: string;
+  search?: string;
 }
 
 export interface SectorData {

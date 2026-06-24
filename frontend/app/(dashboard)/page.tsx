@@ -21,6 +21,7 @@ export default function HomePage() {
   const [sortType, setSortType] = useState('representative');
   const [minMarketCap, setMinMarketCap] = useState('2000');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [rankings, setRankings] = useState<RankingItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -29,6 +30,16 @@ export default function HomePage() {
   const [pageSize, setPageSize] = useState(50);
   const [sortBy, setSortBy] = useState<'rank_in_market' | 'rs_rating' | 'return_3m'>('rank_in_market');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(prev => {
+        if (prev !== searchQuery) setCurrentPage(1);
+        return searchQuery;
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     const fetchRankings = async () => {
@@ -43,6 +54,7 @@ export default function HomePage() {
           order: sortOrder,
           exclude_etf: excludeEtf,
           sector: selectedSector !== 'all' ? selectedSector : undefined,
+          search: debouncedSearch || undefined,
         });
         setRankings(response.items);
         setTotalCount(response.total_count);
@@ -55,7 +67,7 @@ export default function HomePage() {
     };
 
     fetchRankings();
-  }, [market, currentPage, pageSize, sortBy, sortOrder, excludeEtf, selectedSector]);
+  }, [market, currentPage, pageSize, sortBy, sortOrder, excludeEtf, selectedSector, debouncedSearch]);
 
   const handleRetry = () => {
     setError(null);

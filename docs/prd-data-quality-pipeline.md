@@ -14,6 +14,9 @@
   테이블과 Alembic migration을 추가했다.
 - `scripts/validate_data_quality.py --job-id <id>`로 외부 재수집 없이 persisted job을
   replay할 수 있다. 기본 모드는 `report_only`다.
+- 스케줄 배치는 가격 동기화 직후 validation을 실행하고, 결과를
+  `reports/data_quality/job_<id>.json`에 자동 저장한다. 자동 retry는 배치에 연결하지
+  않고 운영 CLI로 분리한다.
 - coverage, ingest failure, persisted OHLC, benchmark, RS input freshness, extreme return,
   market-level coverage를 deterministic rule로 기록한다.
 - 신규 가격/benchmark 저장 시 append-only observation과 payload hash를 남긴다.

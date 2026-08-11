@@ -13,6 +13,7 @@ from app.services.batch.sync_eod import sync_eod_prices
 from app.services.batch.sync_prices import PriceSyncResult, sync_prices
 from app.services.batch.sync_symbols import sync_symbols
 from app.services.validation.data_quality import validate_crawl_job
+from app.services.validation.report import write_validation_report
 
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,7 @@ def run_daily_job(
         validation_result = None
         validation_blocked = False
         target_date = None
+        validation_report_path = None
         settings = get_settings()
         if (
             context.session is not None
@@ -69,6 +71,11 @@ def run_daily_job(
             context.validation_status = validation_result.run.validation_status
             target_date = validation_result.run.trade_date
             context.target_date = target_date
+            try:
+                validation_report_path = str(write_validation_report(validation_result))
+                logger.info("wrote validation report: %s", validation_report_path)
+            except Exception:
+                logger.exception("failed to write validation report for job %s", job_id)
             validation_blocked = (
                 settings.validation_mode == "enforce" and validation_result.would_block
             )
@@ -132,6 +139,7 @@ def run_daily_job(
             "prices": {code: len(rows) for code, rows in prices.items()},
             "rs_results": {market: len(rows) for market, rows in rs_results.items()},
             "validation": validation_result.to_dict() if validation_result else None,
+            "validation_report": validation_report_path,
             "validation_blocked": validation_blocked,
         }
     except Exception as e:

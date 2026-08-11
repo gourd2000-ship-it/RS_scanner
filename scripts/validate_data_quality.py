@@ -5,12 +5,11 @@ from __future__ import annotations
 
 import argparse
 from datetime import date
-import json
 from pathlib import Path
 
-from app.core.config import get_settings
 from app.core.database import session_scope
 from app.services.validation.data_quality import validate_crawl_job
+from app.services.validation.report import write_validation_report
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -37,16 +36,7 @@ def main() -> int:
             mode=args.mode,
         )
         document = result.to_dict()
-        output = args.output
-        if output is None:
-            output = Path(get_settings().validation_report_dir) / f"job_{args.job_id}.json"
-        output.parent.mkdir(parents=True, exist_ok=True)
-        temporary = output.with_suffix(output.suffix + ".tmp")
-        temporary.write_text(
-            json.dumps(document, ensure_ascii=False, indent=2, default=str),
-            encoding="utf-8",
-        )
-        temporary.replace(output)
+        output = write_validation_report(result, output=args.output)
 
     print(f"Validation Job {args.job_id}")
     print(f"Trade date: {document['trade_date']}")

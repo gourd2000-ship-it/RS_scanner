@@ -51,6 +51,12 @@ canary 범위는 `EOD_CANARY_MARKETS` 또는 `EOD_CANARY_CODES`로 제한하고,
 
 초기 배포는 `VALIDATION_MODE=report_only`로 유지한다.
 
+일일 스케줄 배치(`scripts/run_daily_batch.sh`)는 가격 동기화가 끝난 직후
+deterministic validation을 실행하고, 완료되면 자동으로
+`reports/data_quality/job_<job_id>.json`을 원자적으로 저장한다. 리포트 파일 쓰기에
+실패하더라도 이미 DB에 저장된 validation run/case와 RS 실행을 되돌리지는 않고 로그로
+알린다.
+
 ```bash
 python scripts/validate_data_quality.py --job-id <job_id>
 ```
@@ -65,7 +71,8 @@ fresh coverage, RS input freshness를 남긴다.
 python scripts/retry_failed_targets.py --job-id <job_id>
 ```
 
-재시도 후 validation을 다시 실행하며, `CRAWL_RETRY_MAX_ATTEMPTS` 이상 시도한 target은
-자동으로 제외한다. `VALIDATION_MODE=enforce` 전환은 최소 10개 거래일 report-only
+재시도는 운영자가 필요할 때 별도로 실행하는 절차이며, 일일 스케줄 배치가 자동으로
+호출하지 않는다. 재시도 후에는 validation을 다시 실행한다. `CRAWL_RETRY_MAX_ATTEMPTS`
+이상 시도한 target은 자동으로 제외한다. `VALIDATION_MODE=enforce` 전환은 최소 10개 거래일 report-only
 관측, false-positive 검토, benchmark/freshness 정책 승인을 완료한 뒤에만 진행한다.
 enforce에서 blocked이면 새 RS를 생성하지 않고 RS checkpoint를 `blocked`로 기록한다.

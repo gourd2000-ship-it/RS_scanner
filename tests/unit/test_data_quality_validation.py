@@ -1,3 +1,4 @@
+import json
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
@@ -8,9 +9,15 @@ from app.core.base import Base
 from app.models.benchmark import Benchmark
 from app.models.crawl_job import CrawlJob
 from app.models.crawl_target_result import CrawlTargetResult
+from app.models.data_quality import ValidationCase, ValidationRun
 from app.models.daily_price import DailyPrice
 from app.models.symbol import Symbol
-from app.services.validation.data_quality import ValidationPolicy, validate_crawl_job
+from app.services.validation.data_quality import (
+    ValidationPolicy,
+    ValidationResult,
+    validate_crawl_job,
+)
+from app.services.validation.report import write_validation_report
 from app.services.validation.rules import inspect_ohlc_row
 
 
@@ -132,3 +139,43 @@ def test_validation_replay_records_freshness_and_coverage_cases():
         reasons = {case.reason_code for case in result.cases}
         assert "RS_INPUT_STALE" in reasons
         assert "COVERAGE_BELOW_POLICY" in reasons
+
+
+def test_validation_report_is_written_atomically(tmp_path):
+    run = ValidationRun(
+        id=9,
+        crawl_job_id=56,
+        trade_date=date(2026, 8, 11),
+        run_kind="daily",
+        validator_version="test",
+        mode="report_only",
+        expected_symbols=2,
+        fresh_symbols=1,
+        coverage_rate=Decimal("0.5"),
+        validation_status="blocked",
+        metrics={"source": "test"},
+    )
+    case = ValidationCase(
+        id=10,
+        validation_run_id=9,
+        subject_type="market",
+        rule_id="coverage",
+        severity="CRITICAL",
+        reason_code="COVERAGE_BELOW_POLICY",
+        case_status="open",
+        decision="BLOCK",
+        evidence={"coverage": "0.5"},
+        validator_version="test",
+    )
+
+    output = write_validation_report(
+        ValidationResult(run=run, cases=[case], metrics=run.metrics),
+        output=tmp_path / "job_56.json",
+    )
+
+    assert output.exists()
+    assert not output.with_suffix(".json.tmp").exists()
+    document = json.loads(output.read_text(encoding="utf-8"))
+    assert document["run_id"] == 9
+    assert document["validation_status"] == "blocked"
+    assert document["cases"][0]["reason_code"] == "COVERAGE_BELOW_POLICY"

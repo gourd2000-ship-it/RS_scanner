@@ -20,6 +20,7 @@ from app.services.batch.sync_symbols import sync_symbols
 from app.core.config import get_settings
 from app.repositories.data_quality_repository import DataQualityRepository
 from app.services.validation.data_quality import ValidationResult, validate_crawl_job
+from app.services.validation.report import write_validation_report
 
 
 logger = logging.getLogger(__name__)
@@ -248,6 +249,16 @@ class BatchOrchestrator:
         try:
             # 단계 실행 (별도 트랜잭션)
             result = self._execute_step(step_name, step_func)
+
+            if step_name == "validation" and isinstance(result, ValidationResult):
+                try:
+                    report_path = write_validation_report(result)
+                    logger.info("wrote validation report: %s", report_path)
+                except Exception:
+                    # Validation state is already persisted.  A local report
+                    # write failure must not turn a data-quality result into
+                    # a crawler/RS failure.
+                    logger.exception("failed to write validation report for job %s", self.job_id)
 
             # 단계 완료 기록 (별도 트랜잭션)
             self._complete_step_checkpoint(step_name, result)

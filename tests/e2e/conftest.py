@@ -19,6 +19,7 @@ from app.repositories.crawl_job_repository import CrawlJobRepository
 from app.repositories.price_repository import PriceRepository
 from app.repositories.rs_repository import RsRepository
 from app.repositories.symbol_repository import SymbolRepository
+from app.services.validation.clean_layer import ValidatedPriceRepository
 from app.services.batch.context import BatchContext
 
 # E2E 테스트용 PostgreSQL 데이터베이스
@@ -117,6 +118,7 @@ def e2e_batch_context(e2e_session: Session):
         symbol_repository=SymbolRepository(e2e_session),
         benchmark_repository=BenchmarkRepository(e2e_session),
         price_repository=PriceRepository(e2e_session),
+        rs_input_repository=ValidatedPriceRepository(e2e_session),
         rs_repository=RsRepository(e2e_session),
         crawl_job_repository=CrawlJobRepository(e2e_session),
         crawl_failure_repository=CrawlFailureRepository(e2e_session),

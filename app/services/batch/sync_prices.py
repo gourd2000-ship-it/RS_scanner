@@ -319,6 +319,7 @@ def retry_failed_price_targets(
     job_id: int,
     target_keys: set[str] | None = None,
     max_requests: int | None = None,
+    max_attempts: int | None = None,
 ) -> PriceSyncResult:
     """이전 가격 단계에서 failed/partial인 종목만 재수집한다."""
     repository = context.crawl_target_result_repository
@@ -333,6 +334,12 @@ def retry_failed_price_targets(
     )
     if target_keys is not None:
         records = [record for record in records if record.target_key in target_keys]
+    if max_attempts is not None:
+        records = [
+            record
+            for record in records
+            if (record.attempt_count or 0) < max_attempts
+        ]
 
     symbols = []
     for record in records:
@@ -473,6 +480,8 @@ def _process_chunk_in_context(
                             saved_prices = chunk_context.price_repository.save_symbol_prices(
                                 symbol.code,
                                 prices,
+                                crawl_job_id=job_id,
+                                provider=type(source).__name__,
                             )
                     else:
                         saved_prices = chunk_context.price_repository.save_symbol_prices(

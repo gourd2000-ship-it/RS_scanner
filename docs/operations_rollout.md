@@ -46,3 +46,26 @@ canary 범위는 `EOD_CANARY_MARKETS` 또는 `EOD_CANARY_CODES`로 제한하고,
 
 실제 provider canary와 rollback 리허설은 PostgreSQL staging 및 계약된 공급자 없이는
 완료 처리하지 않는다.
+
+## Data-quality validation rollout
+
+초기 배포는 `VALIDATION_MODE=report_only`로 유지한다.
+
+```bash
+python scripts/validate_data_quality.py --job-id <job_id>
+```
+
+이 명령은 외부 요청을 다시 보내지 않고 저장된 crawl target/failure/price/benchmark
+자료를 replay한다. `reports/data_quality/job_<id>.json`에 rule별 evidence와
+fresh coverage, RS input freshness를 남긴다.
+
+실패 대상만 bounded retry할 때는 다음 명령을 사용한다.
+
+```bash
+python scripts/retry_failed_targets.py --job-id <job_id>
+```
+
+재시도 후 validation을 다시 실행하며, `CRAWL_RETRY_MAX_ATTEMPTS` 이상 시도한 target은
+자동으로 제외한다. `VALIDATION_MODE=enforce` 전환은 최소 10개 거래일 report-only
+관측, false-positive 검토, benchmark/freshness 정책 승인을 완료한 뒤에만 진행한다.
+enforce에서 blocked이면 새 RS를 생성하지 않고 RS checkpoint를 `blocked`로 기록한다.

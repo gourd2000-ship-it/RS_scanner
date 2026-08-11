@@ -20,6 +20,7 @@ from app.repositories.price_repository import PriceRepository
 from app.repositories.rs_repository import RsRepository
 from app.repositories.symbol_repository import SymbolRepository
 from app.repositories.symbol_universe_snapshot_repository import SymbolUniverseSnapshotRepository
+from app.services.validation.clean_layer import ValidatedPriceRepository
 
 
 @dataclass
@@ -28,6 +29,7 @@ class BatchContext:
     benchmark_repository: object
     price_repository: object
     rs_repository: object
+    rs_input_repository: object | None = None
     crawl_job_repository: object | None = None
     crawl_failure_repository: object | None = None
     crawl_target_result_repository: object | None = None
@@ -38,6 +40,10 @@ class BatchContext:
     universe_snapshot_id: int | None = None
     universe_snapshot_status: str | None = None
     job_id: int | None = None
+    validation_run_id: int | None = None
+    validation_status: str | None = None
+    target_date: object | None = None
+    rs_run_id: int | None = None
 
 
 def build_db_batch_context(session: Session) -> BatchContext:
@@ -45,6 +51,7 @@ def build_db_batch_context(session: Session) -> BatchContext:
         symbol_repository=SymbolRepository(session),
         benchmark_repository=BenchmarkRepository(session),
         price_repository=PriceRepository(session),
+        rs_input_repository=ValidatedPriceRepository(session),
         rs_repository=RsRepository(session),
         crawl_job_repository=CrawlJobRepository(session),
         crawl_failure_repository=CrawlFailureRepository(session),
@@ -56,10 +63,12 @@ def build_db_batch_context(session: Session) -> BatchContext:
 
 
 def build_memory_batch_context() -> BatchContext:
+    price_repository = MemoryPriceRepository()
     return BatchContext(
         symbol_repository=MemorySymbolRepository(),
         benchmark_repository=MemoryBenchmarkRepository(),
-        price_repository=MemoryPriceRepository(),
+        price_repository=price_repository,
+        rs_input_repository=price_repository,
         rs_repository=MemoryRsRepository(),
         crawl_job_repository=MemoryCrawlJobRepository(),
         crawl_failure_repository=MemoryCrawlFailureRepository(),

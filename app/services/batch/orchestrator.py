@@ -18,6 +18,8 @@ from app.services.batch.sync_eod import sync_eod_prices
 from app.services.batch.sync_prices import PriceSyncResult, sync_prices
 from app.services.batch.sync_symbols import sync_symbols
 from app.core.config import get_settings
+from app.repositories.data_quality_repository import DataQualityRepository
+from app.services.validation.data_quality import ValidationResult, validate_crawl_job
 
 
 logger = logging.getLogger(__name__)
@@ -76,22 +78,50 @@ class BatchOrchestrator:
                 description="가격 데이터 동기화",
             )
 
-            # Step 4: RS 계산
-            rs_results = self._run_step(
-                step_name="rs",
-                step_func=calculate_rs,
-                description="RS 계산",
+            # Step 4: 데이터 품질 검증.  report_only에서는 기존 RS 동작을
+            # 유지하지만, enforce에서는 blocked validation 결과를 publish로
+            # 전파하지 않는다.
+            validation_result = None
+            if get_settings().validation_enabled:
+                validation_result = self._run_step(
+                    step_name="validation",
+                    step_func=lambda ctx: validate_crawl_job(
+                        ctx.session,
+                        self.job_id,
+                        mode=get_settings().validation_mode,
+                    ),
+                    description="데이터 품질 검증",
+                )
+            validation_blocked = (
+                isinstance(validation_result, ValidationResult)
+                and get_settings().validation_mode == "enforce"
+                and validation_result.would_block
             )
+
+            # Step 5: RS 계산
+            if validation_blocked:
+                self._block_step_checkpoint("rs", "validation gate blocked RS publish")
+                rs_results = {}
+            else:
+                rs_results = self._run_step(
+                    step_name="rs",
+                    step_func=calculate_rs,
+                    description="RS 계산",
+                )
 
             price_stats = prices if isinstance(prices, PriceSyncResult) else None
             universe_degraded = self.universe_snapshot_status in {"partial", "failed"}
             symbols_total = price_stats.target_count if price_stats else (len(symbols) if symbols else 0)
             symbols_succeeded = price_stats.succeeded_count if price_stats else symbols_total
             symbols_failed = price_stats.unsuccessful_count if price_stats else 0
-            job_status = "completed_with_errors" if symbols_failed or universe_degraded else "completed"
+            job_status = (
+                "completed_with_errors"
+                if symbols_failed or universe_degraded or validation_blocked
+                else "completed"
+            )
             job_message = (
                 "Daily batch completed with errors"
-                if symbols_failed or universe_degraded
+                if symbols_failed or universe_degraded or validation_blocked
                 else "Daily batch completed successfully"
             )
 
@@ -127,6 +157,8 @@ class BatchOrchestrator:
                 "benchmarks": {market: len(rows) for market, rows in benchmarks.items()} if benchmarks else {},
                 "prices": {code: len(rows) for code, rows in prices.items()} if prices else {},
                 "rs_results": {market: len(rows) for market, rows in rs_results.items()} if rs_results else {},
+                "validation": validation_result.to_dict() if isinstance(validation_result, ValidationResult) else None,
+                "validation_blocked": validation_blocked,
             }
 
         except Exception as e:
@@ -163,7 +195,7 @@ class BatchOrchestrator:
 
                 # 각 단계에 대한 체크포인트 초기화
                 if context.checkpoint_repository:
-                    for step_name in ["symbols", "benchmarks", "prices", "rs"]:
+                    for step_name in ["symbols", "benchmarks", "prices", "validation", "rs"]:
                         context.checkpoint_repository.create_checkpoint(
                             job_id=self.job_id,
                             step_name=step_name,
@@ -245,8 +277,12 @@ class BatchOrchestrator:
     def _get_step_result(self, step_name: str) -> Any:
         """완료된 단계의 결과 조회 (DB에서 로드)"""
         logger.info(f"loading result for completed step: {step_name}")
-        # 실제로는 DB에서 결과를 로드해야 하지만, 여기서는 단순히 None 반환
-        # 재시작 시나리오에서는 이전 단계의 결과가 DB에 있으므로 문제없음
+        if step_name == "validation" and self.job_id:
+            with session_scope() as session:
+                repository = DataQualityRepository(session)
+                run = repository.latest_validation_run(crawl_job_id=self.job_id)
+                if run is not None:
+                    return ValidationResult(run=run, cases=[], metrics=run.metrics or {})
         return None
 
     def _start_step_checkpoint(self, step_name: str) -> None:
@@ -272,6 +308,11 @@ class BatchOrchestrator:
             items_processed = result.target_count
             items_failed = result.unsuccessful_count
             if items_failed:
+                checkpoint_status = "completed_with_errors"
+        elif isinstance(result, ValidationResult):
+            items_processed = result.run.expected_symbols
+            items_failed = result.run.error_count + result.run.critical_count
+            if result.would_block or result.run.warning_count:
                 checkpoint_status = "completed_with_errors"
         elif isinstance(result, list):
             items_processed = len(result)
@@ -319,12 +360,34 @@ class BatchOrchestrator:
                     error_message=error_message,
                 )
 
+    def _block_step_checkpoint(self, step_name: str, message: str) -> None:
+        """Record a policy block without treating it as an infrastructure crash."""
+        if not self.job_id:
+            return
+        with session_scope() as session:
+            context = build_db_batch_context(session)
+            if context.checkpoint_repository:
+                context.checkpoint_repository.complete_step(
+                    job_id=self.job_id,
+                    step_name=step_name,
+                    status="blocked",
+                    step_metadata=message,
+                )
+
     def _execute_step(self, step_name: str, step_func: Callable[[BatchContext], Any]) -> Any:
         """단계 실행 (별도 트랜잭션)"""
         with session_scope() as session:
             context = build_db_batch_context(session)
             context.job_id = self.job_id
             context.price_source = self.source
+            if step_name == "rs" and self.job_id:
+                validation_run = DataQualityRepository(session).latest_validation_run(
+                    crawl_job_id=self.job_id
+                )
+                if validation_run is not None:
+                    context.validation_run_id = validation_run.id
+                    context.validation_status = validation_run.validation_status
+                    context.target_date = validation_run.trade_date
             result = step_func(context)
             if step_name == "symbols":
                 self.universe_snapshot_status = context.universe_snapshot_status

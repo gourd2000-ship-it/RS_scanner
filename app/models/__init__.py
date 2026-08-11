@@ -6,6 +6,17 @@ from app.models.benchmark_daily_price import BenchmarkDailyPrice
 from app.models.crawl_failure import CrawlFailure
 from app.models.crawl_job import CrawlJob
 from app.models.crawl_target_result import CrawlTargetResult
+from app.models.data_quality import (
+    BenchmarkObservation,
+    CorporateAction,
+    OhlcCorrection,
+    OhlcExclusion,
+    PriceObservation,
+    RsInputSnapshot,
+    RsRun,
+    ValidationCase,
+    ValidationRun,
+)
 from app.models.daily_price import DailyPrice
 from app.models.rs_score import RsScore
 from app.models.symbol_universe_snapshot import SymbolUniverseSnapshot
@@ -18,6 +29,15 @@ __all__ = [
     "CrawlFailure",
     "CrawlJob",
     "CrawlTargetResult",
+    "ValidationRun",
+    "ValidationCase",
+    "PriceObservation",
+    "BenchmarkObservation",
+    "OhlcCorrection",
+    "OhlcExclusion",
+    "CorporateAction",
+    "RsRun",
+    "RsInputSnapshot",
     "DailyPrice",
     "RsScore",
     "Symbol",

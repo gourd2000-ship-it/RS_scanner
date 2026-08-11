@@ -13,7 +13,7 @@ class BatchCheckpoint(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     job_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    step_name: Mapped[str] = mapped_column(String(50), nullable=False)  # 'symbols', 'benchmarks', 'prices', 'rs'
+    step_name: Mapped[str] = mapped_column(String(50), nullable=False)  # 'symbols', 'benchmarks', 'prices', 'validation', 'rs'
     status: Mapped[str] = mapped_column(
         String(30),
         nullable=False,

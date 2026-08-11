@@ -3,11 +3,17 @@ import re
 from collections import defaultdict
 from datetime import date
 from decimal import Decimal
+from hashlib import sha256
+
+from sqlalchemy import select
 
 from app.core.config import get_settings
+from app.models.symbol import Symbol
+from app.repositories.data_quality_repository import DataQualityRepository
 from app.services.batch.context import BatchContext
 from app.services.rs.calculator import SymbolSeries, calculate_combined_rs
 from app.services.rs.corporate_action_filter import detect_corporate_action
+from app.services.validation.clean_layer import hash_price_rows
 from app.services.validation.market_data import validate_prices
 
 logger = logging.getLogger(__name__)
@@ -149,7 +155,15 @@ def _refetch_adjusted_prices(
             if prices:
                 invalid_rows = int(getattr(prices, "invalid_rows", 0) or 0)
                 validate_prices(prices)
-                context.price_repository.save_symbol_prices(code, prices)
+                if context.session is not None:
+                    context.price_repository.save_symbol_prices(
+                        code,
+                        prices,
+                        crawl_job_id=context.job_id,
+                        provider=type(source).__name__,
+                    )
+                else:
+                    context.price_repository.save_symbol_prices(code, prices)
                 latest_after = context.price_repository.get_latest_symbol_trade_date(code)
                 _record_refetch_result(
                     context,
@@ -188,17 +202,36 @@ def _refetch_adjusted_prices(
 
 
 def calculate_rs(context: BatchContext, target_date: date | None = None) -> dict:
-    effective_target_date = target_date or date.today()
+    effective_target_date = target_date or context.target_date or date.today()
 
     settings = get_settings()
     ca_threshold = Decimal(str(settings.corporate_action_threshold))
+    input_repository = (
+        context.rs_input_repository
+        if settings.validation_use_rs_input_layer and context.rs_input_repository is not None
+        else context.price_repository
+    )
+
+    rs_run = None
+    lineage_repository = None
+    if context.session is not None:
+        lineage_repository = DataQualityRepository(context.session)
+        rs_run = lineage_repository.create_rs_run(
+            validation_run_id=context.validation_run_id,
+            trade_date=effective_target_date,
+            input_policy_version=settings.rs_input_policy_version,
+            mode=settings.validation_mode,
+        )
+        context.rs_run_id = rs_run.id
 
     series_by_market: dict[str, list[SymbolSeries]] = defaultdict(list)
+    input_prices_by_code: dict[str, list] = {}
     skipped_ca = 0
     ca_codes: list[str] = []
 
     for symbol in context.symbol_repository.list_stocks_only():
-        prices = context.price_repository.get_symbol_prices(symbol.code)
+        prices = input_repository.get_symbol_prices(symbol.code)
+        input_prices_by_code[symbol.code] = prices
         if detect_corporate_action(prices, threshold=ca_threshold):
             skipped_ca += 1
             ca_codes.append(symbol.code)
@@ -215,7 +248,8 @@ def calculate_rs(context: BatchContext, target_date: date | None = None) -> dict
         if refetched:
             logger.info("%d/%d종목 수정주가 재수집 완료, RS 재계산에 포함", refetched, len(ca_codes))
             for code in ca_codes:
-                prices = context.price_repository.get_symbol_prices(code)
+                prices = input_repository.get_symbol_prices(code)
+                input_prices_by_code[code] = prices
                 if not detect_corporate_action(prices, threshold=ca_threshold):
                     symbol = context.symbol_repository.get_by_code(code)
                     if symbol:
@@ -240,6 +274,51 @@ def calculate_rs(context: BatchContext, target_date: date | None = None) -> dict
                         error,
                     )
 
+    if rs_run is not None and lineage_repository is not None:
+        symbol_ids = {
+            row.code: row.id
+            for row in context.session.scalars(
+                select(Symbol).where(Symbol.code.in_(input_prices_by_code))
+            ).all()
+        }
+        snapshot_hashes: list[str] = []
+        for code, prices in sorted(input_prices_by_code.items()):
+            input_date = max(
+                (row.trade_date for row in prices if row.trade_date <= effective_target_date),
+                default=None,
+            )
+            lag = (
+                (effective_target_date - input_date).days
+                if input_date is not None
+                else None
+            )
+            input_status = (
+                "fresh"
+                if input_date == effective_target_date
+                else "stale"
+                if input_date is not None
+                else "missing"
+            )
+            row_hash = hash_price_rows(prices)
+            snapshot_hashes.append(f"{code}:{row_hash}:{input_status}")
+            if code in symbol_ids:
+                lineage_repository.add_rs_input_snapshot(
+                    rs_run_id=rs_run.id,
+                    symbol_id=symbol_ids[code],
+                    target_date=effective_target_date,
+                    input_trade_date=input_date,
+                    stale_lag_days=lag,
+                    input_status=input_status,
+                    price_row_count=len(prices),
+                    price_hash=row_hash,
+                )
+
+        snapshot_hash = sha256(
+            "|".join(snapshot_hashes).encode("utf-8")
+        ).hexdigest()
+    else:
+        snapshot_hash = None
+
     all_rows = calculate_combined_rs(
         series_by_market,
         target_date=effective_target_date,
@@ -256,5 +335,20 @@ def calculate_rs(context: BatchContext, target_date: date | None = None) -> dict
         # Re-number it after splitting the combined result by market.
         for market_rank, row in enumerate(rows, start=1):
             row.rank_in_market = market_rank
-        results[market] = context.rs_repository.save_many(market, rows)
+        if context.session is not None:
+            results[market] = context.rs_repository.save_many(
+                market,
+                rows,
+                rs_run_id=rs_run.id if rs_run is not None else None,
+            )
+        else:
+            results[market] = context.rs_repository.save_many(market, rows)
+
+    if rs_run is not None and lineage_repository is not None:
+        lineage_repository.finish_rs_run(
+            rs_run,
+            status="completed",
+            symbol_count=sum(len(rows) for rows in results.values()),
+            snapshot_hash=snapshot_hash,
+        )
     return results

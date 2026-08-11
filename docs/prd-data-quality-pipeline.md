@@ -1,8 +1,32 @@
 # RS 데이터 품질 검증 파이프라인 PRD
 
-상태: 제안 검토 완료 · 구현 승인 대기  
+상태: Phase 1~3 핵심 기반 구현 완료 · SAM 제외 후 운영 검증 진행 중
 작성일: 2026-08-11  
 대상 저장소: RS Scanner
+
+구현 범위 메모: Hermes/SAM skill과 외부 reference provider 연동은 이 작업에서
+구현하지 않는다. 대신 SAM이 나중에 읽을 수 있는 구조화된 validation case와
+승인 전 correction/exclusion 저장소까지 준비한다.
+
+## 구현 완료 내역 (2026-08-11)
+
+- `validation_runs`, `validation_cases` 및 observation/correction/exclusion/corporate-action
+  테이블과 Alembic migration을 추가했다.
+- `scripts/validate_data_quality.py --job-id <id>`로 외부 재수집 없이 persisted job을
+  replay할 수 있다. 기본 모드는 `report_only`다.
+- coverage, ingest failure, persisted OHLC, benchmark, RS input freshness, extreme return,
+  market-level coverage를 deterministic rule로 기록한다.
+- 신규 가격/benchmark 저장 시 append-only observation과 payload hash를 남긴다.
+- `v_daily_prices_validated`, `v_rs_input_prices`와 동일 정책을 사용하는 validated
+  read repository를 추가하고, RS 계산에 input policy를 연결했다.
+- `rs_runs`, `rs_input_snapshots`, `rs_scores.rs_run_id`로 RS 입력 lineage를 기록한다.
+- `enforce` 모드에서는 blocked validation 결과가 RS 계산을 차단하며, 실패 대상은
+  `scripts/retry_failed_targets.py --job-id <id>`로 bounded retry 후 다시 검증한다.
+
+Job 56 replay 결과는 fresh coverage `2519/2837 (88.79%)`,
+`NAVER_EMPTY_RESPONSE` 190건, `INVALID_PRICE` 128건, `RS_INPUT_STALE` 147건으로
+재현됐다. 이 결과는 현재 threshold에서 `blocked (report_only)`로 기록되며,
+report-only 모드에서는 기존 RS 계산을 중단하지 않는다.
 
 ## 1. 결론
 

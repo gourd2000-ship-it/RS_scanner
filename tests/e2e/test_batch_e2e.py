@@ -4,12 +4,20 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 import pytest
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.models.benchmark import Benchmark
 from app.models.benchmark_daily_price import BenchmarkDailyPrice
 from app.models.crawl_job import CrawlJob
 from app.models.daily_price import DailyPrice
+from app.models.data_quality import (
+    BenchmarkObservation,
+    PriceObservation,
+    RsInputSnapshot,
+    RsRun,
+    ValidationRun,
+)
 from app.models.rs_score import RsScore
 from app.models.symbol import Symbol
 from app.schemas.market_data import BenchmarkPricePayload, DailyPricePayload, SymbolPayload
@@ -122,6 +130,26 @@ def test_full_batch_pipeline_e2e(e2e_batch_context: BatchContext, e2e_session: S
     assert latest_job.symbols_total == 3
     assert latest_job.symbols_succeeded == 3
     assert latest_job.symbols_failed == 0
+
+    # 7. Validation and lineage records
+    validation_run = e2e_session.query(ValidationRun).one()
+    assert validation_run.validation_status in {"passed", "passed_with_warnings"}
+    assert validation_run.expected_symbols == 3
+    assert e2e_session.query(PriceObservation).count() == 260 * 3
+    assert e2e_session.query(BenchmarkObservation).count() == 260 * 2
+    rs_run = e2e_session.query(RsRun).one()
+    assert rs_run.status == "completed"
+    assert rs_run.validation_run_id == validation_run.id
+    assert e2e_session.query(RsInputSnapshot).count() == 3
+    assert all(row.rs_run_id == rs_run.id for row in saved_rs_scores)
+    validated_count = e2e_session.scalar(
+        text("SELECT count(*) FROM v_daily_prices_validated")
+    )
+    rs_input_count = e2e_session.scalar(
+        text("SELECT count(*) FROM v_rs_input_prices")
+    )
+    assert validated_count == saved_prices
+    assert rs_input_count == saved_prices
 
 
 @pytest.mark.e2e

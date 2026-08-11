@@ -22,6 +22,9 @@ class Settings(BaseSettings):
         ge=1,
         alias="NAVER_MAX_REQUESTS_PER_BATCH",
     )
+    crawl_retry_max_attempts: int = Field(
+        default=2, ge=1, alias="CRAWL_RETRY_MAX_ATTEMPTS"
+    )
     naver_user_agent: str = Field(
         default=(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -81,6 +84,39 @@ class Settings(BaseSettings):
 
     # 기업 이벤트 감지 임계값 (거래정지 전후 가격 변동 배율)
     corporate_action_threshold: float = Field(default=3.0, alias="CORPORATE_ACTION_THRESHOLD")
+
+    # Deterministic data-quality validation.  ``report_only`` is deliberately
+    # the safe default until historical replay and policy review are complete.
+    validation_enabled: bool = Field(default=True, alias="VALIDATION_ENABLED")
+    validation_mode: str = Field(default="report_only", alias="VALIDATION_MODE")
+    validation_version: str = Field(default="1.0.0", alias="VALIDATION_VERSION")
+    validation_coverage_warning: float = Field(
+        default=0.97, ge=0.0, le=1.0, alias="VALIDATION_COVERAGE_WARNING"
+    )
+    validation_coverage_block: float = Field(
+        default=0.90, ge=0.0, le=1.0, alias="VALIDATION_COVERAGE_BLOCK"
+    )
+    validation_stale_warning_lag_days: int = Field(
+        default=1, ge=0, alias="VALIDATION_STALE_WARNING_LAG_DAYS"
+    )
+    validation_stale_block_lag_days: int = Field(
+        default=5, ge=0, alias="VALIDATION_STALE_BLOCK_LAG_DAYS"
+    )
+    validation_extreme_return_threshold: float = Field(
+        default=0.30, gt=0.0, alias="VALIDATION_EXTREME_RETURN_THRESHOLD"
+    )
+    validation_require_benchmark: bool = Field(
+        default=False, alias="VALIDATION_REQUIRE_BENCHMARK"
+    )
+    validation_use_rs_input_layer: bool = Field(
+        default=True, alias="VALIDATION_USE_RS_INPUT_LAYER"
+    )
+    validation_report_dir: str = Field(
+        default="reports/data_quality", alias="VALIDATION_REPORT_DIR"
+    )
+    rs_input_policy_version: str = Field(
+        default="v1-canonical-clean", alias="RS_INPUT_POLICY_VERSION"
+    )
 
 
 @lru_cache

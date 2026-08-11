@@ -273,10 +273,26 @@ def sync_eod_prices(
         try:
             save_bulk = getattr(context.price_repository, "save_symbol_prices_bulk", None)
             if callable(save_bulk):
-                persisted_by_code = save_bulk(rows_by_code)
+                if context.session is not None:
+                    persisted_by_code = save_bulk(
+                        rows_by_code,
+                        crawl_job_id=job_id,
+                        provider=type(source).__name__,
+                    )
+                else:
+                    persisted_by_code = save_bulk(rows_by_code)
             else:
                 persisted_by_code = {
-                    code: context.price_repository.save_symbol_prices(code, rows)
+                    code: (
+                        context.price_repository.save_symbol_prices(
+                            code,
+                            rows,
+                            crawl_job_id=job_id,
+                            provider=type(source).__name__,
+                        )
+                        if context.session is not None
+                        else context.price_repository.save_symbol_prices(code, rows)
+                    )
                     for code, rows in rows_by_code.items()
                 }
         except Exception as exc:  # noqa: BLE001

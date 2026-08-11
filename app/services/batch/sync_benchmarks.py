@@ -10,7 +10,17 @@ def sync_benchmarks(context: BatchContext, source: PriceSource):
         latest_trade_date = context.price_repository.get_latest_benchmark_trade_date(MARKET_BENCHMARKS[market])
         prices = source.fetch_benchmark_prices(market, since_date=latest_trade_date)
         if prices:
-            rows_by_market[market] = context.price_repository.save_benchmark_prices(MARKET_BENCHMARKS[market], prices)
+            if context.session is not None:
+                rows_by_market[market] = context.price_repository.save_benchmark_prices(
+                    MARKET_BENCHMARKS[market],
+                    prices,
+                    crawl_job_id=context.job_id,
+                    provider=type(source).__name__,
+                )
+            else:
+                rows_by_market[market] = context.price_repository.save_benchmark_prices(
+                    MARKET_BENCHMARKS[market], prices
+                )
         else:
             rows_by_market[market] = context.price_repository.get_benchmark_prices(MARKET_BENCHMARKS[market])
     return rows_by_market

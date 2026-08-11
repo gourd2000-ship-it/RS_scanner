@@ -49,3 +49,10 @@ def init_db() -> None:
     else:
         # 개발 환경에서는 편의를 위해 자동으로 테이블 생성
         Base.metadata.create_all(bind=engine)
+        # ``create_all`` does not create SQL views.  Keep local/dev databases
+        # aligned with the Alembic clean-layer views as well.
+        from app.services.validation.clean_layer import ensure_validated_views
+
+        with SessionLocal() as session:
+            ensure_validated_views(session)
+            session.commit()

@@ -15,7 +15,13 @@ class RsRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
 
-    def save_many(self, market: str, rows: Iterable[RsResultPayload]) -> list[RsResultPayload]:
+    def save_many(
+        self,
+        market: str,
+        rows: Iterable[RsResultPayload],
+        *,
+        rs_run_id: int | None = None,
+    ) -> list[RsResultPayload]:
         incoming = list(rows)
         if not incoming:
             return []
@@ -58,6 +64,7 @@ class RsRepository:
                     rs_percentile=payload.rs_percentile,
                     rs_rating=payload.rs_rating,
                     rank_in_market=payload.rank_in_market,
+                    rs_run_id=rs_run_id,
                 )
                 self.session.add(row)
             else:
@@ -71,6 +78,7 @@ class RsRepository:
                 row.rs_percentile = payload.rs_percentile
                 row.rs_rating = payload.rs_rating
                 row.rank_in_market = payload.rank_in_market
+                row.rs_run_id = rs_run_id
 
         self.session.flush()
         return incoming

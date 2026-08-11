@@ -1,5 +1,7 @@
 from collections.abc import Iterable
-from datetime import date
+from datetime import date, datetime
+from hashlib import sha256
+import json
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -7,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.models.benchmark import Benchmark
 from app.models.benchmark_daily_price import BenchmarkDailyPrice
 from app.models.daily_price import DailyPrice
+from app.models.data_quality import BenchmarkObservation, PriceObservation
 from app.models.symbol import Symbol
 from app.schemas.market_data import BenchmarkPricePayload, DailyPricePayload
 
@@ -15,7 +18,15 @@ class PriceRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
 
-    def save_symbol_prices(self, code: str, prices: Iterable[DailyPricePayload]) -> list[DailyPricePayload]:
+    def save_symbol_prices(
+        self,
+        code: str,
+        prices: Iterable[DailyPricePayload],
+        *,
+        crawl_job_id: int | None = None,
+        provider: str = "naver",
+        parser_version: str | None = None,
+    ) -> list[DailyPricePayload]:
         symbol = self.session.scalar(select(Symbol).where(Symbol.code == code))
         if symbol is None:
             raise KeyError(f"missing symbol {code}")
@@ -41,6 +52,7 @@ class PriceRepository:
                     close=payload.close,
                     volume=payload.volume,
                     change_rate=payload.change_rate,
+                    source=provider,
                 )
                 self.session.add(row)
             else:
@@ -50,6 +62,15 @@ class PriceRepository:
                 row.close = payload.close
                 row.volume = payload.volume
                 row.change_rate = payload.change_rate
+            row.source = provider
+
+        self._append_price_observations(
+            symbol.id,
+            incoming,
+            crawl_job_id=crawl_job_id,
+            provider=provider,
+            parser_version=parser_version,
+        )
 
         self.session.flush()
         return self.get_symbol_prices(code)
@@ -57,6 +78,10 @@ class PriceRepository:
     def save_symbol_prices_bulk(
         self,
         prices_by_code: dict[str, Iterable[DailyPricePayload]],
+        *,
+        crawl_job_id: int | None = None,
+        provider: str = "naver",
+        parser_version: str | None = None,
     ) -> dict[str, list[DailyPricePayload]]:
         """여러 종목의 EOD 행을 하나의 transaction flush로 upsert한다."""
         grouped = {
@@ -107,6 +132,7 @@ class PriceRepository:
                             close=payload.close,
                             volume=payload.volume,
                             change_rate=payload.change_rate,
+                            source=provider,
                         )
                     )
                 else:
@@ -116,12 +142,27 @@ class PriceRepository:
                     row.close = payload.close
                     row.volume = payload.volume
                     row.change_rate = payload.change_rate
+                    row.source = provider
+
+            self._append_price_observations(
+                symbol_id,
+                rows,
+                crawl_job_id=crawl_job_id,
+                provider=provider,
+                parser_version=parser_version,
+            )
 
         self.session.flush()
         return {code: self.get_symbol_prices(code) for code in grouped}
 
     def save_benchmark_prices(
-        self, benchmark_code: str, prices: Iterable[BenchmarkPricePayload]
+        self,
+        benchmark_code: str,
+        prices: Iterable[BenchmarkPricePayload],
+        *,
+        crawl_job_id: int | None = None,
+        provider: str = "naver",
+        parser_version: str | None = None,
     ) -> list[BenchmarkPricePayload]:
         benchmark = self.session.scalar(select(Benchmark).where(Benchmark.benchmark_code == benchmark_code))
         if benchmark is None:
@@ -160,6 +201,14 @@ class PriceRepository:
                 row.close = payload.close
                 row.volume = payload.volume
                 row.change_rate = payload.change_rate
+
+        self._append_benchmark_observations(
+            benchmark.id,
+            incoming,
+            crawl_job_id=crawl_job_id,
+            provider=provider,
+            parser_version=parser_version,
+        )
 
         self.session.flush()
         return self.get_benchmark_prices(benchmark_code)
@@ -220,3 +269,77 @@ class PriceRepository:
             .join(Benchmark, Benchmark.id == BenchmarkDailyPrice.benchmark_id)
             .where(Benchmark.benchmark_code == benchmark_code)
         )
+
+    @staticmethod
+    def _payload_hash(payload: object, *, provider: str) -> str:
+        values = {
+            "provider": provider,
+            "trade_date": getattr(payload, "trade_date").isoformat(),
+            "open": str(getattr(payload, "open")),
+            "high": str(getattr(payload, "high")),
+            "low": str(getattr(payload, "low")),
+            "close": str(getattr(payload, "close")),
+            "volume": getattr(payload, "volume"),
+            "change_rate": str(getattr(payload, "change_rate")),
+        }
+        return sha256(
+            json.dumps(values, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+
+    def _append_price_observations(
+        self,
+        symbol_id: int,
+        prices: Iterable[DailyPricePayload],
+        *,
+        crawl_job_id: int | None,
+        provider: str,
+        parser_version: str | None,
+    ) -> None:
+        observed_at = datetime.utcnow()
+        for payload in prices:
+            self.session.add(
+                PriceObservation(
+                    symbol_id=symbol_id,
+                    crawl_job_id=crawl_job_id,
+                    trade_date=payload.trade_date,
+                    open=payload.open,
+                    high=payload.high,
+                    low=payload.low,
+                    close=payload.close,
+                    volume=payload.volume,
+                    change_rate=payload.change_rate,
+                    provider=provider,
+                    parser_version=parser_version,
+                    payload_hash=self._payload_hash(payload, provider=provider),
+                    observed_at=observed_at,
+                )
+            )
+
+    def _append_benchmark_observations(
+        self,
+        benchmark_id: int,
+        prices: Iterable[BenchmarkPricePayload],
+        *,
+        crawl_job_id: int | None,
+        provider: str,
+        parser_version: str | None,
+    ) -> None:
+        observed_at = datetime.utcnow()
+        for payload in prices:
+            self.session.add(
+                BenchmarkObservation(
+                    benchmark_id=benchmark_id,
+                    crawl_job_id=crawl_job_id,
+                    trade_date=payload.trade_date,
+                    open=payload.open,
+                    high=payload.high,
+                    low=payload.low,
+                    close=payload.close,
+                    volume=payload.volume,
+                    change_rate=payload.change_rate,
+                    provider=provider,
+                    parser_version=parser_version,
+                    payload_hash=self._payload_hash(payload, provider=provider),
+                    observed_at=observed_at,
+                )
+            )

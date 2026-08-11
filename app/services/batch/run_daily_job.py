@@ -12,6 +12,7 @@ from app.services.batch.sync_benchmarks import sync_benchmarks
 from app.services.batch.sync_eod import sync_eod_prices
 from app.services.batch.sync_prices import PriceSyncResult, sync_prices
 from app.services.batch.sync_symbols import sync_symbols
+from app.services.validation.data_quality import validate_crawl_job
 
 
 logger = logging.getLogger(__name__)
@@ -50,7 +51,33 @@ def run_daily_job(
             if use_eod
             else sync_prices(context, source)
         )
-        rs_results = calculate_rs(context)
+        validation_result = None
+        validation_blocked = False
+        target_date = None
+        settings = get_settings()
+        if (
+            context.session is not None
+            and context.job_id is not None
+            and settings.validation_enabled
+        ):
+            validation_result = validate_crawl_job(
+                context.session,
+                context.job_id,
+                mode=settings.validation_mode,
+            )
+            context.validation_run_id = validation_result.run.id
+            context.validation_status = validation_result.run.validation_status
+            target_date = validation_result.run.trade_date
+            context.target_date = target_date
+            validation_blocked = (
+                settings.validation_mode == "enforce" and validation_result.would_block
+            )
+
+        rs_results = (
+            {}
+            if validation_blocked
+            else calculate_rs(context, target_date=target_date)
+        )
 
         # 가격 단계 결과에서 실제 종목별 통계를 계산한다.
         price_stats = prices if isinstance(prices, PriceSyncResult) else None
@@ -58,10 +85,14 @@ def run_daily_job(
         symbols_total = price_stats.target_count if price_stats else len(symbols)
         symbols_succeeded = price_stats.succeeded_count if price_stats else symbols_total
         symbols_failed = price_stats.unsuccessful_count if price_stats else 0
-        job_status = "completed_with_errors" if symbols_failed or universe_degraded else "completed"
+        job_status = (
+            "completed_with_errors"
+            if symbols_failed or universe_degraded or validation_blocked
+            else "completed"
+        )
         job_message = (
             "Daily batch completed with errors"
-            if symbols_failed or universe_degraded
+            if symbols_failed or universe_degraded or validation_blocked
             else "Daily batch completed successfully"
         )
 
@@ -100,6 +131,8 @@ def run_daily_job(
             "benchmarks": {market: len(rows) for market, rows in benchmarks.items()},
             "prices": {code: len(rows) for code, rows in prices.items()},
             "rs_results": {market: len(rows) for market, rows in rs_results.items()},
+            "validation": validation_result.to_dict() if validation_result else None,
+            "validation_blocked": validation_blocked,
         }
     except Exception as e:
         error_message = str(e)

@@ -17,6 +17,9 @@ class RsScore(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     symbol_id: Mapped[int] = mapped_column(ForeignKey("symbols.id"), index=True)
     benchmark_id: Mapped[int] = mapped_column(ForeignKey("benchmarks.id"), index=True)
+    rs_run_id: Mapped[int | None] = mapped_column(
+        ForeignKey("rs_runs.id"), nullable=True, index=True
+    )
     trade_date: Mapped[date] = mapped_column(Date, index=True)
     market: Mapped[str] = mapped_column(String(20), index=True)
     return_3m: Mapped[Decimal] = mapped_column(Numeric(12, 6))

@@ -19,10 +19,11 @@ class CrawlFailureRepository:
         job_id: int,
         target_type: str,
         target_key: str,
-        url: str | None = None,
+        url: str,
+        error_class: str,
+        error_message: str,
         http_status: int | None = None,
-        error_class: str | None = None,
-        error_message: str | None = None,
+        response_bytes: int | None = None,
         retry_count: int = 0,
     ) -> CrawlFailure:
         """실패 기록 생성."""
@@ -32,6 +33,7 @@ class CrawlFailureRepository:
             target_key=target_key,
             url=url,
             http_status=http_status,
+            response_bytes=response_bytes,
             error_class=error_class,
             error_message=error_message,
             retry_count=retry_count,

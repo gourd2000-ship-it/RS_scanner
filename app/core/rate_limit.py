@@ -2,6 +2,8 @@ import time
 from collections import defaultdict
 from typing import Callable
 
+from app.core.config import get_settings
+
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -12,6 +14,7 @@ WINDOW_SECONDS = 60
 PATH_LIMITS: dict[str, int] = {
     "/api/v1/rankings/rs": 30,
     "/api/v1/stocks": 30,
+    "/api/v1/agent/v1": 60,
 }
 
 
@@ -23,6 +26,8 @@ def _get_client_ip(request: Request) -> str:
 
 
 def _match_limit(path: str) -> int:
+    if path.startswith("/api/v1/agent/v1"):
+        return get_settings().agent_rate_limit
     for prefix, limit in PATH_LIMITS.items():
         if path.startswith(prefix):
             return limit

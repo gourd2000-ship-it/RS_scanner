@@ -54,6 +54,72 @@ class PriceRepository:
         self.session.flush()
         return self.get_symbol_prices(code)
 
+    def save_symbol_prices_bulk(
+        self,
+        prices_by_code: dict[str, Iterable[DailyPricePayload]],
+    ) -> dict[str, list[DailyPricePayload]]:
+        """여러 종목의 EOD 행을 하나의 transaction flush로 upsert한다."""
+        grouped = {
+            code: sorted(list(rows), key=lambda row: row.trade_date)
+            for code, rows in prices_by_code.items()
+            if rows
+        }
+        if not grouped:
+            return {}
+
+        codes = list(grouped)
+        symbols = self.session.scalars(
+            select(Symbol).where(Symbol.code.in_(codes))
+        ).all()
+        symbol_by_code = {symbol.code: symbol for symbol in symbols}
+        missing_codes = set(codes) - set(symbol_by_code)
+        if missing_codes:
+            raise KeyError(f"missing symbols: {', '.join(sorted(missing_codes))}")
+
+        symbol_ids = [symbol.id for symbol in symbols]
+        dates = {
+            row.trade_date
+            for rows in grouped.values()
+            for row in rows
+        }
+        existing = {
+            (row.symbol_id, row.trade_date): row
+            for row in self.session.scalars(
+                select(DailyPrice).where(
+                    DailyPrice.symbol_id.in_(symbol_ids),
+                    DailyPrice.trade_date.in_(dates),
+                )
+            ).all()
+        }
+
+        for code, rows in grouped.items():
+            symbol_id = symbol_by_code[code].id
+            for payload in rows:
+                row = existing.get((symbol_id, payload.trade_date))
+                if row is None:
+                    self.session.add(
+                        DailyPrice(
+                            symbol_id=symbol_id,
+                            trade_date=payload.trade_date,
+                            open=payload.open,
+                            high=payload.high,
+                            low=payload.low,
+                            close=payload.close,
+                            volume=payload.volume,
+                            change_rate=payload.change_rate,
+                        )
+                    )
+                else:
+                    row.open = payload.open
+                    row.high = payload.high
+                    row.low = payload.low
+                    row.close = payload.close
+                    row.volume = payload.volume
+                    row.change_rate = payload.change_rate
+
+        self.session.flush()
+        return {code: self.get_symbol_prices(code) for code in grouped}
+
     def save_benchmark_prices(
         self, benchmark_code: str, prices: Iterable[BenchmarkPricePayload]
     ) -> list[BenchmarkPricePayload]:

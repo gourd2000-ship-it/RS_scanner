@@ -59,6 +59,7 @@ class BatchCheckpointRepository:
         self,
         job_id: int,
         step_name: str,
+        status: str = "completed",
         items_processed: int = 0,
         items_failed: int = 0,
         step_metadata: str | None = None,
@@ -68,7 +69,7 @@ class BatchCheckpointRepository:
         if not checkpoint:
             raise ValueError(f"Checkpoint not found: job_id={job_id}, step_name={step_name}")
 
-        checkpoint.status = "completed"
+        checkpoint.status = status
         checkpoint.completed_at = datetime.utcnow()
         checkpoint.items_processed = items_processed
         checkpoint.items_failed = items_failed
@@ -129,6 +130,8 @@ class BatchCheckpointRepository:
         total_chunks: int,
         chunk_size: int,
         items_processed_this_chunk: int,
+        items_failed_this_chunk: int = 0,
+        chunk_succeeded: bool = True,
     ) -> BatchCheckpoint:
         """청크 완료 시 메타데이터 업데이트"""
         checkpoint = self.get_checkpoint(job_id, step_name)
@@ -151,17 +154,26 @@ class BatchCheckpointRepository:
             metadata["chunk_size"] = chunk_size
         if "total_chunks" not in metadata:
             metadata["total_chunks"] = total_chunks
+        if "chunks_failed" not in metadata:
+            metadata["chunks_failed"] = []
 
-        # 현재 청크를 완료 목록에 추가 (중복 방지)
-        if chunk_index not in metadata["chunks_completed"]:
-            metadata["chunks_completed"].append(chunk_index)
-        metadata["last_completed_chunk"] = chunk_index
+        # 실패가 없는 청크만 재시작 시 완료 청크로 간주한다.
+        if chunk_succeeded:
+            if chunk_index not in metadata["chunks_completed"]:
+                metadata["chunks_completed"].append(chunk_index)
+            metadata["chunks_failed"] = [
+                index for index in metadata["chunks_failed"] if index != chunk_index
+            ]
+        elif chunk_index not in metadata["chunks_failed"]:
+            metadata["chunks_failed"].append(chunk_index)
+        metadata["last_attempted_chunk"] = chunk_index
 
         # JSON 직렬화
         checkpoint.step_metadata = json.dumps(metadata)
 
         # 전체 진행률 업데이트
         checkpoint.items_processed = checkpoint.items_processed + items_processed_this_chunk
+        checkpoint.items_failed = checkpoint.items_failed + items_failed_this_chunk
 
         self.session.flush()
         return checkpoint

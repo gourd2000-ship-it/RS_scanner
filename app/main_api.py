@@ -1,13 +1,15 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 
+from app.api.v1.endpoints.agent import router as agent_router
 from app.api.v1.endpoints.crawl import router as crawl_router
 from app.api.v1.endpoints.health import router as health_router
 from app.api.v1.endpoints.rankings import router as rankings_router
 from app.api.v1.endpoints.stocks import router as stocks_router
 from app.core.database import init_db
+from app.core.metrics import increment_metric
 from app.core.exceptions import (
     generic_exception_handler,
     http_exception_handler,
@@ -15,6 +17,7 @@ from app.core.exceptions import (
 )
 from app.core.logging import configure_logging
 from app.core.rate_limit import RateLimitMiddleware
+from uuid import uuid4
 
 
 configure_logging()
@@ -60,6 +63,10 @@ tags_metadata = [
         "name": "crawl",
         "description": "크롤링 모니터링. 네이버 금융에서 데이터를 수집하는 배치 작업의 상태를 모니터링합니다.",
     },
+    {
+        "name": "agent",
+        "description": "Hermes용 인증된 읽기 전용 RS 데이터 facade.",
+    },
 ]
 
 app = FastAPI(
@@ -92,6 +99,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def request_id_middleware(request: Request, call_next):
+    request_id = request.headers.get("x-request-id", "").strip()[:128] or uuid4().hex
+    request.state.request_id = request_id
+    response = await call_next(request)
+    if request.url.path.startswith("/api/v1/agent/v1") and response.status_code >= 400:
+        increment_metric("hermes_api_errors_total")
+    response.headers["X-Request-Id"] = request_id
+    return response
+
 # 예외 핸들러 등록
 app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
@@ -99,6 +116,7 @@ app.add_exception_handler(Exception, generic_exception_handler)
 
 # 라우터 등록
 app.include_router(health_router, prefix="/api/v1", tags=["health"])
+app.include_router(agent_router, prefix="/api/v1/agent/v1", tags=["agent"])
 app.include_router(rankings_router, prefix="/api/v1", tags=["rankings"])
 app.include_router(stocks_router, prefix="/api/v1/stocks", tags=["stocks"])
 app.include_router(crawl_router, prefix="/api/v1/crawl", tags=["crawl"])

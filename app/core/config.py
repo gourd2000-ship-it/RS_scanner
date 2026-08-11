@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     naver_min_delay_ms: int = Field(default=800, alias="NAVER_MIN_DELAY_MS")
     naver_max_delay_ms: int = Field(default=2500, alias="NAVER_MAX_DELAY_MS")
     naver_max_retries: int = Field(default=5, alias="NAVER_MAX_RETRIES")
+    naver_max_concurrency: int = Field(default=4, ge=1, alias="NAVER_MAX_CONCURRENCY")
+    naver_max_requests_per_batch: int = Field(
+        default=5000,
+        ge=1,
+        alias="NAVER_MAX_REQUESTS_PER_BATCH",
+    )
     naver_user_agent: str = Field(
         default=(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -27,6 +33,37 @@ class Settings(BaseSettings):
     batch_timezone: str = Field(default="Asia/Seoul", alias="BATCH_TIMEZONE")
     batch_market_close_hour: int = Field(default=17, alias="BATCH_MARKET_CLOSE_HOUR")
     batch_chunk_size: int = Field(default=200, alias="BATCH_CHUNK_SIZE")
+
+    # Universe completeness guard.  The ratio is applied per market when a
+    # previous active universe exists; the absolute minimum protects a first
+    # import from accepting an empty response as a completed snapshot.
+    universe_min_symbols: int = Field(default=100, ge=1, alias="UNIVERSE_MIN_SYMBOLS")
+    universe_min_symbol_ratio: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        alias="UNIVERSE_MIN_SYMBOL_RATIO",
+    )
+
+    # EOD provider rollout controls. The safe default is off until a provider
+    # contract and canary approval exist; tests can still call sync_eod
+    # directly with an explicit source.
+    eod_provider_enabled: bool = Field(default=False, alias="EOD_PROVIDER_ENABLED")
+    eod_canary_markets: str = Field(default="", alias="EOD_CANARY_MARKETS")
+    eod_canary_codes: str = Field(default="", alias="EOD_CANARY_CODES")
+
+    # Hermes Agent API
+    agent_api_enabled: bool = Field(default=True, alias="AGENT_API_ENABLED")
+    agent_service_tokens: str = Field(default="", alias="AGENT_SERVICE_TOKENS")
+    agent_allowed_ips: str = Field(default="", alias="AGENT_ALLOWED_IPS")
+    agent_freshness_max_age_hours: int = Field(default=36, ge=1, alias="AGENT_FRESHNESS_MAX_AGE_HOURS")
+    agent_rate_limit: int = Field(default=60, ge=1, alias="AGENT_RATE_LIMIT")
+
+    # Hermes client adapter
+    hermes_api_base_url: str = Field(default="", alias="HERMES_API_BASE_URL")
+    hermes_service_token: Optional[str] = Field(default=None, alias="HERMES_SERVICE_TOKEN")
+    hermes_request_timeout: float = Field(default=10.0, alias="HERMES_REQUEST_TIMEOUT")
+    hermes_max_retries: int = Field(default=2, ge=0, alias="HERMES_MAX_RETRIES")
 
     # 알림 설정
     notification_webhook_url: Optional[str] = Field(default=None, alias="NOTIFICATION_WEBHOOK_URL")

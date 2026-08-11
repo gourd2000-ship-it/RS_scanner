@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Index, String
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base import Base
@@ -24,3 +24,9 @@ class Symbol(Base):
     delisted_at: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_snapshot_id: Mapped[int | None] = mapped_column(
+        ForeignKey("symbol_universe_snapshots.id"),
+        nullable=True,
+        index=True,
+    )

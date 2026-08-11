@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from datetime import date, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -12,11 +13,18 @@ class SymbolRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
 
-    def upsert_many(self, symbols: Iterable[SymbolPayload]) -> list[SymbolPayload]:
+    def upsert_many(
+        self,
+        symbols: Iterable[SymbolPayload],
+        *,
+        snapshot_id: int | None = None,
+        seen_at: datetime | None = None,
+    ) -> list[SymbolPayload]:
         incoming = list(symbols)
         if not incoming:
             return []
 
+        seen_at = seen_at or datetime.utcnow()
         codes = [symbol.code for symbol in incoming]
         existing = {
             row.code: row
@@ -26,7 +34,14 @@ class SymbolRepository:
         for payload in incoming:
             row = existing.get(payload.code)
             if row is None:
-                row = Symbol(code=payload.code, name=payload.name, market=payload.market, symbol_type=payload.symbol_type)
+                row = Symbol(
+                    code=payload.code,
+                    name=payload.name,
+                    market=payload.market,
+                    symbol_type=payload.symbol_type,
+                    last_seen_at=seen_at if snapshot_id is not None else None,
+                    last_snapshot_id=snapshot_id,
+                )
                 self.session.add(row)
                 existing[payload.code] = row
             else:
@@ -34,21 +49,47 @@ class SymbolRepository:
                 row.market = payload.market
                 row.symbol_type = payload.symbol_type
                 row.is_active = True
+                if snapshot_id is not None:
+                    row.last_seen_at = seen_at
+                    row.last_snapshot_id = snapshot_id
 
         self.session.flush()
         return self.list_all()
+
+    def reconcile_missing(
+        self,
+        incoming_codes: set[str],
+        *,
+        delisted_at: date | None = None,
+    ) -> list[str]:
+        """완료된 universe에서 사라진 active 종목만 비활성화한다."""
+        rows = self.session.scalars(select(Symbol).where(Symbol.is_active.is_(True))).all()
+        missing_codes: list[str] = []
+        delisted_at = delisted_at or datetime.utcnow().date()
+        for row in rows:
+            if row.code in incoming_codes:
+                continue
+            row.is_active = False
+            row.delisted_at = delisted_at
+            missing_codes.append(row.code)
+        self.session.flush()
+        return missing_codes
 
     def list_all(self) -> list[SymbolPayload]:
         rows = self.session.scalars(select(Symbol).order_by(Symbol.market, Symbol.code)).all()
         return [SymbolPayload(code=row.code, name=row.name, market=row.market, symbol_type=row.symbol_type) for row in rows]
 
-    def list_stocks_only(self) -> list[SymbolPayload]:
+    def list_price_targets(self) -> list[SymbolPayload]:
+        """기본 가격 수집 대상: 활성 상태인 일반 주식만 반환한다."""
         rows = self.session.scalars(
             select(Symbol)
-            .where(Symbol.symbol_type == "stock")
+            .where(Symbol.is_active.is_(True), Symbol.symbol_type == "stock")
             .order_by(Symbol.market, Symbol.code)
         ).all()
         return [SymbolPayload(code=row.code, name=row.name, market=row.market, symbol_type=row.symbol_type) for row in rows]
+
+    def list_stocks_only(self) -> list[SymbolPayload]:
+        return self.list_price_targets()
 
     def get_by_code(self, code: str) -> SymbolPayload | None:
         row = self.session.scalar(select(Symbol).where(Symbol.code == code))

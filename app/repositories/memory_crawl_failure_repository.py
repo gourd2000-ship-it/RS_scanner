@@ -12,10 +12,11 @@ class MemoryCrawlFailure:
         job_id: int,
         target_type: str,
         target_key: str,
-        url: str | None,
+        url: str,
         http_status: int | None,
-        error_class: str | None,
-        error_message: str | None,
+        response_bytes: int | None,
+        error_class: str,
+        error_message: str,
         retry_count: int,
         created_at: datetime,
     ) -> None:
@@ -25,6 +26,7 @@ class MemoryCrawlFailure:
         self.target_key = target_key
         self.url = url
         self.http_status = http_status
+        self.response_bytes = response_bytes
         self.error_class = error_class
         self.error_message = error_message
         self.retry_count = retry_count
@@ -43,10 +45,11 @@ class MemoryCrawlFailureRepository:
         job_id: int,
         target_type: str,
         target_key: str,
-        url: str | None = None,
+        url: str,
+        error_class: str,
+        error_message: str,
         http_status: int | None = None,
-        error_class: str | None = None,
-        error_message: str | None = None,
+        response_bytes: int | None = None,
         retry_count: int = 0,
     ) -> MemoryCrawlFailure:
         """실패 기록 생성."""
@@ -57,6 +60,7 @@ class MemoryCrawlFailureRepository:
             target_key=target_key,
             url=url,
             http_status=http_status,
+            response_bytes=response_bytes,
             error_class=error_class,
             error_message=error_message,
             retry_count=retry_count,

@@ -14,7 +14,11 @@ class BatchCheckpoint(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     job_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     step_name: Mapped[str] = mapped_column(String(50), nullable=False)  # 'symbols', 'benchmarks', 'prices', 'rs'
-    status: Mapped[str] = mapped_column(String(20), nullable=False, index=True)  # 'pending', 'running', 'completed', 'failed'
+    status: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False,
+        index=True,
+    )  # 'pending', 'running', 'completed', 'completed_with_errors', 'failed'
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     items_total: Mapped[int] = mapped_column(Integer, default=0)

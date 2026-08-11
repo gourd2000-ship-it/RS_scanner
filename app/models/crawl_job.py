@@ -13,7 +13,7 @@ class CrawlJob(Base):
     job_type: Mapped[str] = mapped_column(String(50), index=True)
     started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    status: Mapped[str] = mapped_column(String(20), default="running", index=True)
+    status: Mapped[str] = mapped_column(String(30), default="running", index=True)
     symbols_total: Mapped[int] = mapped_column(Integer, default=0)
     symbols_succeeded: Mapped[int] = mapped_column(Integer, default=0)
     symbols_failed: Mapped[int] = mapped_column(Integer, default=0)

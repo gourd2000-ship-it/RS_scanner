@@ -15,6 +15,7 @@ class CrawlFailure(Base):
     target_key: Mapped[str] = mapped_column(String(255), index=True)
     url: Mapped[str] = mapped_column(Text)
     http_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    response_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error_class: Mapped[str] = mapped_column(String(100))
     error_message: Mapped[str] = mapped_column(Text)
     retry_count: Mapped[int] = mapped_column(Integer, default=0)

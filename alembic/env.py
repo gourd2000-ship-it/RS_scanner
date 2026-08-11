@@ -23,6 +23,11 @@ config = context.config
 # 환경변수에서 DATABASE_URL 로드
 database_url = os.environ.get("DATABASE_URL")
 if database_url:
+    # psycopg v3 is the project's supported PostgreSQL driver.  Alembic's
+    # bare ``postgresql://`` default otherwise resolves to the uninstalled
+    # psycopg2 dialect in SQLAlchemy.
+    if database_url.startswith("postgresql://"):
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
     config.set_main_option("sqlalchemy.url", database_url)
 
 # Interpret the config file for Python logging.

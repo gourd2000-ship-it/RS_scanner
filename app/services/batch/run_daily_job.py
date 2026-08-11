@@ -1,12 +1,16 @@
 import logging
 from datetime import datetime
 
+from app.core.config import get_settings
 from app.core.notification import get_notification_service
 from app.crawler.sources.base import PriceSource
+from app.crawler.sources.eod import BulkEodSource
+from app.crawler.sources.eod import EodCanaryPolicy
 from app.services.batch.calculate_rs import calculate_rs
 from app.services.batch.context import BatchContext
 from app.services.batch.sync_benchmarks import sync_benchmarks
-from app.services.batch.sync_prices import sync_prices
+from app.services.batch.sync_eod import sync_eod_prices
+from app.services.batch.sync_prices import PriceSyncResult, sync_prices
 from app.services.batch.sync_symbols import sync_symbols
 
 
@@ -14,9 +18,14 @@ logger = logging.getLogger(__name__)
 notification_service = get_notification_service()
 
 
-def run_daily_job(context: BatchContext, source: PriceSource) -> dict[str, object]:
+def run_daily_job(
+    context: BatchContext,
+    source: PriceSource,
+    eod_source: BulkEodSource | None = None,
+) -> dict[str, object]:
     logger.info("starting daily batch")
     started_at = datetime.utcnow()
+    context.price_source = source
 
     # 작업 추적 시작 (선택적)
     job = None
@@ -24,43 +33,70 @@ def run_daily_job(context: BatchContext, source: PriceSource) -> dict[str, objec
     if context.crawl_job_repository:
         job = context.crawl_job_repository.create_job("daily_full")
         job_id = job.id
+        context.job_id = job_id
         logger.info(f"created crawl job: {job_id}")
 
     try:
         symbols = sync_symbols(context, source)
         benchmarks = sync_benchmarks(context, source)
-        prices = sync_prices(context, source)
+        use_eod = eod_source is not None and get_settings().eod_provider_enabled
+        prices = (
+            sync_eod_prices(
+                context,
+                eod_source,
+                fallback_source=source,
+                canary_policy=EodCanaryPolicy.from_settings(get_settings()),
+            )
+            if use_eod
+            else sync_prices(context, source)
+        )
         rs_results = calculate_rs(context)
 
-        # 통계 계산
-        symbols_total = len(symbols)
-        symbols_succeeded = symbols_total
-        symbols_failed = 0
+        # 가격 단계 결과에서 실제 종목별 통계를 계산한다.
+        price_stats = prices if isinstance(prices, PriceSyncResult) else None
+        universe_degraded = context.universe_snapshot_status in {"partial", "failed"}
+        symbols_total = price_stats.target_count if price_stats else len(symbols)
+        symbols_succeeded = price_stats.succeeded_count if price_stats else symbols_total
+        symbols_failed = price_stats.unsuccessful_count if price_stats else 0
+        job_status = "completed_with_errors" if symbols_failed or universe_degraded else "completed"
+        job_message = (
+            "Daily batch completed with errors"
+            if symbols_failed or universe_degraded
+            else "Daily batch completed successfully"
+        )
 
         # 작업 완료 기록
         if context.crawl_job_repository and job_id:
             context.crawl_job_repository.finish_job(
                 job_id=job_id,
-                status="completed",
+                status=job_status,
                 symbols_total=symbols_total,
                 symbols_succeeded=symbols_succeeded,
                 symbols_failed=symbols_failed,
-                message="Daily batch completed successfully",
+                message=job_message,
             )
             logger.info(f"finished crawl job: {job_id}")
 
-        # 성공 알림 (선택적)
         duration = (datetime.utcnow() - started_at).total_seconds()
-        notification_service.send_batch_success_sync(
-            job_type="daily_full",
-            total_count=symbols_total,
-            duration_seconds=duration,
-        )
+        if symbols_failed or universe_degraded:
+            notification_service.send_batch_failure_sync(
+                job_type="daily_full",
+                error_message=job_message,
+                failed_count=symbols_failed,
+                total_count=symbols_total,
+                started_at=started_at,
+            )
+        else:
+            notification_service.send_batch_success_sync(
+                job_type="daily_full",
+                total_count=symbols_total,
+                duration_seconds=duration,
+            )
 
         logger.info("finished daily batch")
         return {
             "job_id": job_id,
-            "symbols": len(symbols),
+            "symbols": symbols_total,
             "benchmarks": {market: len(rows) for market, rows in benchmarks.items()},
             "prices": {code: len(rows) for code, rows in prices.items()},
             "rs_results": {market: len(rows) for market, rows in rs_results.items()},

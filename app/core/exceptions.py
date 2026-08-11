@@ -15,6 +15,42 @@ class ParseError(Exception):
     """Raised when HTML parsing fails."""
 
 
+class PriceParseError(ParseError):
+    """Raised when a price response is malformed or contains no valid rows."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        url: str | None = None,
+        invalid_rows: int = 0,
+        response_bytes: int | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.url = url
+        self.invalid_rows = invalid_rows
+        self.response_bytes = response_bytes
+
+
+class PriceFetchError(CrawlError):
+    """Raised when a price provider request cannot be completed."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        url: str,
+        http_status: int | None = None,
+        retry_count: int = 0,
+        response_bytes: int | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.url = url
+        self.http_status = http_status
+        self.retry_count = retry_count
+        self.response_bytes = response_bytes
+
+
 class ValidationError(Exception):
     """Raised when domain validation fails."""
 
@@ -64,6 +100,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
                 "message": exc.detail,
             }
         },
+        headers=exc.headers,
     )
 
 

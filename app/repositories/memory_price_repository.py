@@ -14,6 +14,17 @@ class MemoryPriceRepository:
         self._daily_prices[code] = sorted(prices, key=lambda row: row.trade_date)
         return self._daily_prices[code]
 
+    def save_symbol_prices_bulk(
+        self,
+        prices_by_code: dict[str, Iterable[DailyPricePayload]],
+    ) -> dict[str, list[DailyPricePayload]]:
+        """메모리 저장소의 bulk EOD 계약."""
+        return {
+            code: self.save_symbol_prices(code, rows)
+            for code, rows in prices_by_code.items()
+            if rows
+        }
+
     def save_benchmark_prices(
         self, benchmark_code: str, prices: Iterable[BenchmarkPricePayload]
     ) -> list[BenchmarkPricePayload]:

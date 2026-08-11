@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -42,12 +43,19 @@ def e2e_engine():
 @pytest.fixture(scope="session")
 def setup_db(e2e_engine):
     """E2E 테스트 DB 초기화 및 마이그레이션 실행."""
+    # E2E 전용 DB는 테스트 실행마다 비우고 시작한다. ``drop_all``만
+    # 사용하면 Alembic의 버전 테이블이 남아, 다음 실행에서 마이그레이션이
+    # 이미 적용된 것으로 오인될 수 있다.
+    with e2e_engine.begin() as connection:
+        connection.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
+        connection.execute(text("CREATE SCHEMA public"))
+
     # Alembic 마이그레이션 실행
     env = os.environ.copy()
     env["DATABASE_URL"] = E2E_DATABASE_URL.replace("postgresql+psycopg://", "postgresql://")
 
     result = subprocess.run(
-        ["alembic", "upgrade", "head"],
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
         cwd=PROJECT_ROOT,
         env=env,
         capture_output=True,
@@ -63,7 +71,9 @@ def setup_db(e2e_engine):
     yield
 
     # 테스트 종료 후 모든 테이블 삭제
-    Base.metadata.drop_all(bind=e2e_engine)
+    with e2e_engine.begin() as connection:
+        connection.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
+        connection.execute(text("CREATE SCHEMA public"))
 
 
 @pytest.fixture(scope="function")
@@ -110,4 +120,5 @@ def e2e_batch_context(e2e_session: Session):
         rs_repository=RsRepository(e2e_session),
         crawl_job_repository=CrawlJobRepository(e2e_session),
         crawl_failure_repository=CrawlFailureRepository(e2e_session),
+        session=e2e_session,
     )

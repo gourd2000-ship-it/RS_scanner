@@ -1,6 +1,9 @@
 from datetime import date
 from decimal import Decimal
 
+import pytest
+
+from app.core.exceptions import PriceParseError
 from app.crawler.parsers.fchart import parse_fchart_prices
 
 
@@ -25,12 +28,14 @@ class TestFchartParser:
         assert rows[0].close == Decimal("1805000")
         assert rows[0].volume == 1295394
 
-    def test_parse_empty_string(self):
-        assert parse_fchart_prices("") == []
+    def test_parse_empty_string_is_a_parse_failure(self):
+        with pytest.raises(PriceParseError, match="empty fchart response"):
+            parse_fchart_prices("")
 
-    def test_parse_header_only(self):
+    def test_parse_header_only_is_a_parse_failure(self):
         text = "[['날짜', '시가', '고가', '저가', '종가', '거래량', '외국인소진율']]"
-        assert parse_fchart_prices(text) == []
+        with pytest.raises(PriceParseError, match="no data rows"):
+            parse_fchart_prices(text)
 
     def test_single_row(self):
         text = """[['날짜','시가','고가','저가','종가','거래량','외'],
@@ -66,5 +71,20 @@ class TestFchartParser:
         for r in rows:
             assert r.change_rate == Decimal("0")
 
-    def test_invalid_json_returns_empty(self):
-        assert parse_fchart_prices("not json at all") == []
+    def test_invalid_json_is_a_parse_failure(self):
+        with pytest.raises(PriceParseError, match="invalid fchart JSON"):
+            parse_fchart_prices("not json at all")
+
+    def test_mixed_valid_and_invalid_rows_are_marked_partial(self):
+        text = """[['날짜','시가','고가','저가','종가','거래량','외'],
+        ["20260101", 100, 110, 90, 105, 50000, 1.0],
+        ["bad-date", 100, 110, 90, 105, 50000, 1.0]]"""
+        rows = parse_fchart_prices(text)
+        assert len(rows) == 1
+        assert rows.invalid_rows == 1
+
+    def test_all_invalid_rows_are_a_parse_failure(self):
+        text = """[['날짜','시가','고가','저가','종가','거래량','외'],
+        ["bad-date", 100, 110, 90, 105, 50000, 1.0]]"""
+        with pytest.raises(PriceParseError, match="no valid price rows"):
+            parse_fchart_prices(text)

@@ -9,11 +9,15 @@ from sqlalchemy.orm import Session
 from app.core.database import session_scope
 from app.core.notification import get_notification_service
 from app.crawler.sources.base import PriceSource
+from app.crawler.sources.eod import BulkEodSource
+from app.crawler.sources.eod import EodCanaryPolicy
 from app.services.batch.calculate_rs import calculate_rs
 from app.services.batch.context import build_db_batch_context, BatchContext
 from app.services.batch.sync_benchmarks import sync_benchmarks
-from app.services.batch.sync_prices import sync_prices
+from app.services.batch.sync_eod import sync_eod_prices
+from app.services.batch.sync_prices import PriceSyncResult, sync_prices
 from app.services.batch.sync_symbols import sync_symbols
+from app.core.config import get_settings
 
 
 logger = logging.getLogger(__name__)
@@ -23,9 +27,15 @@ notification_service = get_notification_service()
 class BatchOrchestrator:
     """배치 오케스트레이터 - 단계별 트랜잭션 분리 및 체크포인트 관리"""
 
-    def __init__(self, source: PriceSource):
+    def __init__(
+        self,
+        source: PriceSource,
+        eod_source: BulkEodSource | None = None,
+    ):
         self.source = source
+        self.eod_source = eod_source
         self.job_id: int | None = None
+        self.universe_snapshot_status: str | None = None
         self.started_at: datetime = datetime.utcnow()
 
     def run_daily_job(self) -> dict[str, Any]:
@@ -53,7 +63,16 @@ class BatchOrchestrator:
             # Step 3: 가격 데이터 동기화
             prices = self._run_step(
                 step_name="prices",
-                step_func=lambda ctx: sync_prices(ctx, self.source),
+                step_func=lambda ctx: (
+                    sync_eod_prices(
+                        ctx,
+                        self.eod_source,
+                        fallback_source=self.source,
+                        canary_policy=EodCanaryPolicy.from_settings(get_settings()),
+                    )
+                    if self.eod_source is not None and get_settings().eod_provider_enabled
+                    else sync_prices(ctx, self.source)
+                ),
                 description="가격 데이터 동기화",
             )
 
@@ -64,27 +83,47 @@ class BatchOrchestrator:
                 description="RS 계산",
             )
 
-            # Step 5: 작업 완료 (별도 트랜잭션)
-            self._finish_job(
-                status="completed",
-                symbols_total=len(symbols) if symbols else 0,
-                symbols_succeeded=len(symbols) if symbols else 0,
-                symbols_failed=0,
-                message="Daily batch completed successfully",
+            price_stats = prices if isinstance(prices, PriceSyncResult) else None
+            universe_degraded = self.universe_snapshot_status in {"partial", "failed"}
+            symbols_total = price_stats.target_count if price_stats else (len(symbols) if symbols else 0)
+            symbols_succeeded = price_stats.succeeded_count if price_stats else symbols_total
+            symbols_failed = price_stats.unsuccessful_count if price_stats else 0
+            job_status = "completed_with_errors" if symbols_failed or universe_degraded else "completed"
+            job_message = (
+                "Daily batch completed with errors"
+                if symbols_failed or universe_degraded
+                else "Daily batch completed successfully"
             )
 
-            # 성공 알림
-            duration = (datetime.utcnow() - self.started_at).total_seconds()
-            notification_service.send_batch_success_sync(
-                job_type="daily_full",
-                total_count=len(symbols) if symbols else 0,
-                duration_seconds=duration,
+            # Step 5: 작업 완료 (별도 트랜잭션)
+            self._finish_job(
+                status=job_status,
+                symbols_total=symbols_total,
+                symbols_succeeded=symbols_succeeded,
+                symbols_failed=symbols_failed,
+                message=job_message,
             )
+
+            duration = (datetime.utcnow() - self.started_at).total_seconds()
+            if symbols_failed or universe_degraded:
+                notification_service.send_batch_failure_sync(
+                    job_type="daily_full",
+                    error_message=job_message,
+                    failed_count=symbols_failed,
+                    total_count=symbols_total,
+                    started_at=self.started_at,
+                )
+            else:
+                notification_service.send_batch_success_sync(
+                    job_type="daily_full",
+                    total_count=symbols_total,
+                    duration_seconds=duration,
+                )
 
             logger.info("finished daily batch")
             return {
                 "job_id": self.job_id,
-                "symbols": len(symbols) if symbols else 0,
+                "symbols": symbols_total,
                 "benchmarks": {market: len(rows) for market, rows in benchmarks.items()} if benchmarks else {},
                 "prices": {code: len(rows) for code, rows in prices.items()} if prices else {},
                 "rs_results": {market: len(rows) for market, rows in rs_results.items()} if rs_results else {},
@@ -227,7 +266,14 @@ class BatchOrchestrator:
 
         # 결과 크기 계산
         items_processed = 0
-        if isinstance(result, list):
+        items_failed = 0
+        checkpoint_status = "completed"
+        if isinstance(result, PriceSyncResult):
+            items_processed = result.target_count
+            items_failed = result.unsuccessful_count
+            if items_failed:
+                checkpoint_status = "completed_with_errors"
+        elif isinstance(result, list):
             items_processed = len(result)
         elif isinstance(result, dict):
             items_processed = sum(len(v) if isinstance(v, list) else 1 for v in result.values())
@@ -244,7 +290,9 @@ class BatchOrchestrator:
                 context.checkpoint_repository.complete_step(
                     job_id=self.job_id,
                     step_name=step_name,
+                    status=checkpoint_status,
                     items_processed=items_processed,
+                    items_failed=items_failed,
                 )
 
         # 단계 완료 알림 전송
@@ -276,4 +324,8 @@ class BatchOrchestrator:
         with session_scope() as session:
             context = build_db_batch_context(session)
             context.job_id = self.job_id
-            return step_func(context)
+            context.price_source = self.source
+            result = step_func(context)
+            if step_name == "symbols":
+                self.universe_snapshot_status = context.universe_snapshot_status
+            return result

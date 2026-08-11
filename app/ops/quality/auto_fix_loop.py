@@ -69,5 +69,23 @@ class AutoCorrectionLoop:
         env = os.environ.copy()
         env["CODEX_QUALITY_REPORT"] = str(report_path)
         env["CODEX_AUTO_FIX_PROMPT"] = str(prompt_path)
-        completed = subprocess.run(command, cwd=self.project_root, shell=True, env=env, check=False)
+        # The configured command is often a module shipped by this project.  A
+        # quality run may target a temporary checkout (as the unit tests do),
+        # so the subprocess must still be able to import the command module
+        # from the repository that owns this loop.
+        package_root = str(Path(__file__).resolve().parents[3])
+        existing_pythonpath = env.get("PYTHONPATH")
+        env["PYTHONPATH"] = (
+            package_root
+            if not existing_pythonpath
+            else os.pathsep.join((package_root, existing_pythonpath))
+        )
+        command_cwd = self.project_root
+        # A temporary/minimal target may not contain the bundled command
+        # module.  In that case run the module from its owning checkout while
+        # keeping the quality report paths absolute.
+        bundled_command = self.project_root / "app" / "ops" / "quality" / "auto_fix_command.py"
+        if not bundled_command.exists():
+            command_cwd = Path(__file__).resolve().parents[3]
+        completed = subprocess.run(command, cwd=command_cwd, shell=True, env=env, check=False)
         return completed.returncode == 0

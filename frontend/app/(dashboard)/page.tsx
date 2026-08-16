@@ -25,7 +25,7 @@ type DashboardSortField =
   | 'rs_12m';
 
 export default function HomePage() {
-  const [market, setMarket] = useState<DashboardMarket>('KOSPI');
+  const [market, setMarket] = useState<DashboardMarket>('ALL');
   const [selectedSector, setSelectedSector] = useState('all');
   const [excludeEtf, setExcludeEtf] = useState(true);
   const [period, setPeriod] = useState('12M');
@@ -133,6 +133,14 @@ export default function HomePage() {
         <Button
           variant="outline"
           size="sm"
+          active={market === 'ALL'}
+          onClick={() => handleMarketChange('ALL')}
+        >
+          전체
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           active={market === 'KOSPI'}
           onClick={() => handleMarketChange('KOSPI')}
         >
@@ -145,14 +153,6 @@ export default function HomePage() {
           onClick={() => handleMarketChange('KOSDAQ')}
         >
           코스닥
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          active={market === 'ALL'}
-          onClick={() => handleMarketChange('ALL')}
-        >
-          전체
         </Button>
       </div>
 

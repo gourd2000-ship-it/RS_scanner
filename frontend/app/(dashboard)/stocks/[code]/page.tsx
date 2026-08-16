@@ -11,6 +11,10 @@ import { RsTrendChart } from './_components/rs-trend-chart';
 import type { SymbolDetailResponse, DailyPriceItem, RsScoreItem } from '@/types/api';
 import { formatNumber, formatPercent, getRsColorClass } from '@/lib/utils/format';
 
+function formatReturnPercent(value: number | null): string {
+  return value === null ? '-' : formatPercent(value * 100);
+}
+
 export default function StockDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -155,7 +159,7 @@ export default function StockDetailPage() {
 
       {/* RS 및 주요 지표 카드 */}
       {latest_rs && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="border rounded-lg p-4 bg-white">
             <div className="text-sm text-gray-600 mb-1">RS Rating</div>
             <div className={`text-3xl font-bold ${getRsColorClass(latest_rs.rs_rating)}`}>
@@ -167,11 +171,20 @@ export default function StockDetailPage() {
           </div>
 
           <div className="border rounded-lg p-4 bg-white">
+            <div className="text-sm text-gray-600 mb-1">1개월 수익률</div>
+            <div className={`text-2xl font-semibold ${
+              latest_rs.return_1m && latest_rs.return_1m > 0 ? 'text-red-600' : latest_rs.return_1m && latest_rs.return_1m < 0 ? 'text-blue-600' : 'text-gray-600'
+            }`}>
+              {formatReturnPercent(latest_rs.return_1m)}
+            </div>
+          </div>
+
+          <div className="border rounded-lg p-4 bg-white">
             <div className="text-sm text-gray-600 mb-1">3개월 상대수익률</div>
             <div className={`text-2xl font-semibold ${
               latest_rs.return_3m > 0 ? 'text-red-600' : latest_rs.return_3m < 0 ? 'text-blue-600' : 'text-gray-600'
             }`}>
-              {formatPercent(latest_rs.return_3m)}
+              {formatReturnPercent(latest_rs.return_3m)}
             </div>
           </div>
 
@@ -180,7 +193,7 @@ export default function StockDetailPage() {
             <div className={`text-2xl font-semibold ${
               latest_rs.return_6m > 0 ? 'text-red-600' : latest_rs.return_6m < 0 ? 'text-blue-600' : 'text-gray-600'
             }`}>
-              {formatPercent(latest_rs.return_6m)}
+              {formatReturnPercent(latest_rs.return_6m)}
             </div>
           </div>
 
@@ -189,7 +202,7 @@ export default function StockDetailPage() {
             <div className={`text-2xl font-semibold ${
               latest_rs.return_12m > 0 ? 'text-red-600' : latest_rs.return_12m < 0 ? 'text-blue-600' : 'text-gray-600'
             }`}>
-              {formatPercent(latest_rs.return_12m)}
+              {formatReturnPercent(latest_rs.return_12m)}
             </div>
           </div>
         </div>

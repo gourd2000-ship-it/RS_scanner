@@ -8,7 +8,6 @@ import { cn } from '@/lib/utils/cn';
 import {
   formatNumber,
   formatPercent,
-  formatMarketCap,
   getRsColorClass,
   getChangeColorClass,
 } from '@/lib/utils/format';
@@ -18,7 +17,11 @@ interface RankingTableProps {
   onSort?: (column: string, direction: 'asc' | 'desc') => void;
 }
 
-type SortColumn = 'rank_in_market' | 'name' | 'close' | 'change_rate' | 'rs_rating' | 'return_3m' | 'return_6m' | 'return_9m';
+type SortColumn = 'rank_in_market' | 'rs_rating' | 'return_1m' | 'return_3m' | 'return_6m' | 'return_9m' | 'return_12m';
+
+function formatReturnPercent(value: number | null): string {
+  return value === null ? '-' : formatPercent(value * 100);
+}
 
 export function RankingTable({ items, onSort }: RankingTableProps) {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -44,7 +47,7 @@ export function RankingTable({ items, onSort }: RankingTableProps) {
     onSort?.(column, newDirection);
   };
 
-  const SortIcon = ({ column }: { column: SortColumn }) => {
+  const sortIcon = (column: SortColumn) => {
     if (sortColumn !== column) return null;
     return sortDirection === 'asc' ? (
       <ArrowUp className="w-3 h-3 inline ml-1" />
@@ -67,47 +70,47 @@ export function RankingTable({ items, onSort }: RankingTableProps) {
                 className="px-3 py-2 text-center font-medium text-gray-700 cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('rank_in_market')}
               >
-                섹터내순위 <SortIcon column="rank_in_market" />
+                시장내순위 {sortIcon('rank_in_market')}
               </th>
-              <th
-                className="px-3 py-2 text-left font-medium text-gray-700 cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('name')}
-              >
-                종목명 <SortIcon column="name" />
-              </th>
-              <th
-                className="px-3 py-2 text-right font-medium text-gray-700 cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('close')}
-              >
-                현재가 <SortIcon column="close" />
-              </th>
-              <th
-                className="px-3 py-2 text-right font-medium text-gray-700 cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('change_rate')}
-              >
-                등락율 <SortIcon column="change_rate" />
-              </th>
+              <th className="px-3 py-2 text-left font-medium text-gray-700">종목명</th>
+              <th className="px-3 py-2 text-right font-medium text-gray-700">현재가</th>
+              <th className="px-3 py-2 text-right font-medium text-gray-700">등락율</th>
               <th
                 className="px-3 py-2 text-center font-medium text-gray-700 cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('rs_rating')}
               >
-                RS <SortIcon column="rs_rating" />
+                RS {sortIcon('rs_rating')}
               </th>
-              <th className="px-3 py-2 text-center font-medium text-gray-700">RS(1M)</th>
+              <th
+                className="px-3 py-2 text-center font-medium text-gray-700 cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('return_1m')}
+              >
+                수익률(1M) {sortIcon('return_1m')}
+              </th>
               <th
                 className="px-3 py-2 text-center font-medium text-gray-700 cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('return_3m')}
               >
-                RS(3M) <SortIcon column="return_3m" />
+                수익률(3M) {sortIcon('return_3m')}
               </th>
               <th
                 className="px-3 py-2 text-center font-medium text-gray-700 cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('return_6m')}
               >
-                RS(6M) <SortIcon column="return_6m" />
+                수익률(6M) {sortIcon('return_6m')}
               </th>
-              <th className="px-3 py-2 text-center font-medium text-gray-700">MMT</th>
-              <th className="px-3 py-2 text-right font-medium text-gray-700">시가총액</th>
+              <th
+                className="px-3 py-2 text-center font-medium text-gray-700 cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('return_9m')}
+              >
+                수익률(9M) {sortIcon('return_9m')}
+              </th>
+              <th
+                className="px-3 py-2 text-center font-medium text-gray-700 cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('return_12m')}
+              >
+                수익률(12M) {sortIcon('return_12m')}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -151,11 +154,11 @@ export function RankingTable({ items, onSort }: RankingTableProps) {
                 <td className={cn('px-3 py-2 text-center font-bold', getRsColorClass(item.rs_rating))}>
                   {item.rs_rating}
                 </td>
-                <td className="px-3 py-2 text-center text-gray-700">-</td>
-                <td className="px-3 py-2 text-center text-gray-700">{item.rs_rating}</td>
-                <td className="px-3 py-2 text-center text-gray-700">{item.rs_rating}</td>
-                <td className="px-3 py-2 text-center text-gray-700">-</td>
-                <td className="px-3 py-2 text-right text-gray-700">-</td>
+                <td className={cn('px-3 py-2 text-center font-mono', getChangeColorClass((item.return_1m ?? 0) * 100))}>{formatReturnPercent(item.return_1m)}</td>
+                <td className={cn('px-3 py-2 text-center font-mono', getChangeColorClass(item.return_3m * 100))}>{formatReturnPercent(item.return_3m)}</td>
+                <td className={cn('px-3 py-2 text-center font-mono', getChangeColorClass(item.return_6m * 100))}>{formatReturnPercent(item.return_6m)}</td>
+                <td className={cn('px-3 py-2 text-center font-mono', getChangeColorClass(item.return_9m * 100))}>{formatReturnPercent(item.return_9m)}</td>
+                <td className={cn('px-3 py-2 text-center font-mono', getChangeColorClass(item.return_12m * 100))}>{formatReturnPercent(item.return_12m)}</td>
               </tr>
             ))}
           </tbody>

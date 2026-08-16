@@ -12,6 +12,7 @@ export interface RankingItem {
   trade_date: string;
   rs_rating: number;
   rank_in_market: number;
+  return_1m: number | null;
   return_3m: number;
   return_6m: number;
   return_9m: number;
@@ -67,7 +68,7 @@ export interface RankingQueryParams {
   size?: number;
   min_rs?: number;
   max_rs?: number;
-  sort_by?: 'rank_in_market' | 'rs_rating' | 'return_3m' | 'return_6m' | 'return_9m' | 'return_12m' | 'relative_return_score';
+  sort_by?: 'rank_in_market' | 'rs_rating' | 'return_1m' | 'return_3m' | 'return_6m' | 'return_9m' | 'return_12m' | 'relative_return_score';
   order?: 'asc' | 'desc';
   trade_date?: string;
   exclude_etf?: boolean;
@@ -97,6 +98,7 @@ export interface RsScoreItem {
   trade_date: string;
   rs_rating: number;
   rank_in_market: number;
+  return_1m: number | null;
   return_3m: number;
   return_6m: number;
   return_9m: number;

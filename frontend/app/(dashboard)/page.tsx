@@ -13,6 +13,15 @@ import { getRankings } from '@/lib/api/rankings';
 import { useSectorData } from '@/lib/hooks/use-sector-data';
 import type { RankingItem } from '@/types/api';
 
+type DashboardSortField =
+  | 'rank_in_market'
+  | 'rs_rating'
+  | 'return_1m'
+  | 'return_3m'
+  | 'return_6m'
+  | 'return_9m'
+  | 'return_12m';
+
 export default function HomePage() {
   const [market, setMarket] = useState<'KOSPI' | 'KOSDAQ'>('KOSPI');
   const [selectedSector, setSelectedSector] = useState('all');
@@ -28,7 +37,7 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
-  const [sortBy, setSortBy] = useState<'rank_in_market' | 'rs_rating' | 'return_3m'>('rank_in_market');
+  const [sortBy, setSortBy] = useState<DashboardSortField>('rank_in_market');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
@@ -79,13 +88,27 @@ export default function HomePage() {
     setCurrentPage(1);
   };
 
+  const handlePeriodChange = (selectedPeriod: string) => {
+    const periodSortMap = {
+      '1M': 'return_1m',
+      '3M': 'return_3m',
+      '6M': 'return_6m',
+      '12M': 'return_12m',
+    } as const;
+    setPeriod(selectedPeriod);
+    setSortBy(periodSortMap[selectedPeriod as keyof typeof periodSortMap]);
+    setSortOrder('desc');
+    setCurrentPage(1);
+  };
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSort = (column: string, direction: 'asc' | 'desc') => {
-    setSortBy(column as any);
+    const sortField = column as DashboardSortField;
+    setSortBy(sortField);
     setSortOrder(direction);
     setCurrentPage(1); // 정렬 변경 시 첫 페이지로
   };
@@ -106,7 +129,7 @@ export default function HomePage() {
       {/* 필터 컨트롤 */}
       <FilterControls
         period={period}
-        onPeriodChange={setPeriod}
+        onPeriodChange={handlePeriodChange}
         sortType={sortType}
         onSortTypeChange={setSortType}
         minMarketCap={minMarketCap}

@@ -11,16 +11,16 @@ export function TableSkeleton() {
             <tr>
               <th className="px-3 py-2 text-left font-medium text-gray-700 w-10"></th>
               <th className="px-3 py-2 text-left font-medium text-gray-700">섹터</th>
-              <th className="px-3 py-2 text-center font-medium text-gray-700">섹터내순위</th>
+              <th className="px-3 py-2 text-center font-medium text-gray-700">시장내순위</th>
               <th className="px-3 py-2 text-left font-medium text-gray-700">종목명</th>
               <th className="px-3 py-2 text-right font-medium text-gray-700">현재가</th>
               <th className="px-3 py-2 text-right font-medium text-gray-700">등락율</th>
               <th className="px-3 py-2 text-center font-medium text-gray-700">RS</th>
-              <th className="px-3 py-2 text-center font-medium text-gray-700">RS(1M)</th>
-              <th className="px-3 py-2 text-center font-medium text-gray-700">RS(3M)</th>
-              <th className="px-3 py-2 text-center font-medium text-gray-700">RS(6M)</th>
-              <th className="px-3 py-2 text-center font-medium text-gray-700">MMT</th>
-              <th className="px-3 py-2 text-right font-medium text-gray-700">시가총액</th>
+              <th className="px-3 py-2 text-center font-medium text-gray-700">수익률(1M)</th>
+              <th className="px-3 py-2 text-center font-medium text-gray-700">수익률(3M)</th>
+              <th className="px-3 py-2 text-center font-medium text-gray-700">수익률(6M)</th>
+              <th className="px-3 py-2 text-center font-medium text-gray-700">수익률(9M)</th>
+              <th className="px-3 py-2 text-right font-medium text-gray-700">수익률(12M)</th>
             </tr>
           </thead>
           <tbody>

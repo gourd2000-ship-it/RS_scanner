@@ -55,6 +55,10 @@ class TestRankingsAPI:
                 "return_6m",
                 "return_9m",
                 "return_12m",
+                "rs_1m",
+                "rs_3m",
+                "rs_6m",
+                "rs_12m",
                 "relative_return_score",
                 "close",
                 "change_rate",
@@ -86,6 +90,26 @@ class TestRankingsAPI:
         # 모든 아이템이 KOSDAQ인지 확인
         for item in data["items"]:
             assert item["market"] == "KOSDAQ"
+
+    def test_get_all_market_rankings_uses_universe_rank(
+        self,
+        client: TestClient,
+        sample_symbols,
+        sample_benchmarks,
+        sample_prices,
+        sample_rs_scores,
+    ):
+        """ALL 조회는 양 시장을 합치고 전체순위를 반환한다."""
+        response = client.get("/api/v1/rankings/rs?market=ALL&sort_by=rank_in_market")
+        assert_response_success(response)
+
+        data = response.json()
+        assert data["market"] == "ALL"
+        assert data["total_count"] == len(sample_symbols)
+        assert {item["market"] for item in data["items"]} == {"KOSPI", "KOSDAQ"}
+        assert [item["rank_in_market"] for item in data["items"]] == list(
+            range(1, len(data["items"]) + 1)
+        )
 
     def test_rankings_pagination(
         self,

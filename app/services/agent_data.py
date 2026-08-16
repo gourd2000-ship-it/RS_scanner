@@ -167,6 +167,10 @@ def get_rs_rankings(
             return_6m=row.return_6m,
             return_9m=row.return_9m,
             return_12m=row.return_12m,
+            rs_1m=row.rs_1m,
+            rs_3m=row.rs_3m,
+            rs_6m=row.rs_6m,
+            rs_12m=row.rs_12m,
             relative_return_score=row.relative_return_score,
             rs_percentile=row.rs_percentile,
         )
@@ -253,6 +257,10 @@ def get_stock_snapshot(
             return_9m=rs.return_9m,
             return_12m=rs.return_12m,
             relative_return_score=rs.relative_return_score,
+            rs_1m=rs.rs_1m,
+            rs_3m=rs.rs_3m,
+            rs_6m=rs.rs_6m,
+            rs_12m=rs.rs_12m,
             rs_percentile=rs.rs_percentile,
         )
         if rs is not None

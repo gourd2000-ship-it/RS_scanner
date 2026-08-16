@@ -104,6 +104,48 @@ def _quarterly_score(qr: dict[str, Decimal]) -> Decimal:
     return QUARTER_WEIGHT * (qr["q1"] + qr["q2"] + qr["q3"] + qr["q4"])
 
 
+def _rating_for_rank(rank: int, total: int) -> int:
+    """순위(1이 최고)를 RS Rating 1~99로 변환."""
+    percentile = Decimal("1") if total <= 1 else Decimal(total - rank) / Decimal(total - 1)
+    return max(1, min(99, int((percentile * Decimal("98")).to_integral_value()) + 1))
+
+
+def _assign_period_rs_ratings(rows: list[RsResultPayload]) -> None:
+    """기간별 종가 수익률을 전체 유니버스 내 RS Rating(1~99)으로 변환.
+
+    동률은 같은 rating을 얻고, 뒤의 표시 순서는 종목코드로 안정적으로 결정한다.
+    """
+    fields = {
+        "1m": "rs_1m",
+        "3m": "rs_3m",
+        "6m": "rs_6m",
+        "12m": "rs_12m",
+    }
+    total = len(rows)
+    for period, field in fields.items():
+        ordered = sorted(rows, key=lambda row: (-getattr(row, f"return_{period}"), row.code))
+        rank = 0
+        previous: Decimal | None = None
+        for position, row in enumerate(ordered, start=1):
+            value = getattr(row, f"return_{period}")
+            if previous is None or value != previous:
+                rank = position
+                previous = value
+            setattr(row, field, _rating_for_rank(rank, total))
+
+
+def _overall_sort_key(row: RsResultPayload) -> tuple[Decimal, int, int, int, int, str]:
+    """동일 RS의 표시 순서를 결정하는 안정적인 정렬 기준."""
+    return (
+        -row.relative_return_score,
+        -row.rs_12m,
+        -row.rs_6m,
+        -row.rs_3m,
+        -row.rs_1m,
+        row.code,
+    )
+
+
 def calculate_market_rs(
     market: str,
     symbol_series: Iterable[SymbolSeries],
@@ -212,12 +254,14 @@ def calculate_market_rs(
             )
         )
 
-    ordered = sorted(rows, key=lambda row: row.relative_return_score, reverse=True)
+    _assign_period_rs_ratings(rows)
+    ordered = sorted(rows, key=_overall_sort_key)
     total = len(ordered)
     for rank, row in enumerate(ordered, start=1):
         percentile = Decimal("1") if total <= 1 else Decimal(total - rank) / Decimal(total - 1)
-        rating = max(1, min(99, int((percentile * Decimal("98")).to_integral_value()) + 1))
+        rating = _rating_for_rank(rank, total)
         row.rank_in_market = rank
+        row.rank_in_universe = rank
         row.rs_percentile = percentile
         row.rs_rating = rating
     return ordered
@@ -314,13 +358,15 @@ def calculate_combined_rs(
             )
         )
 
-    # --- 통합 순위 (전체 시장 합산) ---
-    ordered = sorted(rows, key=lambda row: row.relative_return_score, reverse=True)
+    # --- 기간별 RS와 통합 순위 (전체 시장 합산) ---
+    _assign_period_rs_ratings(rows)
+    ordered = sorted(rows, key=_overall_sort_key)
     total = len(ordered)
     for rank, row in enumerate(ordered, start=1):
         percentile = Decimal("1") if total <= 1 else Decimal(total - rank) / Decimal(total - 1)
-        rating = max(1, min(99, int((percentile * Decimal("98")).to_integral_value()) + 1))
+        rating = _rating_for_rank(rank, total)
         row.rank_in_market = rank
+        row.rank_in_universe = rank
         row.rs_percentile = percentile
         row.rs_rating = rating
     return ordered

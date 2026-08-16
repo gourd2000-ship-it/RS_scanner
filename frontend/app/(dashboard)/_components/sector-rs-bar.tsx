@@ -74,10 +74,12 @@ export function SectorRsBar({ sectors, loading }: SectorRsBarProps) {
                     className={`mb-1 px-1.5 py-0.5 rounded text-xs font-medium cursor-pointer ${
                       sector.market === 'KOSPI'
                         ? 'bg-blue-100 text-blue-700'
-                        : 'bg-purple-100 text-purple-700'
+                        : sector.market === 'KOSDAQ'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-gray-100 text-gray-700'
                     }`}
                   >
-                    {sector.market === 'KOSPI' ? 'KS' : 'KQ'}
+                    {sector.market === 'KOSPI' ? 'KS' : sector.market === 'KOSDAQ' ? 'KQ' : '전체'}
                   </div>
                   {/* 아이콘 */}
                   <div className="text-lg cursor-pointer">{getSectorIcon(sector.name)}</div>

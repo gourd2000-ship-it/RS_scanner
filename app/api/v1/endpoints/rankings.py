@@ -16,7 +16,7 @@ router = APIRouter()
 @router.get("/rankings/rs", response_model=RsRankingResponse)
 @cached_rankings
 def get_rankings(
-    market: str = Query(..., pattern="^(KOSPI|KOSDAQ)$", description="시장 구분 (KOSPI/KOSDAQ)"),
+    market: str = Query(..., pattern="^(KOSPI|KOSDAQ|ALL)$", description="시장 구분 (KOSPI/KOSDAQ/ALL)"),
     page: int = Query(default=1, ge=1, description="페이지 번호"),
     size: int = Query(default=100, ge=1, le=500, description="페이지 크기"),
     min_rs: int | None = Query(default=None, ge=1, le=99, description="최소 RS Rating"),

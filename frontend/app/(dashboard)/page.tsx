@@ -14,17 +14,18 @@ import { getRankings } from '@/lib/api/rankings';
 import { useSectorData } from '@/lib/hooks/use-sector-data';
 import type { RankingItem } from '@/types/api';
 
+type DashboardMarket = 'KOSPI' | 'KOSDAQ' | 'ALL';
+
 type DashboardSortField =
   | 'rank_in_market'
   | 'rs_rating'
-  | 'return_1m'
-  | 'return_3m'
-  | 'return_6m'
-  | 'return_9m'
-  | 'return_12m';
+  | 'rs_1m'
+  | 'rs_3m'
+  | 'rs_6m'
+  | 'rs_12m';
 
 export default function HomePage() {
-  const [market, setMarket] = useState<'KOSPI' | 'KOSDAQ'>('KOSPI');
+  const [market, setMarket] = useState<DashboardMarket>('KOSPI');
   const [selectedSector, setSelectedSector] = useState('all');
   const [excludeEtf, setExcludeEtf] = useState(true);
   const [period, setPeriod] = useState('12M');
@@ -89,7 +90,7 @@ export default function HomePage() {
     setCurrentPage(1);
   };
 
-  const handleMarketChange = (nextMarket: 'KOSPI' | 'KOSDAQ') => {
+  const handleMarketChange = (nextMarket: DashboardMarket) => {
     setMarket(nextMarket);
     setSelectedSector('all');
     setCurrentPage(1);
@@ -97,10 +98,10 @@ export default function HomePage() {
 
   const handlePeriodChange = (selectedPeriod: string) => {
     const periodSortMap = {
-      '1M': 'return_1m',
-      '3M': 'return_3m',
-      '6M': 'return_6m',
-      '12M': 'return_12m',
+      '1M': 'rs_1m',
+      '3M': 'rs_3m',
+      '6M': 'rs_6m',
+      '12M': 'rs_12m',
     } as const;
     setPeriod(selectedPeriod);
     setSortBy(periodSortMap[selectedPeriod as keyof typeof periodSortMap]);
@@ -145,6 +146,14 @@ export default function HomePage() {
         >
           코스닥
         </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          active={market === 'ALL'}
+          onClick={() => handleMarketChange('ALL')}
+        >
+          전체
+        </Button>
       </div>
 
       {/* 섹터 RS 막대 그래프 */}
@@ -184,7 +193,11 @@ export default function HomePage() {
         </div>
       ) : (
         <>
-          <RankingTable items={rankings} onSort={handleSort} />
+          <RankingTable
+            items={rankings}
+            rankLabel={market === 'ALL' ? '전체순위' : '시장내순위'}
+            onSort={handleSort}
+          />
 
           {/* 페이지네이션 */}
           {totalPages > 1 && (

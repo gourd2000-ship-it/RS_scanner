@@ -105,6 +105,10 @@ def get_stock_detail(
             RsScore.return_6m,
             RsScore.return_9m,
             RsScore.return_12m,
+            RsScore.rs_1m,
+            RsScore.rs_3m,
+            RsScore.rs_6m,
+            RsScore.rs_12m,
             RsScore.relative_return_score,
             RsScore.rs_percentile,
             func.row_number().over(
@@ -134,6 +138,10 @@ def get_stock_detail(
             latest_rs_subq.c.return_6m,
             latest_rs_subq.c.return_9m,
             latest_rs_subq.c.return_12m,
+            latest_rs_subq.c.rs_1m,
+            latest_rs_subq.c.rs_3m,
+            latest_rs_subq.c.rs_6m,
+            latest_rs_subq.c.rs_12m,
             latest_rs_subq.c.relative_return_score,
             latest_rs_subq.c.rs_percentile,
         )
@@ -189,8 +197,12 @@ def get_stock_detail(
             return_6m=result[13],
             return_9m=result[14],
             return_12m=result[15],
-            relative_return_score=result[16],
-            rs_percentile=result[17],
+            rs_1m=result[16],
+            rs_3m=result[17],
+            rs_6m=result[18],
+            rs_12m=result[19],
+            relative_return_score=result[20],
+            rs_percentile=result[21],
         )
 
     return SymbolDetailResponse(
@@ -238,6 +250,10 @@ def get_rs_history(
             return_6m=row.return_6m,
             return_9m=row.return_9m,
             return_12m=row.return_12m,
+            rs_1m=row.rs_1m,
+            rs_3m=row.rs_3m,
+            rs_6m=row.rs_6m,
+            rs_12m=row.rs_12m,
             relative_return_score=row.relative_return_score,
             rs_percentile=row.rs_percentile,
         )

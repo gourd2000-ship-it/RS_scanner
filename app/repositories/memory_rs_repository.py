@@ -49,6 +49,10 @@ class MemoryRsRepository:
         SORT_KEY_MAP = {
             "rank_in_market": lambda r: r.rank_in_market,
             "rs_rating": lambda r: r.rs_rating,
+            "rs_1m": lambda r: r.rs_1m,
+            "rs_3m": lambda r: r.rs_3m,
+            "rs_6m": lambda r: r.rs_6m,
+            "rs_12m": lambda r: r.rs_12m,
             "return_1m": lambda r: r.return_1m,
             "return_3m": lambda r: r.return_3m,
             "return_6m": lambda r: r.return_6m,
@@ -80,6 +84,10 @@ class MemoryRsRepository:
                 "return_6m": r.return_6m,
                 "return_9m": r.return_9m,
                 "return_12m": r.return_12m,
+                "rs_1m": r.rs_1m,
+                "rs_3m": r.rs_3m,
+                "rs_6m": r.rs_6m,
+                "rs_12m": r.rs_12m,
                 "relative_return_score": r.relative_return_score,
                 "close": Decimal("50000"),  # 더미 종가
                 "change_rate": Decimal("0.5"),  # 더미 등락률

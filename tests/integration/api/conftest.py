@@ -241,6 +241,12 @@ def sample_rs_scores(test_session: Session, sample_symbols, sample_benchmarks):
             )
         )
 
+    for universe_rank, rs_score in enumerate(
+        sorted(rs_scores, key=lambda row: (-row.relative_return_score, row.symbol_id)),
+        1,
+    ):
+        rs_score.rank_in_universe = universe_rank
+
     for rs in rs_scores:
         test_session.add(rs)
     test_session.commit()

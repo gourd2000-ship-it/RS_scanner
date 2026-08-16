@@ -11,10 +11,6 @@ import { RsTrendChart } from './_components/rs-trend-chart';
 import type { SymbolDetailResponse, DailyPriceItem, RsScoreItem } from '@/types/api';
 import { formatNumber, formatPercent, getRsColorClass } from '@/lib/utils/format';
 
-function formatReturnPercent(value: number | null): string {
-  return value === null ? '-' : formatPercent(value * 100);
-}
-
 export default function StockDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -171,38 +167,30 @@ export default function StockDetailPage() {
           </div>
 
           <div className="border rounded-lg p-4 bg-white">
-            <div className="text-sm text-gray-600 mb-1">1개월 수익률</div>
-            <div className={`text-2xl font-semibold ${
-              latest_rs.return_1m && latest_rs.return_1m > 0 ? 'text-red-600' : latest_rs.return_1m && latest_rs.return_1m < 0 ? 'text-blue-600' : 'text-gray-600'
-            }`}>
-              {formatReturnPercent(latest_rs.return_1m)}
+            <div className="text-sm text-gray-600 mb-1">RS(1M)</div>
+            <div className={`text-2xl font-semibold ${getRsColorClass(latest_rs.rs_1m)}`}>
+              {latest_rs.rs_1m}
             </div>
           </div>
 
           <div className="border rounded-lg p-4 bg-white">
-            <div className="text-sm text-gray-600 mb-1">3개월 상대수익률</div>
-            <div className={`text-2xl font-semibold ${
-              latest_rs.return_3m > 0 ? 'text-red-600' : latest_rs.return_3m < 0 ? 'text-blue-600' : 'text-gray-600'
-            }`}>
-              {formatReturnPercent(latest_rs.return_3m)}
+            <div className="text-sm text-gray-600 mb-1">RS(3M)</div>
+            <div className={`text-2xl font-semibold ${getRsColorClass(latest_rs.rs_3m)}`}>
+              {latest_rs.rs_3m}
             </div>
           </div>
 
           <div className="border rounded-lg p-4 bg-white">
-            <div className="text-sm text-gray-600 mb-1">6개월 상대수익률</div>
-            <div className={`text-2xl font-semibold ${
-              latest_rs.return_6m > 0 ? 'text-red-600' : latest_rs.return_6m < 0 ? 'text-blue-600' : 'text-gray-600'
-            }`}>
-              {formatReturnPercent(latest_rs.return_6m)}
+            <div className="text-sm text-gray-600 mb-1">RS(6M)</div>
+            <div className={`text-2xl font-semibold ${getRsColorClass(latest_rs.rs_6m)}`}>
+              {latest_rs.rs_6m}
             </div>
           </div>
 
           <div className="border rounded-lg p-4 bg-white">
-            <div className="text-sm text-gray-600 mb-1">12개월 상대수익률</div>
-            <div className={`text-2xl font-semibold ${
-              latest_rs.return_12m > 0 ? 'text-red-600' : latest_rs.return_12m < 0 ? 'text-blue-600' : 'text-gray-600'
-            }`}>
-              {formatReturnPercent(latest_rs.return_12m)}
+            <div className="text-sm text-gray-600 mb-1">RS(12M)</div>
+            <div className={`text-2xl font-semibold ${getRsColorClass(latest_rs.rs_12m)}`}>
+              {latest_rs.rs_12m}
             </div>
           </div>
         </div>

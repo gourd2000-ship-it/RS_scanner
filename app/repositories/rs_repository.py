@@ -61,10 +61,15 @@ class RsRepository:
                     return_6m=payload.return_6m,
                     return_9m=payload.return_9m,
                     return_12m=payload.return_12m,
+                    rs_1m=payload.rs_1m,
+                    rs_3m=payload.rs_3m,
+                    rs_6m=payload.rs_6m,
+                    rs_12m=payload.rs_12m,
                     relative_return_score=payload.relative_return_score,
                     rs_percentile=payload.rs_percentile,
                     rs_rating=payload.rs_rating,
                     rank_in_market=payload.rank_in_market,
+                    rank_in_universe=payload.rank_in_universe,
                     rs_run_id=rs_run_id,
                 )
                 self.session.add(row)
@@ -76,10 +81,15 @@ class RsRepository:
                 row.return_6m = payload.return_6m
                 row.return_9m = payload.return_9m
                 row.return_12m = payload.return_12m
+                row.rs_1m = payload.rs_1m
+                row.rs_3m = payload.rs_3m
+                row.rs_6m = payload.rs_6m
+                row.rs_12m = payload.rs_12m
                 row.relative_return_score = payload.relative_return_score
                 row.rs_percentile = payload.rs_percentile
                 row.rs_rating = payload.rs_rating
                 row.rank_in_market = payload.rank_in_market
+                row.rank_in_universe = payload.rank_in_universe
                 row.rs_run_id = rs_run_id
 
         self.session.flush()
@@ -110,10 +120,15 @@ class RsRepository:
                 return_6m=row.return_6m,
                 return_9m=row.return_9m,
                 return_12m=row.return_12m,
+                rs_1m=row.rs_1m,
+                rs_3m=row.rs_3m,
+                rs_6m=row.rs_6m,
+                rs_12m=row.rs_12m,
                 relative_return_score=row.relative_return_score,
                 rs_percentile=row.rs_percentile,
                 rs_rating=row.rs_rating,
                 rank_in_market=row.rank_in_market,
+                rank_in_universe=row.rank_in_universe,
             )
             for row, code in rows
         ]
@@ -167,14 +182,18 @@ class RsRepository:
         from app.models.daily_price import DailyPrice
 
         # RS 데이터의 최신 거래일 찾기
-        target_trade_date = trade_date or self.session.scalar(
-            select(func.max(RsScore.trade_date)).where(RsScore.market == market)
-        )
+        is_all_market = market == "ALL"
+        latest_date_query = select(func.max(RsScore.trade_date))
+        if not is_all_market:
+            latest_date_query = latest_date_query.where(RsScore.market == market)
+        target_trade_date = trade_date or self.session.scalar(latest_date_query)
         if target_trade_date is None:
             return [], 0, None
 
         # 필터 조건 구성
-        filters = [RsScore.market == market, RsScore.trade_date == target_trade_date]
+        filters = [RsScore.trade_date == target_trade_date]
+        if not is_all_market:
+            filters.append(RsScore.market == market)
         if min_rs is not None:
             filters.append(RsScore.rs_rating >= min_rs)
         if max_rs is not None:
@@ -226,8 +245,12 @@ class RsRepository:
 
         # 정렬 컬럼 매핑 (SQL injection 방지)
         SORT_COLUMN_MAP = {
-            "rank_in_market": RsScore.rank_in_market,
+            "rank_in_market": RsScore.rank_in_universe if is_all_market else RsScore.rank_in_market,
             "rs_rating": RsScore.rs_rating,
+            "rs_1m": RsScore.rs_1m,
+            "rs_3m": RsScore.rs_3m,
+            "rs_6m": RsScore.rs_6m,
+            "rs_12m": RsScore.rs_12m,
             "return_1m": RsScore.return_1m,
             "return_3m": RsScore.return_3m,
             "return_6m": RsScore.return_6m,
@@ -235,7 +258,8 @@ class RsRepository:
             "return_12m": RsScore.return_12m,
             "relative_return_score": RsScore.relative_return_score,
         }
-        sort_column = SORT_COLUMN_MAP.get(sort_by, RsScore.rank_in_market)
+        default_rank = RsScore.rank_in_universe if is_all_market else RsScore.rank_in_market
+        sort_column = SORT_COLUMN_MAP.get(sort_by, default_rank)
         order_by_clause = sort_column.desc() if order == "desc" else sort_column.asc()
 
         # 메인 쿼리: RsScore + Symbol + 최신 가격 JOIN
@@ -254,7 +278,15 @@ class RsRepository:
                 latest_price_subq.c.symbol_id == RsScore.symbol_id,
             )
             .where(*filters)
-            .order_by(order_by_clause)
+            .order_by(
+                order_by_clause,
+                RsScore.relative_return_score.desc(),
+                RsScore.rs_12m.desc(),
+                RsScore.rs_6m.desc(),
+                RsScore.rs_3m.desc(),
+                RsScore.rs_1m.desc(),
+                Symbol.code.asc(),
+            )
             .limit(size)
             .offset(offset)
         ).all()
@@ -266,12 +298,16 @@ class RsRepository:
                 "market": rs.market,
                 "trade_date": rs.trade_date,
                 "rs_rating": rs.rs_rating,
-                "rank_in_market": rs.rank_in_market,
+                "rank_in_market": rs.rank_in_universe if is_all_market else rs.rank_in_market,
                 "return_1m": rs.return_1m,
                 "return_3m": rs.return_3m,
                 "return_6m": rs.return_6m,
                 "return_9m": rs.return_9m,
                 "return_12m": rs.return_12m,
+                "rs_1m": rs.rs_1m,
+                "rs_3m": rs.rs_3m,
+                "rs_6m": rs.rs_6m,
+                "rs_12m": rs.rs_12m,
                 "relative_return_score": rs.relative_return_score,
                 "close": close if close is not None else 0,
                 "change_rate": change_rate if change_rate is not None else 0,

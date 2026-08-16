@@ -42,10 +42,15 @@ class RsResultPayload(BaseModel):
     return_6m: Decimal
     return_9m: Decimal
     return_12m: Decimal
+    rs_1m: int = 0
+    rs_3m: int = 0
+    rs_6m: int = 0
+    rs_12m: int = 0
     relative_return_score: Decimal
     rs_percentile: Decimal
     rs_rating: int
     rank_in_market: int
+    rank_in_universe: int = 0
 
 
 class JobStatusPayload(BaseModel):

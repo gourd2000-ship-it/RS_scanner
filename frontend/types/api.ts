@@ -3,7 +3,7 @@
  * 백엔드 FastAPI 스키마와 일치
  */
 
-export type MarketType = 'KOSPI' | 'KOSDAQ';
+export type MarketType = 'KOSPI' | 'KOSDAQ' | 'ALL';
 
 export interface RankingItem {
   code: string;
@@ -17,6 +17,10 @@ export interface RankingItem {
   return_6m: number;
   return_9m: number;
   return_12m: number;
+  rs_1m: number;
+  rs_3m: number;
+  rs_6m: number;
+  rs_12m: number;
   relative_return_score: number;
   close: number;
   change_rate: number;
@@ -68,7 +72,7 @@ export interface RankingQueryParams {
   size?: number;
   min_rs?: number;
   max_rs?: number;
-  sort_by?: 'rank_in_market' | 'rs_rating' | 'return_1m' | 'return_3m' | 'return_6m' | 'return_9m' | 'return_12m' | 'relative_return_score';
+  sort_by?: 'rank_in_market' | 'rs_rating' | 'rs_1m' | 'rs_3m' | 'rs_6m' | 'rs_12m' | 'relative_return_score';
   order?: 'asc' | 'desc';
   trade_date?: string;
   exclude_etf?: boolean;
@@ -103,6 +107,10 @@ export interface RsScoreItem {
   return_6m: number;
   return_9m: number;
   return_12m: number;
+  rs_1m: number;
+  rs_3m: number;
+  rs_6m: number;
+  rs_12m: number;
   relative_return_score: number;
   rs_percentile: number;
 }

@@ -318,3 +318,35 @@ class TestCombinedRs:
         assert r.return_1m > 0
         assert r.return_3m > 0
         assert r.return_12m > r.return_3m
+
+    def test_period_rs_ratings_follow_each_period_performance(self):
+        """기간별 RS는 해당 기간의 종가 성과를 전체 유니버스에서 백분위화한다."""
+        result = calculate_combined_rs(
+            {
+                "KOSPI": [
+                    SymbolSeries(code="K1", market="KOSPI", prices=make_series(100, 3)),
+                    SymbolSeries(code="K2", market="KOSPI", prices=make_series(100, 1)),
+                ],
+                "KOSDAQ": [
+                    SymbolSeries(code="D1", market="KOSDAQ", prices=make_series(100, 2)),
+                ],
+            }
+        )
+        ratings = {row.code: (row.rs_1m, row.rs_3m, row.rs_6m, row.rs_12m) for row in result}
+        assert ratings["K1"] == (99, 99, 99, 99)
+        assert ratings["D1"] == (50, 50, 50, 50)
+        assert ratings["K2"] == (1, 1, 1, 1)
+
+    def test_exact_score_tie_uses_stock_code_as_stable_final_order(self):
+        """동일한 기간 성과·종합점수면 종목코드 오름차순으로 안정적으로 표시한다."""
+        result = calculate_combined_rs(
+            {
+                "KOSPI": [
+                    SymbolSeries(code="B", market="KOSPI", prices=make_series(100, 2)),
+                    SymbolSeries(code="A", market="KOSPI", prices=make_series(100, 2)),
+                    SymbolSeries(code="C", market="KOSPI", prices=make_series(100, 1)),
+                ]
+            }
+        )
+        assert [row.code for row in result] == ["A", "B", "C"]
+        assert result[0].rs_12m == result[1].rs_12m

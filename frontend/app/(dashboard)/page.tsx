@@ -7,6 +7,7 @@ import { FilterControls } from './_components/filter-controls';
 import { RankingTable } from './_components/ranking-table';
 import { TableSkeleton } from './_components/table-skeleton';
 import { Pagination } from '@/components/ui/pagination';
+import { Button } from '@/components/ui/button';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { EmptyState } from '@/components/ui/empty-state';
 import { getRankings } from '@/lib/api/rankings';
@@ -88,6 +89,12 @@ export default function HomePage() {
     setCurrentPage(1);
   };
 
+  const handleMarketChange = (nextMarket: 'KOSPI' | 'KOSDAQ') => {
+    setMarket(nextMarket);
+    setSelectedSector('all');
+    setCurrentPage(1);
+  };
+
   const handlePeriodChange = (selectedPeriod: string) => {
     const periodSortMap = {
       '1M': 'return_1m',
@@ -120,6 +127,26 @@ export default function HomePage() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-2">
+        <span className="mr-1 text-sm font-medium text-gray-700">시장</span>
+        <Button
+          variant="outline"
+          size="sm"
+          active={market === 'KOSPI'}
+          onClick={() => handleMarketChange('KOSPI')}
+        >
+          코스피
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          active={market === 'KOSDAQ'}
+          onClick={() => handleMarketChange('KOSDAQ')}
+        >
+          코스닥
+        </Button>
+      </div>
+
       {/* 섹터 RS 막대 그래프 */}
       <SectorRsBar sectors={sectorData} loading={sectorLoading} />
 

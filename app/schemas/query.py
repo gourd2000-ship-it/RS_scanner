@@ -22,6 +22,7 @@ class RsSortField(str, Enum):
     """RS 랭킹 정렬 필드."""
     RS_RATING = "rs_rating"
     RANK_IN_MARKET = "rank_in_market"
+    RETURN_1M = "return_1m"
     RETURN_3M = "return_3m"
     RETURN_6M = "return_6m"
     RETURN_9M = "return_9m"

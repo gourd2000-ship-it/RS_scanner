@@ -48,6 +48,7 @@ def _winsorize_bounds(
 
 
 TRADING_WINDOWS = {
+    "1m": 21,
     "3m": 63,
     "6m": 126,
     "9m": 189,
@@ -199,6 +200,7 @@ def calculate_market_rs(
                 code=code,
                 market=market,
                 trade_date=trade_dt,
+                return_1m=stock_returns["1m"],
                 return_3m=stock_returns["3m"],
                 return_6m=stock_returns["6m"],
                 return_9m=stock_returns["9m"],
@@ -300,6 +302,7 @@ def calculate_combined_rs(
                 code=code,
                 market=market,
                 trade_date=trade_dt,
+                return_1m=cumulative["1m"],
                 return_3m=cumulative["3m"],
                 return_6m=cumulative["6m"],
                 return_9m=cumulative["9m"],

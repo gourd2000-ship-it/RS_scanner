@@ -22,6 +22,7 @@ class RsScore(Base):
     )
     trade_date: Mapped[date] = mapped_column(Date, index=True)
     market: Mapped[str] = mapped_column(String(20), index=True)
+    return_1m: Mapped[Decimal | None] = mapped_column(Numeric(12, 6), nullable=True)
     return_3m: Mapped[Decimal] = mapped_column(Numeric(12, 6))
     return_6m: Mapped[Decimal] = mapped_column(Numeric(12, 6))
     return_9m: Mapped[Decimal] = mapped_column(Numeric(12, 6))

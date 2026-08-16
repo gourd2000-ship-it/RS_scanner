@@ -56,6 +56,7 @@ class RsRepository:
                     benchmark_id=benchmark_id,
                     trade_date=payload.trade_date,
                     market=payload.market,
+                    return_1m=payload.return_1m,
                     return_3m=payload.return_3m,
                     return_6m=payload.return_6m,
                     return_9m=payload.return_9m,
@@ -70,6 +71,7 @@ class RsRepository:
             else:
                 row.benchmark_id = benchmark_id
                 row.market = payload.market
+                row.return_1m = payload.return_1m
                 row.return_3m = payload.return_3m
                 row.return_6m = payload.return_6m
                 row.return_9m = payload.return_9m
@@ -103,6 +105,7 @@ class RsRepository:
                 code=code,
                 market=row.market,
                 trade_date=row.trade_date,
+                return_1m=row.return_1m,
                 return_3m=row.return_3m,
                 return_6m=row.return_6m,
                 return_9m=row.return_9m,
@@ -225,6 +228,7 @@ class RsRepository:
         SORT_COLUMN_MAP = {
             "rank_in_market": RsScore.rank_in_market,
             "rs_rating": RsScore.rs_rating,
+            "return_1m": RsScore.return_1m,
             "return_3m": RsScore.return_3m,
             "return_6m": RsScore.return_6m,
             "return_9m": RsScore.return_9m,
@@ -263,6 +267,7 @@ class RsRepository:
                 "trade_date": rs.trade_date,
                 "rs_rating": rs.rs_rating,
                 "rank_in_market": rs.rank_in_market,
+                "return_1m": rs.return_1m,
                 "return_3m": rs.return_3m,
                 "return_6m": rs.return_6m,
                 "return_9m": rs.return_9m,

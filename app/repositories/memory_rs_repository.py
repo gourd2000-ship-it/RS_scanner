@@ -49,6 +49,7 @@ class MemoryRsRepository:
         SORT_KEY_MAP = {
             "rank_in_market": lambda r: r.rank_in_market,
             "rs_rating": lambda r: r.rs_rating,
+            "return_1m": lambda r: r.return_1m,
             "return_3m": lambda r: r.return_3m,
             "return_6m": lambda r: r.return_6m,
             "return_9m": lambda r: r.return_9m,
@@ -74,6 +75,7 @@ class MemoryRsRepository:
                 "trade_date": r.trade_date,
                 "rs_rating": r.rs_rating,
                 "rank_in_market": r.rank_in_market,
+                "return_1m": r.return_1m,
                 "return_3m": r.return_3m,
                 "return_6m": r.return_6m,
                 "return_9m": r.return_9m,

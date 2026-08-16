@@ -50,6 +50,7 @@ class TestRankingsAPI:
                 "trade_date",
                 "rs_rating",
                 "rank_in_market",
+                "return_1m",
                 "return_3m",
                 "return_6m",
                 "return_9m",
@@ -304,6 +305,22 @@ class TestRankingsAPI:
                 current = float(data["items"][i]["return_3m"])
                 next_item = float(data["items"][i + 1]["return_3m"])
                 assert current >= next_item
+
+    def test_sort_by_return_1m_desc(
+        self,
+        client: TestClient,
+        sample_symbols,
+        sample_benchmarks,
+        sample_prices,
+        sample_rs_scores,
+    ):
+        """return_1m 기준 내림차순 정렬 테스트."""
+        response = client.get("/api/v1/rankings/rs?market=KOSPI&sort_by=return_1m&order=desc")
+        assert_response_success(response)
+
+        items = response.json()["items"]
+        for index in range(len(items) - 1):
+            assert float(items[index]["return_1m"]) >= float(items[index + 1]["return_1m"])
 
     def test_sort_by_rank_in_market_asc(
         self,

@@ -38,7 +38,7 @@ def get_rankings(
     - min_rs, max_rs: RS Rating 범위 필터링 (1~99)
 
     정렬:
-    - sort_by: 정렬 기준 (rs_rating, rank_in_market, return_3m, return_6m, return_9m, return_12m, relative_return_score)
+    - sort_by: 정렬 기준 (rs_rating, rank_in_market, return_1m, return_3m, return_6m, return_9m, return_12m, relative_return_score)
     - order: 정렬 방향 (asc, desc)
 
     캐시: 1시간 (production 환경에서만 활성화)

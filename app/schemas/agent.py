@@ -42,6 +42,7 @@ class AgentRankingItem(BaseModel):
     trade_date: date
     rs_rating: int
     rank_in_market: int
+    return_1m: Decimal | None = None
     return_3m: Decimal
     return_6m: Decimal
     return_9m: Decimal

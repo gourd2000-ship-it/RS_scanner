@@ -24,6 +24,7 @@ class TestRsRepository:
                 code="005930",
                 market="KOSPI",
                 trade_date=test_date,
+                return_1m=Decimal("4.1"),
                 return_3m=Decimal("15.5"),
                 return_6m=Decimal("20.3"),
                 return_9m=Decimal("25.1"),
@@ -37,6 +38,7 @@ class TestRsRepository:
                 code="000660",
                 market="KOSPI",
                 trade_date=test_date,
+                return_1m=Decimal("1.2"),
                 return_3m=Decimal("5.2"),
                 return_6m=Decimal("8.1"),
                 return_9m=Decimal("10.5"),
@@ -50,6 +52,7 @@ class TestRsRepository:
                 code="035720",
                 market="KOSPI",
                 trade_date=test_date,
+                return_1m=Decimal("7.8"),
                 return_3m=Decimal("25.8"),
                 return_6m=Decimal("35.2"),
                 return_9m=Decimal("40.5"),
@@ -101,6 +104,17 @@ class TestRsRepository:
         # 내림차순 확인
         assert items[0]["return_3m"] >= items[1]["return_3m"]
         assert items[1]["return_3m"] >= items[2]["return_3m"]
+
+    def test_sort_by_return_1m_desc(self, rs_repo):
+        """return_1m 기준 내림차순 정렬 테스트."""
+        items, _, _ = rs_repo.list_market_with_prices(
+            market="KOSPI",
+            sort_by="return_1m",
+            order="desc",
+        )
+
+        assert items[0]["return_1m"] >= items[1]["return_1m"]
+        assert items[1]["return_1m"] >= items[2]["return_1m"]
 
     def test_sort_by_rs_rating_asc(self, rs_repo):
         """rs_rating 기준 오름차순 정렬 테스트."""

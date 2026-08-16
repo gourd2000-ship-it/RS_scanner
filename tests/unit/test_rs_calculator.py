@@ -192,7 +192,7 @@ class TestWinsorizeIntegration:
         assert outlier_win.relative_return_score < outlier_raw.relative_return_score
 
     def test_return_fields_preserve_original_values(self):
-        """윈저라이즈 적용 후에도 return_3m~12m 필드는 원본값을 유지한다."""
+        """윈저라이즈 적용 후에도 return_1m~12m 필드는 원본값을 유지한다."""
         benchmark = make_benchmark("KOSPI", 1000, 1)
         series = _make_12_symbols_with_outlier()
 
@@ -206,6 +206,7 @@ class TestWinsorizeIntegration:
         for code in ["OUTLIER", "NORMAL_00", "NORMAL_10"]:
             raw = next(r for r in result_raw if r.code == code)
             win = next(r for r in result_win if r.code == code)
+            assert raw.return_1m == win.return_1m
             assert raw.return_3m == win.return_3m
             assert raw.return_6m == win.return_6m
             assert raw.return_9m == win.return_9m
@@ -310,9 +311,10 @@ class TestCombinedRs:
         assert result[0].rs_rating == 99
 
     def test_return_fields_store_cumulative(self):
-        """return_3m~12m 필드는 누적수익률을 저장한다."""
+        """return_1m~12m 필드는 누적수익률을 저장한다."""
         series = [SymbolSeries(code="A", market="KOSPI", prices=make_series(100, 2))]
         result = calculate_combined_rs({"KOSPI": series})
         r = result[0]
+        assert r.return_1m > 0
         assert r.return_3m > 0
         assert r.return_12m > r.return_3m

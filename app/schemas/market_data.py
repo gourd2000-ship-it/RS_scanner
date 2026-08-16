@@ -37,6 +37,7 @@ class RsResultPayload(BaseModel):
     code: str
     market: str
     trade_date: date
+    return_1m: Decimal
     return_3m: Decimal
     return_6m: Decimal
     return_9m: Decimal

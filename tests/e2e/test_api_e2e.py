@@ -299,6 +299,7 @@ def test_stock_rs_history_e2e(e2e_client: TestClient, setup_batch_data):
     assert "trade_date" in item
     assert "rs_rating" in item
     assert "return_3m" in item
+    assert "return_1m" in item
     assert "return_6m" in item
     assert "return_9m" in item
     assert "return_12m" in item

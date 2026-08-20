@@ -242,6 +242,7 @@ def get_stock_snapshot(
             close=price.close,
             volume=price.volume,
             change_rate=price.change_rate,
+            source=price.source,
         )
         if price is not None
         else None
@@ -311,6 +312,7 @@ def get_stock_history(
                 close=row.close,
                 volume=row.volume,
                 change_rate=row.change_rate,
+                source=row.source,
             )
             for row in rows
         ],

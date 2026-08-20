@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
+from starlette.requests import Request
 
 import app.core.agent_auth as agent_auth
 import app.models
@@ -44,6 +45,7 @@ def agent_client(monkeypatch):
             close=Decimal("100"),
             volume=1,
             change_rate=Decimal("0"),
+            source="kiwoom",
         )
     )
     benchmark = Benchmark(
@@ -209,6 +211,7 @@ def test_agent_scope_is_read_only_and_enforced(agent_client):
     )
     assert stock.status_code == 200
     assert stock.json()["data"]["code"] == "A"
+    assert stock.json()["data"]["latest_price"]["source"] == "kiwoom"
 
 
 def test_unavailable_agent_dataset_returns_503_with_retry_after(empty_agent_client):
@@ -219,3 +222,20 @@ def test_unavailable_agent_dataset_returns_503_with_retry_after(empty_agent_clie
 
     assert response.status_code == 503
     assert response.headers["retry-after"] == "300"
+
+
+def test_agent_ip_allowlist_ignores_untrusted_forwarded_header():
+    request = Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "headers": [(b"x-forwarded-for", b"203.0.113.7")],
+            "client": ("127.0.0.1", 8123),
+            "scheme": "http",
+            "server": ("127.0.0.1", 8000),
+            "path": "/internal/v1/crawl-analysis/requests",
+            "query_string": b"",
+        }
+    )
+
+    assert agent_auth._client_ip(request) == "127.0.0.1"

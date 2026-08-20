@@ -1,12 +1,13 @@
 # RS 데이터 품질 검증 파이프라인 PRD
 
-상태: Phase 1~3 핵심 기반 구현 완료 · SAM 제외 후 운영 검증 진행 중
+상태: Phase 1~3 핵심 기반 구현 완료 · Kiwoom repair queue는 별도 후속 PRD로 진행
 작성일: 2026-08-11  
 대상 저장소: RS Scanner
 
-구현 범위 메모: Hermes/SAM skill과 외부 reference provider 연동은 이 작업에서
-구현하지 않는다. 대신 SAM이 나중에 읽을 수 있는 구조화된 validation case와
-승인 전 correction/exclusion 저장소까지 준비한다.
+구현 범위 메모: Hermes/SAM skill과 Kiwoom repair queue 연동은 이 PRD의 validator
+구현 범위에 포함하지 않는다. Sam은 [크롤링 분석 후속 PRD](prd-crawl-analysis-followup.md)의
+제한된 Repair API를 통해서만 읽기 업무를 수행하며, 이 문서의 validation case와
+승인 전 correction/exclusion 저장소를 직접 수정하지 않는다.
 
 ## 구현 완료 내역 (2026-08-11)
 
@@ -42,7 +43,8 @@ report-only 모드에서는 기존 RS 계산을 중단하지 않는다.
    정책을 확정한다.
 3. 불변 원본 관측 저장소와 clean layer를 만든 뒤 RS 입력을 전환한다.
 4. validation gate를 강제한다.
-5. 그 뒤에만 Hermes/SAM과 외부 기준가격 공급자를 예외 감사 용도로 연결한다.
+5. 그 뒤에 Hermes/SAM 복구 업무와 Kiwoom 결과를 예외 감사 용도로 연결한다. 구체적인
+   queue·API·reconciler는 후속 PRD에서 정의한다.
 
 첫 PR에서 SAM, 증권사 API, 자동 보정, RS 계산식 재작성은 구현하지 않는다.
 
@@ -58,7 +60,7 @@ report-only 모드에서는 기존 RS 계산을 중단하지 않는다.
 | crawler 완료와 RS 가능 여부가 분리되지 않았다 | 맞다. crawl job에는 completed_with_errors가 있으나 RS 계산은 가격 동기화 직후 무조건 실행된다. | validation_status와 gate 상태를 별도로 도입한다. |
 | RS가 benchmark에 의존한다 | 제품 문서상 KOSPI/KOSDAQ benchmark를 사용해야 하나, 현재 calculate_rs()는 calculate_combined_rs()를 사용하며 benchmark series를 읽지 않는다. RsScore에는 benchmark_id만 저장된다. | benchmark 의존성을 제품 계약으로 확정하는 선행 결정을 P0에 넣는다. 확정 전에는 benchmark rule을 report-only로만 적용한다. |
 | Hermes용 API가 없다 | 소스에는 인증된 읽기 전용 agent facade와 Hermes adapter가 있으나, 실행 중 API는 해당 route를 제공하지 않아 status endpoint가 404다. audit decision write endpoint는 없다. | SAM은 DB/MCP가 아니라 배포된 좁은 Agent API를 사용한다. P4의 선행조건은 Agent API 배포·비밀 설정·contract test다. |
-| 다른 기준가격 공급자가 없다 | 운영상 맞다. EOD adapter는 있으나 EOD_PROVIDER_ENABLED 기본값은 false이고 실제 계약된 공급자는 없다. | reference API와 REPAIR는 공급자 계약 후의 후속 범위다. |
+| 다른 기준가격 공급자가 없다 | Kiwoom CLI 기반 읽기 전용 보조 공급자와 Sam 스킬은 준비되었으나, PostgreSQL queue·Repair API·반영 reconciler는 아직 없다. | Naver 주 공급자, Kiwoom 실패 종목 전용 복구를 후속 PRD로 연결한다. |
 
 현재 관련 테이블은 symbols, daily_prices, benchmarks, benchmark_daily_prices, rs_scores,
 crawl_jobs, crawl_failures, crawl_target_results, batch_checkpoints,
@@ -103,7 +105,7 @@ as-of lineage”다.
 | clean view와 correction/exclusion | 가능하나 P2 이후 | 현재 ORM이 daily_prices를 직접 읽으므로 read repository 전환과 immutable observation 설계가 필요하다. |
 | 완전한 RAW 불변성 | 신규 설계 필요 | 현재 upsert 테이블에는 과거 관측 이력이 없으므로 append-only observation store가 필요하다. |
 | SAM audit | 가능하나 현재 운영 준비 미완료 | source에는 read-only facade가 있지만 실행 중 API route가 없고 audit write contract가 없다. |
-| reference provider 기반 REPAIR | 외부 의존성으로 보류 | 실제 provider 계약, 데이터 권리, credential wrapper가 아직 없다. |
+| Kiwoom repair 기반 REPAIR | 후속 구현 | provider 스킬은 준비되었지만 queue migration, 제한 API, credential boundary, canonical 반영 검증이 필요하다. |
 
 ## 3. 문제 정의와 제품 목표
 
@@ -427,16 +429,18 @@ RsScore는 rs_run_id를 참조해야 lineage를 복원할 수 있다.
 
 ### FR-09 Hermes/SAM과 Reference Provider
 
-SAM은 P0/P1의 선행조건이 아니다. 도입 시 다음을 지킨다.
+SAM repair는 이 PRD의 P0/P1 선행조건이 아니다. 도입 시 다음을 지킨다.
 
 - SAM에 PostgreSQL credential, Supabase MCP, generic SQL execution 권한을 주지 않는다.
-- 현재 Agent API source를 실제 API container에 배포하고 service token/IP/scope 설정과
-  contract test를 완료한다.
-- 새 scope는 validation:read와 validation:write로 분리한다.
-- POST decision endpoint는 case_id 단위의 structured body만 받고, raw table이나
-  scheduler, RS calculator를 수정하지 않는다.
-- REPAIR는 ohlc_corrections의 PROPOSED를 만들 뿐 APPROVED가 되지 않는다.
-- 외부 reference provider는 내부 wrapper가 credential을 보관한다.
+- 기존 Agent API source를 실제 API container에 배포하고 service token/IP/scope 설정과
+  read-only contract test를 완료한다.
+- Sam용 `repair:claim`, `repair:submit`, `repair:fail` scope는 Hermes read scope와
+  분리하고, POST 결과는 request/attempt/result audit으로만 저장한다.
+- Repair API는 raw table, scheduler, RS calculator를 Sam이 직접 수정하지 못하게 한다.
+- Repair 결과는 `PROPOSED` 또는 `completed`에 머물며, autobot의 검증 transaction이
+  `applied`로 승격하기 전에는 canonical 가격과 RS 입력이 되지 않는다.
+- Kiwoom credential은 provider wrapper/Sam 실행 환경이 보관하고, autobot·Hermes와
+  공유하지 않는다.
 - provider가 없거나 SAM이 unavailable이면 known PASS data는 계속 처리하고,
   unresolved anomaly에 대한 publish 정책만 BLOCK 또는 이전 verified snapshot 유지로
   결정한다.
@@ -580,7 +584,7 @@ false-positive review, provider conflict 검증을 통과해야 한다.
 | coverage threshold를 성급히 강제 | 정상 배치 불필요 차단 | historical replay와 report-only 기간 후 승인한다. |
 | view만 사용해 lineage를 주장 | 과거 RS 재현 불가 | rs_runs/input snapshot을 추가한다. |
 | SAM에 DB 또는 broker 권한 부여 | 보안·운영 위험 | restricted Agent API와 provider wrapper만 사용한다. |
-| 실제 provider 없이 REPAIR 설계 착수 | 복잡도만 증가 | Phase 4까지 REPAIR는 PROPOSED 설계로 제한한다. |
+| Sam에 DB 또는 broker 권한 부여 | canonical 데이터·거래 기능의 오용 | 제한된 Repair API와 읽기 전용 CLI skill만 허용한다. |
 
 ## 10. 승인 요청
 
@@ -592,5 +596,6 @@ false-positive review, provider conflict 검증을 통과해야 한다.
 2. 기준일 RS에 대한 stale input 허용 정책: 기본 제안은 report-only에서 stale을 모두
    가시화하고, enforce 기준은 관측 결과를 보고 정한다.
 
-그 외의 SAM, reference provider, correction auto-approval은 Phase 1의 완료 및
-운영 데이터 검증 이후에 결정한다.
+그 외의 correction auto-approval과 queue 결과의 자동 반영 정책은 Phase 1의 완료 및
+운영 데이터 검증 이후에 결정한다. Repair queue 자체의 구현 순서는
+[크롤링 개선 로드맵](roadmap_crawling.md)을 따른다.

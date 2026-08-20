@@ -1,5 +1,9 @@
 # 운영 전환·rollback runbook
 
+> 2026-08-15 전환: 이 문서의 종목별 repair canary 절차는 legacy 기록이다. 현행 운영은
+> [Sam 주간 크롤링 품질 분석과 Codex 개선 루프 PRD](prd-weekly-crawl-quality-analysis.md)를
+> 따른다. 일일 batch는 Sam·Kiwoom·repair queue를 자동 호출하지 않는다.
+
 ## Universe
 
 첫 배포에서는 `GET /api/v1/crawl/universe-snapshots/{snapshot_id}/dry-run`으로
@@ -7,24 +11,44 @@
 snapshot만 실제 reconcile 대상으로 허용한다. partial/failed snapshot이면 기존
 active 상태를 유지하고 다음 정상 snapshot을 기다린다.
 
-## EOD provider canary
+## Price provider canary
 
-공급자 계약이 승인된 뒤에도 한 번에 전체 시장으로 전환하지 않는다.
+Naver를 주 공급자로 유지하고, Kiwoom 복구는 PostgreSQL repair queue와 Sam 전용
+Repair API를 통해 한 번에 한 업무씩 제한한다. Sam은 `kiwoom-ohlc-query` 스킬로
+읽기 전용 조회를 수행하며 PostgreSQL 또는 canonical DB에 직접 접근하지 않는다.
+공유 폴더 파일 브리지는 전환 전 legacy 진단 경로이며 신규 canary의 기본 경로로
+사용하지 않는다. 상세 계약은 [크롤링 분석 후속 PRD](prd-crawl-analysis-followup.md)를
+따른다.
 
-1. 한 시장 또는 명시된 종목 집합만 EOD adapter에 연결한다.
-2. bulk 파일의 기준일·checksum·coverage·저장 건수를 확인한다.
-3. coverage 99.5% 이상, 가격 단계 30분 이내 조건을 3회 연속 확인한다.
-4. 조건을 만족하면 다음 시장을 추가하고, 실패하면 provider 연결을 끄고 Naver
-   fallback queue만 실행한다.
+1. synthetic request로 queue 상태 전이와 Repair API 인증·lease를 확인한다.
+2. Naver 실패 종목 중 한 종목만 Sam 업무로 전달하고, Kiwoom 응답의 기준일·조정주가·
+   completeness·출처 충돌을 확인한다.
+3. coverage 99.5% 이상, 가격 단계 30분 이내, rate-limit 오류 허용 범위 조건을
+   단일 종목 → 5~10종목 → 100~300종목 단계에서 3회 연속 확인한다.
+4. 조건을 만족하면 fallback 대상 범위를 확대하고, 실패하면 Repair API와 Kiwoom을 끄고
+   pending queue를 보류·재시도 정책에 따라 처리한다.
 
-canary 범위는 `EOD_CANARY_MARKETS` 또는 `EOD_CANARY_CODES`로 제한하고,
-`EOD_PROVIDER_ENABLED=false`로 EOD 경로를 즉시 끌 수 있다. `EodCanaryPolicy`가
-허용되지 않은 종목을 fallback queue로 보내며, `EodCanaryController`는 마지막 관측과
-연속 성공 횟수를 원자적으로 저장하고 `rollback()` 호출 시 provider를 비활성화한다.
+Repair API를 활성화한 배치에서는 기존 직접 Kiwoom fallback을 함께 켜지 않는다. 애플리케이션이
+중복 경로를 자동 차단하지만, 운영 설정에서도 `KIWOOM_FALLBACK_ENABLED=false`를 유지한다.
 
-현재 저장소에는 특정 공급자 credential이나 자동 시장 전환을 넣지 않았다. 따라서
-계약 승인 전에는 EOD source를 주입하지 않는 것이 provider feature flag off 절차다.
-실제 3회 연속 관측 및 rollback 리허설은 PostgreSQL staging과 계약된 공급자가 필요하다.
+completed 결과 반영은 다음 명령으로 bounded하게 실행한다.
+
+```bash
+python scripts/apply_repair_results.py --limit 100
+```
+
+이 명령은 autobot DB 세션에서만 실행되며, Naver 값과 충돌하거나 품질 계약을 벗어난
+결과는 `conflict`/`rejected`로 남기고 `daily_prices`를 수정하지 않는다.
+
+canary 범위는 `KIWOOM_FALLBACK_CODES=005930,000660,...` allowlist와
+`KIWOOM_FALLBACK_ENABLED`로 제한한다. 초기 canary에서는 allowlist를 반드시 설정한다.
+rate limiter가 허용된 호출량을 넘지 않도록 하며, canary controller는 마지막 관측과
+연속 성공 횟수를 원자적으로 저장하고 rollback 시 Kiwoom 업무 enqueue/claim을
+비활성화한다.
+
+현재 저장소에는 Kiwoom credential을 커밋하지 않는다. 사용 등록·계정·IP 정책과 데이터
+사용 범위를 확인하기 전에는 adapter를 주입하지 않는다. 실제 3회 연속 관측 및 rollback
+리허설은 PostgreSQL staging과 활성화된 Kiwoom REST 계정이 필요하다.
 
 ## Agent traffic rollback
 

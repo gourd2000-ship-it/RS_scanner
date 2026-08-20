@@ -118,9 +118,9 @@ class AgentAuthenticator:
 
 
 def _client_ip(request: Request) -> str | None:
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",", 1)[0].strip()
+    # Internal agent routes are bound directly to host loopback.  There is no
+    # trusted reverse proxy in this path, so a caller-controlled
+    # X-Forwarded-For header must not influence the IP allowlist decision.
     return request.client.host if request.client else None
 
 
@@ -132,6 +132,49 @@ def require_agent_scope(required_scope: str):
         if not settings.agent_api_enabled:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
+        principal = AgentAuthenticator(
+            token_spec=settings.agent_service_tokens,
+            allowed_ips=settings.agent_allowed_ips,
+        ).authenticate(
+            authorization=request.headers.get("authorization"),
+            client_ip=_client_ip(request),
+            required_scope=required_scope,
+        )
+        request.state.agent_principal = principal
+        return principal
+
+    return dependency
+
+
+def require_repair_scope(required_scope: str):
+    """FastAPI dependency for the separately gated Sam repair API."""
+
+    def dependency(request: Request) -> AgentPrincipal:
+        settings = get_settings()
+        if not settings.repair_api_enabled or not settings.legacy_repair_api_enabled:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+        principal = AgentAuthenticator(
+            token_spec=settings.agent_service_tokens,
+            allowed_ips=settings.agent_allowed_ips,
+        ).authenticate(
+            authorization=request.headers.get("authorization"),
+            client_ip=_client_ip(request),
+            required_scope=required_scope,
+        )
+        request.state.agent_principal = principal
+        return principal
+
+    return dependency
+
+
+def require_analysis_scope(required_scope: str):
+    """Authenticate the separately enabled crawl-quality analysis API."""
+
+    def dependency(request: Request) -> AgentPrincipal:
+        settings = get_settings()
+        if not settings.analysis_api_enabled:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
         principal = AgentAuthenticator(
             token_spec=settings.agent_service_tokens,
             allowed_ips=settings.agent_allowed_ips,

@@ -9,7 +9,7 @@
 
 RS Scanner의 일일 배치에서 종목 가격 데이터가 조용히 누락되지 않도록 크롤링 결과를 명시적으로 분류하고, 현재 종목 universe를 안전하게 동기화하며, 실패 원인을 운영 화면에서 추적할 수 있게 한다. 이후 검증된 RS 결과를 Hermes Agent가 서버 간 API로 조회할 수 있도록 버전이 있는 읽기 전용 API를 제공한다.
 
-핵심 방향은 기존 `symbols -> benchmarks -> prices -> rs` 파이프라인과 RS 계산 엔진을 유지하는 것이다. 먼저 관측 가능성과 데이터 완전성을 복구한 뒤, 전종목 EOD 공급자를 주 공급자로 추가하고 Naver를 fallback·수정주가 backfill 용도로 사용한다.
+핵심 방향은 기존 `symbols -> benchmarks -> prices -> rs` 파이프라인과 RS 계산 엔진을 유지하는 것이다. Naver를 universe·benchmark·일별 가격의 주 공급자로 사용한다. 2026-08-15부터 Kiwoom은 실패 종목 자동 복구가 아니라, 사용자가 요청한 Sam 주간 품질 분석의 제한된 evidence 표본으로만 사용한다. 현행 계약은 [Sam 주간 크롤링 품질 분석과 Codex 개선 루프 PRD](prd-weekly-crawl-quality-analysis.md)를 따른다. 전종목 bulk EOD 공급자 전환은 이번 범위에 포함하지 않으며 후속 선택사항으로 남긴다.
 
 ## 2. 배경과 현재 문제
 
@@ -54,7 +54,7 @@ RS Scanner의 일일 배치에서 종목 가격 데이터가 조용히 누락되
 - RS 산식 자체를 재설계하거나 프론트엔드 화면을 전면 개편하지 않는다.
 - 실시간 호가·체결 스트리밍을 제공하지 않는다.
 - Hermes에 DB 직접 접근 권한을 주지 않는다.
-- 1차 릴리스에서 Naver를 즉시 제거하지 않는다. 대체 EOD 공급자 안정화 후 역할을 축소한다.
+- 1차 릴리스에서 Naver를 제거하지 않는다. Kiwoom은 실패 종목 전용 폴백으로만 사용한다.
 - 사용자를 위한 회원가입·로그인 기능을 추가하지 않는다. Hermes 연동은 서버 간 인증으로 처리한다.
 
 ## 4. 대상 사용자와 사용 시나리오
@@ -103,7 +103,7 @@ skipped       : 비활성 종목, ETF/ETN, 정책상 제외
 - `retry_count`, `response_bytes`, `attempt_started_at`, `created_at`
 - 가능하면 `request_id`와 응답 fingerprint
 
-`url`은 DB에서 nullable로 약화하지 않고, Naver 요청 URL을 항상 전달하는 방향을 우선한다. 파서 실패도 HTTP client가 반환한 URL과 응답 메타데이터를 사용한다. 실패 기록은 대상 데이터 저장 트랜잭션과 분리하거나 독립 savepoint를 사용하여 원래 실패가 failure insert를 취소하지 않게 한다. 응답 본문 전체와 인증 정보는 저장하지 않는다.
+`url`은 DB에서 nullable로 약화하지 않고, Naver 또는 Kiwoom 요청 URL을 항상 전달한다. 파서 실패도 HTTP client가 반환한 URL과 응답 메타데이터를 사용한다. 실패 기록은 대상 데이터 저장 트랜잭션과 분리하거나 독립 savepoint를 사용하여 원래 실패가 failure insert를 취소하지 않게 한다. 응답 본문 전체와 인증 정보는 저장하지 않는다.
 
 ### FR-3. 종목 universe를 snapshot 단위로 reconcile한다
 
@@ -149,17 +149,30 @@ latest_date_before, latest_date_after, error_class, created_at
 
 이 테이블은 운영 감사와 Hermes의 데이터 coverage 계산에 사용한다.
 
-### FR-6. 전종목 EOD 공급자와 Naver fallback을 분리한다
+### FR-6. Naver 주 공급자와 PostgreSQL repair queue 기반 Kiwoom 폴백을 분리한다
 
 공급자 인터페이스는 유지하되 다음 정책을 추가한다.
 
-1. 계약된 KRX 또는 동등한 전종목 EOD 공급자가 제공하는 시장별 파일/API를 주 공급자로 사용한다.
-2. 파일 checksum, 기준일, 종목 수, 가격 필드, 중복을 검증한 뒤 bulk upsert한다.
-3. EOD 공급자에 없는 종목과 실패 종목만 Naver fallback 대상으로 만든다.
-4. Naver는 수정주가 전체 이력 backfill과 corporate action 재수집에도 사용한다.
-5. EOD 공급자 장애 시 Naver 전환은 feature flag와 요청 예산 안에서 제한적으로 실행하며, fallback 사실을 배치 메타데이터에 기록한다.
+1. Naver를 universe·benchmark·일별 가격의 주 공급자로 사용한다.
+2. Naver의 실패·빈 응답·기업행위 미해결 종목만 `crawl_repair_requests`에 등록한다.
+3. Repair API는 Sam에게 `daily_chart` 한 건을 전달하고, Sam의 읽기 전용
+   `kiwoomcli domestic candles daily` 결과를 검증해 attempt/result로 저장한다.
+4. Kiwoom은 전종목 bulk 수집기가 아니며, 전체 universe를 대상으로 호출하지 않는다.
+5. Kiwoom의 응답은 기준일, 조정주가 여부, OHLC, 이력 길이, stale 정책을 검증한 뒤에만
+   `daily_prices`와 RS 입력으로 승격한다.
+6. Naver와 Kiwoom의 값이 다르면 기존 가격을 자동으로 덮어쓰지 않고
+   `provider_conflict` 또는 `review_required`로 기록한다.
+7. Sam은 DB credential, generic SQL, 주문·계좌 기능에 접근하지 않는다. 계정·앱키·시크릿·IP
+   허용 정책은 Sam 실행 환경의 Secret 관리 체계에서만 관리한다.
+8. provider, API ID/TR, 기준일, 조정주가 여부, 재시도 수, HTTP 상태와 폴백 결과를
+   `crawl_target_results`, repair request/attempt/result에 기록한다. API ID/TR 매핑은
+   canary 전에 CLI 실제 응답과 공식 계약으로 검증한다.
 
-대체 공급자를 바로 사용할 수 없는 단계에서는 현재 Naver 경로에도 대상 필터, 명시적 결과 상태, 제한된 worker concurrency, 재시도 예산을 먼저 적용한다.
+파일 공유 브리지는 목표 운영 경로에서 제외한다. 기존 파일 계약은 전환 전 진단용
+legacy 문서로만 남기며 기본 feature flag는 비활성화한다.
+
+Naver의 기본 경로에는 대상 필터, 증분 수집, 명시적 결과 상태, 제한된 요청 동시성,
+재시도 예산을 적용한다. Kiwoom은 실패 종목 전용 복구·교차검증 경로로 제한한다.
 
 ## 6. Hermes Agent API 설계
 
@@ -289,7 +302,7 @@ Hermes adapter는 `get_data_status`, `get_rs_briefing`, `get_stock_snapshot`, `g
 ### 성능
 
 - staging에서 현재 기준선 대비 요청 수 80% 이상 감소를 확인한다.
-- 전종목 EOD 경로 도입 후 가격 단계 목표 시간은 30분 이내다.
+- Naver 주 수집과 실패 종목 Kiwoom 폴백을 합친 가격 단계 목표 시간은 30분 이내다.
 - agent rankings/briefing p95 응답 시간은 warm cache 기준 2초 이내다.
 - 단일 종목 snapshot p95 응답 시간은 1초 이내다.
 - API 하나의 응답이 100개 이상의 랭킹 항목 또는 1,000개 이상의 시계열 행을 기본으로 반환하지 않는다.
@@ -321,6 +334,8 @@ Hermes adapter는 `get_data_status`, `get_rs_briefing`, `get_stock_snapshot`, `g
 - `crawl_parser_error_total`
 - `crawl_provider_request_total`
 - `crawl_provider_latency_seconds`
+- `kiwoom_fallback_targets`, `kiwoom_recovered_targets`, `kiwoom_conflicts`
+- `kiwoom_rate_limit_errors`, `kiwoom_latency_seconds`
 - `crawl_duration_seconds`
 - `crawl_coverage_rate`
 - `symbols_deactivated_total`
@@ -364,9 +379,10 @@ Hermes adapter는 `get_data_status`, `get_rs_briefing`, `get_stock_snapshot`, `g
 ## 10. 단계적 출시와 rollback
 
 1. **관측 단계:** 기존 배치 결과는 유지하면서 target result와 파서 실패 지표를 shadow 기록한다.
-2. **P0 단계:** 실패 상태·failure persistence·통계를 켠다. 기존 Naver 데이터 경로는 유지한다.
+2. **P0 단계:** 실패 상태·failure persistence·통계를 켠다. Naver를 주 공급자로 유지한다.
 3. **universe 단계:** snapshot 검증을 켜고, 비활성화는 처음에는 dry-run으로 비교한다.
-4. **공급자 단계:** EOD 공급자를 일부 시장 또는 일부 종목에 canary 적용하고 coverage·시간을 비교한다.
+4. **Kiwoom 폴백 단계:** 실패 종목 100~300개에 Kiwoom REST adapter를 canary 적용하고
+   복구율·충돌률·rate-limit·실행 시간을 비교한다.
 5. **Hermes 단계:** 내부망에서 token 인증과 contract test를 통과시킨 뒤 읽기 트래픽을 연결한다.
 6. **확대 단계:** coverage와 latency 기준을 3회 연속 만족하면 전체 시장으로 확대한다.
 
@@ -374,7 +390,8 @@ rollback 기준은 coverage 급락, 데이터 기준일 역행, 잘못된 대량
 
 ## 11. 결정이 필요한 항목
 
-- 사용할 KRX 또는 계약 EOD 공급자와 라이선스 범위
+- Kiwoom REST API 사용 등록, 계정·앱키·IP 정책과 데이터 저장·제공 범위
+- Naver와 Kiwoom의 조정주가·기준일·거래정지 데이터 계약 차이
 - Hermes의 배포 위치, IP allowlist, token 보관 방식
 - 장 마감 후 최신 데이터의 허용 지연 시간
 - coverage 99.5% 미만일 때 브리핑을 차단할지, stale 브리핑을 허용할지

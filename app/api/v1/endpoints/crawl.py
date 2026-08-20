@@ -9,7 +9,9 @@ from app.core.database import get_db_session
 from app.models.crawl_failure import CrawlFailure
 from app.models.crawl_job import CrawlJob
 from app.models.crawl_target_result import CrawlTargetResult
+from app.models.krx_universe import KrxUniverseSnapshot
 from app.models.symbol_universe_snapshot import SymbolUniverseSnapshot
+from app.models.universe_reconciliation import UniverseReconciliationRun
 from app.schemas.response import PaginatedResponse
 from app.services.monitoring.crawl_metrics import build_crawl_metrics
 
@@ -58,6 +60,10 @@ class CrawlTargetResultItem(BaseModel):
     step_name: str
     target_type: str
     target_key: str
+    krx_snapshot_id: int | None = None
+    instrument_id: int | None = None
+    price_eligibility: str | None = None
+    eligibility_reason: str | None = None
     status: str
     provider: str | None = None
     attempt_count: int
@@ -358,6 +364,35 @@ class UniverseDryRunResponse(BaseModel):
     candidate_codes: list[str]
 
 
+class KrxUniverseSnapshotItem(BaseModel):
+    id: int
+    crawl_job_id: int | None
+    source: str
+    scope: str
+    as_of_date: date
+    status: str
+    members_seen: int
+    members_valid: int
+    duplicate_count: int
+    invalid_count: int
+    snapshot_hash: str | None = None
+    started_at: datetime
+    finished_at: datetime | None = None
+    error_message: str | None = None
+
+
+class UniverseReconciliationRunItem(BaseModel):
+    id: int
+    krx_snapshot_id: int
+    naver_snapshot_id: int
+    status: str
+    report: dict
+    decision: str | None = None
+    approved_by: str | None = None
+    decided_at: datetime | None = None
+    created_at: datetime
+
+
 @router.get(
     "/universe-snapshots",
     response_model=PaginatedResponse[SymbolUniverseSnapshotItem],
@@ -415,6 +450,94 @@ def list_universe_snapshots(
 
 
 @router.get(
+    "/krx-universe-snapshots",
+    response_model=PaginatedResponse[KrxUniverseSnapshotItem],
+)
+def list_krx_universe_snapshots(
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+    status: str | None = Query(default=None),
+    scope: str | None = Query(default=None),
+    session: Session = Depends(get_db_session),
+):
+    """Read-only KRX raw snapshot history; credentials are never persisted here."""
+    filters = []
+    if status is not None:
+        filters.append(KrxUniverseSnapshot.status == status)
+    if scope is not None:
+        filters.append(KrxUniverseSnapshot.scope == scope)
+    stmt = select(KrxUniverseSnapshot).where(*filters).order_by(
+        desc(KrxUniverseSnapshot.as_of_date), desc(KrxUniverseSnapshot.id)
+    )
+    total_count = session.scalar(
+        select(func.count()).select_from(KrxUniverseSnapshot).where(*filters)
+    ) or 0
+    items = [
+        KrxUniverseSnapshotItem(
+            id=row.id,
+            crawl_job_id=row.crawl_job_id,
+            source=row.source,
+            scope=row.scope,
+            as_of_date=row.as_of_date,
+            status=row.status,
+            members_seen=row.members_seen,
+            members_valid=row.members_valid,
+            duplicate_count=row.duplicate_count,
+            invalid_count=row.invalid_count,
+            snapshot_hash=row.snapshot_hash,
+            started_at=row.started_at,
+            finished_at=row.finished_at,
+            error_message=row.error_message,
+        )
+        for row in session.scalars(stmt.limit(size).offset((page - 1) * size))
+    ]
+    return PaginatedResponse(total_count=total_count, page=page, size=size, items=items)
+
+
+@router.get(
+    "/universe-reconciliation-runs",
+    response_model=PaginatedResponse[UniverseReconciliationRunItem],
+)
+def list_universe_reconciliation_runs(
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+    krx_snapshot_id: int | None = Query(default=None),
+    naver_snapshot_id: int | None = Query(default=None),
+    status: str | None = Query(default=None),
+    session: Session = Depends(get_db_session),
+):
+    """Read-only approval queue for KRX/Naver reconciliation evidence."""
+    filters = []
+    if krx_snapshot_id is not None:
+        filters.append(UniverseReconciliationRun.krx_snapshot_id == krx_snapshot_id)
+    if naver_snapshot_id is not None:
+        filters.append(UniverseReconciliationRun.naver_snapshot_id == naver_snapshot_id)
+    if status is not None:
+        filters.append(UniverseReconciliationRun.status == status)
+    stmt = select(UniverseReconciliationRun).where(*filters).order_by(
+        desc(UniverseReconciliationRun.created_at), desc(UniverseReconciliationRun.id)
+    )
+    total_count = session.scalar(
+        select(func.count()).select_from(UniverseReconciliationRun).where(*filters)
+    ) or 0
+    items = [
+        UniverseReconciliationRunItem(
+            id=row.id,
+            krx_snapshot_id=row.krx_snapshot_id,
+            naver_snapshot_id=row.naver_snapshot_id,
+            status=row.status,
+            report=row.report,
+            decision=row.decision,
+            approved_by=row.approved_by,
+            decided_at=row.decided_at,
+            created_at=row.created_at,
+        )
+        for row in session.scalars(stmt.limit(size).offset((page - 1) * size))
+    ]
+    return PaginatedResponse(total_count=total_count, page=page, size=size, items=items)
+
+
+@router.get(
     "/universe-snapshots/{snapshot_id}/dry-run",
     response_model=UniverseDryRunResponse,
 )
@@ -449,6 +572,9 @@ def list_crawl_target_results(
     job_id: int | None = Query(default=None, description="작업 ID 필터"),
     step_name: str | None = Query(default=None, description="배치 단계 필터"),
     status: str | None = Query(default=None, description="target 상태 필터"),
+    krx_snapshot_id: int | None = Query(default=None, description="KRX snapshot ID 필터"),
+    instrument_id: int | None = Query(default=None, description="canonical instrument ID 필터"),
+    price_eligibility: str | None = Query(default=None, description="가격 적격성 필터"),
     session: Session = Depends(get_db_session),
 ):
     """종목·단계별 최종 상태와 재시도 메타데이터를 조회한다."""
@@ -459,6 +585,12 @@ def list_crawl_target_results(
         filters.append(CrawlTargetResult.step_name == step_name)
     if status:
         filters.append(CrawlTargetResult.status == status)
+    if krx_snapshot_id is not None:
+        filters.append(CrawlTargetResult.krx_snapshot_id == krx_snapshot_id)
+    if instrument_id is not None:
+        filters.append(CrawlTargetResult.instrument_id == instrument_id)
+    if price_eligibility is not None:
+        filters.append(CrawlTargetResult.price_eligibility == price_eligibility)
 
     stmt = select(CrawlTargetResult).where(*filters).order_by(
         desc(CrawlTargetResult.updated_at)
@@ -475,6 +607,10 @@ def list_crawl_target_results(
             step_name=result.step_name,
             target_type=result.target_type,
             target_key=result.target_key,
+            krx_snapshot_id=result.krx_snapshot_id,
+            instrument_id=result.instrument_id,
+            price_eligibility=result.price_eligibility,
+            eligibility_reason=result.eligibility_reason,
             status=result.status,
             provider=result.provider,
             attempt_count=result.attempt_count,

@@ -31,9 +31,13 @@ def parse_symbols(html: str, *, market: str) -> list[SymbolPayload]:
     soup = BeautifulSoup(html, "lxml")
     symbols: list[SymbolPayload] = []
 
-    for link in soup.select("a[href*='item/main.naver?code=']"):
+    # Naver uses alphanumeric identifiers for ETF/ETN and some share classes
+    # (for example ``0005D0`` and ``00088K``).  Restricting this to ``\d+``
+    # silently truncated those identifiers and made the subsequent price URL
+    # point at a different/non-existent instrument.
+    for link in soup.select("a[href*='item/main.naver']"):
         href = link.get("href", "")
-        match = re.search(r"code=(\d+)", href)
+        match = re.search(r"(?:[?&])code=([0-9A-Za-z]+)", href)
         name = link.get_text(strip=True)
         if not match or not name:
             continue

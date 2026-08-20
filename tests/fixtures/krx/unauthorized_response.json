@@ -1,0 +1,7 @@
+{
+  "fixture_kind": "unauthorized",
+  "error": {
+    "code": "REDACTED_AUTHORIZATION_ERROR",
+    "message": "Synthetic fixture; replace with a redacted real response when available."
+  }
+}

@@ -8,7 +8,7 @@ from app.core.config import get_settings
 from datetime import datetime
 
 from app.crawler.parsers.symbols import is_etn_name
-from app.crawler.sources.base import PriceSource, SymbolUniverseFetchResult
+from app.crawler.sources.base import PriceSource, SymbolUniverseFetchResult, provider_id
 from app.services.batch.context import BatchContext
 
 logger = logging.getLogger(__name__)
@@ -157,7 +157,7 @@ def sync_symbols(context: BatchContext, source: PriceSource):
         try:
             snapshot = snapshot_repository.create_snapshot(
                 job_id=context.job_id,
-                provider=type(source).__name__,
+                provider=provider_id(source),
                 market="ALL",
             )
             context.universe_snapshot_id = snapshot.id
@@ -193,12 +193,15 @@ def sync_symbols(context: BatchContext, source: PriceSource):
         return context.symbol_repository.list_all()
 
     etf_codes: set[str] = set()
+    etf_lookup_succeeded = True
     if hasattr(source, "fetch_etf_codes"):
         try:
             etf_codes = source.fetch_etf_codes()
         except Exception as exc:  # noqa: BLE001
+            etf_lookup_succeeded = False
             logger.warning("ETF universe fetch failed; continuing without ETF typing: %s", exc)
 
+    validate_symbol_code = getattr(source, "is_valid_symbol_code", None)
     seen_codes: set[str] = set()
     typed = []
     duplicate_count = 0
@@ -211,6 +214,7 @@ def sync_symbols(context: BatchContext, source: PriceSource):
         if (
             not isinstance(code, str)
             or not code.strip()
+            or (callable(validate_symbol_code) and not validate_symbol_code(code))
             or not isinstance(name, str)
             or not name.strip()
             or not isinstance(market, str)
@@ -228,6 +232,12 @@ def sync_symbols(context: BatchContext, source: PriceSource):
             sym = sym.model_copy(update={"symbol_type": "etf"})
         elif is_etn_name(sym.name):
             sym = sym.model_copy(update={"symbol_type": "etn"})
+        elif not etf_lookup_succeeded:
+            existing_symbol = context.symbol_repository.get_by_code(code)
+            if existing_symbol is not None:
+                sym = sym.model_copy(
+                    update={"symbol_type": existing_symbol.symbol_type}
+                )
         typed.append(sym)
 
     snapshot_id = context.universe_snapshot_id
@@ -270,20 +280,12 @@ def sync_symbols(context: BatchContext, source: PriceSource):
                         snapshot_id=snapshot_id,
                         seen_at=datetime.utcnow(),
                     )
-                    if snapshot_status == "completed" and snapshot_id is not None:
-                        deactivation_candidates = sorted(
-                            context.symbol_repository.reconcile_missing(set(seen_codes))
-                        )
             else:
                 updated_symbols = context.symbol_repository.upsert_many(
                     typed,
                     snapshot_id=snapshot_id,
                     seen_at=datetime.utcnow(),
                 )
-                if snapshot_status == "completed" and snapshot_id is not None:
-                    deactivation_candidates = sorted(
-                        context.symbol_repository.reconcile_missing(set(seen_codes))
-                    )
         else:
             updated_symbols = context.symbol_repository.list_all()
     except Exception as exc:  # noqa: BLE001

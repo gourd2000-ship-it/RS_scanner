@@ -1,0 +1,38 @@
+{
+  "OutBlock_1": [
+    {
+      "BAS_DD": "20200414",
+      "ISU_CD": "338100",
+      "ISU_NM": "NH프라임리츠",
+      "MKT_NM": "KOSPI",
+      "SECT_TP_NM": "",
+      "TDD_CLSPRC": "4715",
+      "CMPPREVDD_PRC": "25",
+      "FLUC_RT": "0.53",
+      "TDD_OPNPRC": "4655",
+      "TDD_HGPRC": "4720",
+      "TDD_LWPRC": "4655",
+      "ACC_TRDVOL": "21363",
+      "ACC_TRDVAL": "100332885",
+      "MKTCAP": "87981900000",
+      "LIST_SHRS": "18660000"
+    },
+    {
+      "BAS_DD": "20200414",
+      "ISU_CD": "088980",
+      "ISU_NM": "맥쿼리인프라",
+      "MKT_NM": "KOSPI",
+      "SECT_TP_NM": "",
+      "TDD_CLSPRC": "11200",
+      "CMPPREVDD_PRC": "50",
+      "FLUC_RT": "0.45",
+      "TDD_OPNPRC": "11150",
+      "TDD_HGPRC": "11200",
+      "TDD_LWPRC": "11100",
+      "ACC_TRDVOL": "610438",
+      "ACC_TRDVAL": "6816285500",
+      "MKTCAP": "3909296563200",
+      "LIST_SHRS": "349044336"
+    }
+  ]
+}

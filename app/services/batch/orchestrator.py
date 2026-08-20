@@ -2,6 +2,8 @@
 
 import logging
 from datetime import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
 from typing import Any, Callable
 
 from sqlalchemy.orm import Session
@@ -11,14 +13,21 @@ from app.core.notification import get_notification_service
 from app.crawler.sources.base import PriceSource
 from app.crawler.sources.eod import BulkEodSource
 from app.crawler.sources.eod import EodCanaryPolicy
+from app.crawler.sources.krx import KrxUniverseSource
 from app.services.batch.calculate_rs import calculate_rs
 from app.services.batch.context import build_db_batch_context, BatchContext
 from app.services.batch.sync_benchmarks import sync_benchmarks
 from app.services.batch.sync_eod import sync_eod_prices
 from app.services.batch.sync_prices import PriceSyncResult, sync_prices
+from app.services.batch.sync_krx_universe import KrxUniverseSyncResult, sync_krx_universe
 from app.services.batch.sync_symbols import sync_symbols
 from app.core.config import get_settings
+from app.core.metrics import increment_metric
+from app.core.market_calendar import batch_target_date, krx_market_day_status
 from app.repositories.data_quality_repository import DataQualityRepository
+from app.services.monitoring.crawl_quality_report import ensure_crawl_quality_report
+from app.services.monitoring.reconciliation_report import write_reconciliation_report
+from app.services.monitoring.universe_reconciliation import build_universe_reconciliation_report
 from app.services.validation.data_quality import ValidationResult, validate_crawl_job
 from app.services.validation.report import write_validation_report
 
@@ -34,22 +43,58 @@ class BatchOrchestrator:
         self,
         source: PriceSource,
         eod_source: BulkEodSource | None = None,
+        fallback_source: PriceSource | None = None,
+        krx_source: KrxUniverseSource | None = None,
     ):
         self.source = source
         self.eod_source = eod_source
+        self.krx_source = krx_source
+        # Keep the argument temporarily for legacy call compatibility, but do
+        # not retain or use it.  A daily crawl must not become an automatic
+        # Kiwoom (or any other) fallback path.
+        if fallback_source is not None:
+            logger.warning("legacy fallback_source is ignored by the daily batch")
+        self.fallback_source: PriceSource | None = None
         self.job_id: int | None = None
         self.universe_snapshot_status: str | None = None
+        self.krx_universe_snapshot_status: str | None = None
         self.started_at: datetime = datetime.utcnow()
 
     def run_daily_job(self) -> dict[str, Any]:
         """일일 배치 작업 실행 (단계별 트랜잭션)"""
         logger.info("starting daily batch with checkpointing")
 
+        settings = get_settings()
+        target_date = batch_target_date(settings)
+        market_status = krx_market_day_status(
+            target_date,
+            configured_closed_dates=settings.market_closed_dates,
+        )
+        if not market_status.is_open:
+            logger.info("skipping daily batch for %s: %s", target_date, market_status.reason)
+            return {
+                "job_id": None,
+                "skipped": True,
+                "skip_reason": market_status.reason,
+                "trade_date": target_date.isoformat(),
+            }
+
         # Step 0: 작업 생성 (별도 트랜잭션)
         self._create_job()
 
         try:
-            # Step 1: 심볼 동기화
+            # Step 1: KRX shadow snapshot.  This intentionally precedes the
+            # Naver path but does not decide its target set.
+            if settings.krx_shadow_ingestion_enabled:
+                self._run_step(
+                    step_name="krx_shadow",
+                    step_func=lambda ctx: sync_krx_universe(
+                        ctx, self.krx_source or KrxUniverseSource()
+                    ),
+                    description="KRX shadow universe 동기화",
+                )
+
+            # Step 2: 심볼 동기화
             symbols = self._run_step(
                 step_name="symbols",
                 step_func=lambda ctx: sync_symbols(ctx, self.source),
@@ -74,7 +119,12 @@ class BatchOrchestrator:
                         canary_policy=EodCanaryPolicy.from_settings(get_settings()),
                     )
                     if self.eod_source is not None and get_settings().eod_provider_enabled
-                    else sync_prices(ctx, self.source)
+                    else sync_prices(
+                        ctx,
+                        self.source,
+                        fallback_source=None,
+                        fallback_max_requests=None,
+                    )
                 ),
                 description="가격 데이터 동기화",
             )
@@ -111,7 +161,10 @@ class BatchOrchestrator:
                 )
 
             price_stats = prices if isinstance(prices, PriceSyncResult) else None
-            universe_degraded = self.universe_snapshot_status in {"partial", "failed"}
+            universe_degraded = (
+                self.universe_snapshot_status in {"partial", "failed"}
+                or self.krx_universe_snapshot_status in {"partial", "failed"}
+            )
             symbols_total = price_stats.target_count if price_stats else (len(symbols) if symbols else 0)
             symbols_succeeded = price_stats.succeeded_count if price_stats else symbols_total
             symbols_failed = price_stats.unsuccessful_count if price_stats else 0
@@ -133,6 +186,11 @@ class BatchOrchestrator:
                 symbols_succeeded=symbols_succeeded,
                 symbols_failed=symbols_failed,
                 message=job_message,
+            )
+            reconciliation_report_path = (
+                self._write_krx_reconciliation_report()
+                if settings.krx_shadow_ingestion_enabled
+                else None
             )
 
             duration = (datetime.utcnow() - self.started_at).total_seconds()
@@ -160,6 +218,9 @@ class BatchOrchestrator:
                 "rs_results": {market: len(rows) for market, rows in rs_results.items()} if rs_results else {},
                 "validation": validation_result.to_dict() if isinstance(validation_result, ValidationResult) else None,
                 "validation_blocked": validation_blocked,
+                "reconciliation_report": str(reconciliation_report_path)
+                if reconciliation_report_path is not None
+                else None,
             }
 
         except Exception as e:
@@ -173,6 +234,8 @@ class BatchOrchestrator:
                 symbols_failed=0,
                 message=f"Batch failed: {str(e)}",
             )
+            if settings.krx_shadow_ingestion_enabled:
+                self._write_krx_reconciliation_report()
 
             # 실패 알림
             notification_service.send_batch_failure_sync(
@@ -196,7 +259,7 @@ class BatchOrchestrator:
 
                 # 각 단계에 대한 체크포인트 초기화
                 if context.checkpoint_repository:
-                    for step_name in ["symbols", "benchmarks", "prices", "validation", "rs"]:
+                    for step_name in ["krx_shadow", "symbols", "benchmarks", "prices", "validation", "rs"]:
                         context.checkpoint_repository.create_checkpoint(
                             job_id=self.job_id,
                             step_name=step_name,
@@ -228,6 +291,44 @@ class BatchOrchestrator:
                     message=message,
                 )
                 logger.info(f"finished crawl job {self.job_id}: {status}")
+
+        # A report is deliberately written in a separate transaction.  Its
+        # failure must never rewrite a completed/failed crawl job outcome.
+        try:
+            with session_scope() as session:
+                report = ensure_crawl_quality_report(session, crawl_job_id=self.job_id)
+                logger.info("created crawl quality report %s for job %s", report.id, self.job_id)
+        except Exception:  # noqa: BLE001
+            increment_metric("quality_report_write_error")
+            logger.exception("failed to create crawl quality report for job %s", self.job_id)
+
+    def _write_krx_reconciliation_report(self) -> Path | None:
+        """Write reconciliation evidence after the crawl is committed.
+
+        This is intentionally post-commit and read-only so a local report write
+        problem cannot change an otherwise completed batch outcome.
+        """
+        if self.job_id is None:
+            return None
+        try:
+            with session_scope() as session:
+                report = build_universe_reconciliation_report(session)
+            generated_at = datetime.now(ZoneInfo("UTC"))
+            output = write_reconciliation_report(
+                report,
+                output_dir=Path("reports/krx_universe"),
+                report_stem=(
+                    "krx_universe_reconciliation_"
+                    f"{generated_at.strftime('%Y%m%d_%H%M%S')}_job{self.job_id}"
+                ),
+                generated_at=generated_at,
+            )
+            logger.info("wrote KRX/Naver reconciliation report: %s", output)
+            return output
+        except Exception:  # noqa: BLE001 - reporting must not alter batch state
+            increment_metric("krx_reconciliation_report_write_error")
+            logger.exception("failed to write KRX reconciliation report for job %s", self.job_id)
+            return None
 
     def _run_step(
         self,
@@ -325,6 +426,11 @@ class BatchOrchestrator:
             items_failed = result.run.error_count + result.run.critical_count
             if result.would_block or result.run.warning_count:
                 checkpoint_status = "completed_with_errors"
+        elif isinstance(result, KrxUniverseSyncResult):
+            items_processed = result.member_count
+            if result.status != "completed":
+                items_failed = 1
+                checkpoint_status = "completed_with_errors"
         elif isinstance(result, list):
             items_processed = len(result)
         elif isinstance(result, dict):
@@ -390,6 +496,13 @@ class BatchOrchestrator:
         with session_scope() as session:
             context = build_db_batch_context(session)
             context.job_id = self.job_id
+            if step_name in {"prices", "krx_shadow"}:
+                try:
+                    context.target_date = batch_target_date(get_settings())
+                except Exception:
+                    context.target_date = datetime.utcnow().date()
+            # Corporate-action refetches remain on the primary source.  Sam's
+            # Kiwoom use is evidence-only and never a batch fallback.
             context.price_source = self.source
             if step_name == "rs" and self.job_id:
                 validation_run = DataQualityRepository(session).latest_validation_run(
@@ -402,4 +515,6 @@ class BatchOrchestrator:
             result = step_func(context)
             if step_name == "symbols":
                 self.universe_snapshot_status = context.universe_snapshot_status
+            if step_name == "krx_shadow":
+                self.krx_universe_snapshot_status = context.krx_universe_snapshot_status
             return result

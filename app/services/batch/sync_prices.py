@@ -9,7 +9,9 @@ from threading import Lock
 from time import perf_counter
 from typing import Any, Literal
 
+
 from app.core.config import get_settings
+from app.core.exceptions import ProviderConflictError
 from app.core.metrics import (
     increment_metric,
     record_batch_duration,
@@ -18,7 +20,7 @@ from app.core.metrics import (
 )
 from app.core.database import session_scope
 from app.core.notification import get_notification_service
-from app.crawler.sources.base import PriceSource
+from app.crawler.sources.base import PriceSource, provider_id
 from app.repositories.memory_price_repository import MemoryPriceRepository
 from app.services.batch.context import BatchContext, build_db_batch_context
 from app.services.validation.market_data import validate_prices
@@ -174,11 +176,20 @@ def sync_prices(
     source: PriceSource,
     *,
     target_codes: set[str] | None = None,
+    target_lineage: dict[str, Any] | None = None,
     use_checkpoints: bool = True,
     max_requests: int | None = None,
+    fallback_source: PriceSource | None = None,
+    fallback_max_requests: int | None = None,
+    record_target_results: bool = True,
 ) -> PriceSyncResult:
     """가격 데이터 동기화 - 종목별 최종 상태를 보존하는 청크 처리."""
     started_at = perf_counter()
+    if target_codes is None and target_lineage is None:
+        selection = _resolve_universe_price_selection(context, source)
+        if selection is not None:
+            target_codes = set(selection.target_codes)
+            target_lineage = selection.lineage_by_code
     all_symbols = _list_price_targets(context)
     if target_codes is not None:
         target_code_set = set(target_codes)
@@ -223,7 +234,7 @@ def sync_prices(
                         PriceTargetResult(
                             code=symbol.code,
                             status="skipped",
-                            provider=type(source).__name__,
+                            provider=provider_id(source),
                             error_class="checkpoint",
                             error_message="target was already completed in a previous attempt",
                         )
@@ -245,6 +256,8 @@ def sync_prices(
             context=context,
             update_checkpoint=use_checkpoints,
             request_budget=request_budget,
+            record_target_results=record_target_results,
+            target_lineage=target_lineage,
         )
         result.merge(chunk_result)
         logger.info(
@@ -254,6 +267,53 @@ def sync_prices(
             len(chunk_result.target_results),
             chunk_result.unsuccessful_count,
         )
+
+    if fallback_source is not None:
+        fallback_codes = {
+            code
+            for code, target in result.target_results.items()
+            if _fallback_eligible(target)
+        }
+        if "kiwoom" in provider_id(fallback_source).lower():
+            configured_codes = {
+                code.strip()
+                for code in settings.kiwoom_fallback_codes.split(",")
+                if code.strip()
+            }
+            if configured_codes:
+                fallback_codes &= configured_codes
+        if fallback_codes:
+            logger.info(
+                "sync_prices: sending %d failed/partial targets to fallback %s",
+                len(fallback_codes),
+                provider_id(fallback_source),
+            )
+            fallback_result = sync_prices(
+                context,
+                fallback_source,
+                target_codes=fallback_codes,
+                target_lineage=target_lineage,
+                use_checkpoints=False,
+                max_requests=fallback_max_requests,
+                record_target_results=False,
+            )
+            _record_fallback_metrics(fallback_codes, fallback_result, fallback_source)
+            for target in fallback_result.target_results.values():
+                final_target = target
+                if target.status == "skipped":
+                    # A fallback budget skip must not turn the primary failure
+                    # into a successful-looking skipped target.
+                    final_target = result.target_results.get(target.code, target)
+                result.add_target(final_target)
+                symbol = context.symbol_repository.get_by_code(target.code)
+                if symbol is not None:
+                    _record_target_result_safely(
+                        chunk_context=context,
+                        job_id=context.job_id,
+                        symbol=symbol,
+                        target=final_target,
+                        lineage=(target_lineage or {}).get(target.code),
+                    )
 
     result.validate_status_invariant()
     record_price_sync_metrics(result)
@@ -268,6 +328,62 @@ def sync_prices(
         result.skipped_count,
     )
     return result
+
+
+def _resolve_universe_price_selection(context: BatchContext, source: PriceSource):
+    """Build a job-local canary selection, or preserve the legacy path.
+
+    The resolver deliberately requires both snapshots from the same job.  A
+    previous completed KRX snapshot must not mask a current partial/failed
+    observation when deciding whether the canary may run.
+    """
+    if context.session is None or context.job_id is None or not isinstance(context.target_date, date):
+        return None
+    try:
+        from sqlalchemy import select
+
+        from app.models.krx_universe import KrxUniverseSnapshot
+        from app.models.symbol_universe_snapshot import SymbolUniverseSnapshot
+        from app.services.canonical_universe import materialize_completed_universe
+        from app.services.universe_price_selection import select_price_targets
+
+        naver_snapshot = context.session.scalar(
+            select(SymbolUniverseSnapshot)
+            .where(SymbolUniverseSnapshot.job_id == context.job_id)
+            .order_by(SymbolUniverseSnapshot.id.desc())
+            .limit(1)
+        )
+        krx_snapshot = context.session.scalar(
+            select(KrxUniverseSnapshot)
+            .where(KrxUniverseSnapshot.crawl_job_id == context.job_id)
+            .order_by(KrxUniverseSnapshot.id.desc())
+            .limit(1)
+        )
+        if naver_snapshot is None:
+            return None
+        if (
+            krx_snapshot is not None
+            and krx_snapshot.status == "completed"
+            and naver_snapshot.status == "completed"
+        ):
+            materialize_completed_universe(
+                context.session,
+                krx_snapshot_id=krx_snapshot.id,
+                naver_snapshot_id=naver_snapshot.id,
+                provider=provider_id(source),
+            )
+        return select_price_targets(
+            context.session,
+            provider=provider_id(source),
+            as_of_date=context.target_date,
+            naver_snapshot_id=naver_snapshot.id,
+            krx_snapshot_status=krx_snapshot.status if krx_snapshot is not None else None,
+            naver_targets=_list_price_targets(context),
+            settings=get_settings(),
+        )
+    except Exception:  # noqa: BLE001 - canary evidence must not break Naver fallback
+        logger.exception("failed to resolve KRX universe canary; using Naver targets")
+        return None
 
 
 def _get_completed_chunks(context: BatchContext) -> set[int]:
@@ -377,6 +493,8 @@ def _process_chunk(
     context: BatchContext,
     update_checkpoint: bool = True,
     request_budget: RequestBudget | None = None,
+    record_target_results: bool = True,
+    target_lineage: dict[str, Any] | None = None,
 ) -> ChunkPriceResult:
     """단일 청크를 처리하고 종목별 결과를 반환한다."""
     if isinstance(context.price_repository, MemoryPriceRepository) or context.session is not None:
@@ -390,6 +508,8 @@ def _process_chunk(
             chunk_context=chunk_context,
             update_checkpoint=update_checkpoint,
             request_budget=request_budget,
+            record_target_results=record_target_results,
+            target_lineage=target_lineage,
         )
     else:
         with session_scope() as session:
@@ -404,7 +524,9 @@ def _process_chunk(
                 job_id=job_id,
                 chunk_context=chunk_context,
                 update_checkpoint=update_checkpoint,
-                request_budget=request_budget,
+            request_budget=request_budget,
+            record_target_results=record_target_results,
+            target_lineage=target_lineage,
             )
 
     _post_commit_validate_chunk(chunk_idx, symbol_chunk, job_id, chunk_context)
@@ -430,8 +552,11 @@ def _process_chunk_in_context(
     chunk_context: BatchContext,
     update_checkpoint: bool = True,
     request_budget: RequestBudget | None = None,
+    record_target_results: bool = True,
+    target_lineage: dict[str, Any] | None = None,
 ) -> ChunkPriceResult:
     target_results: dict[str, PriceTargetResult] = {}
+    source_provider = provider_id(source)
 
     latest_dates = {
         symbol.code: chunk_context.price_repository.get_latest_symbol_trade_date(symbol.code)
@@ -458,7 +583,7 @@ def _process_chunk_in_context(
                 latest_date_before=latest_trade_date,
                 latest_date_after=latest_trade_date,
                 trade_date=latest_trade_date,
-                provider=type(source).__name__,
+                provider=source_provider,
                 error_class="RequestBudgetExceeded",
                 error_message="provider request budget exhausted",
                 url=request_url,
@@ -475,13 +600,22 @@ def _process_chunk_in_context(
 
                 if prices:
                     validate_prices(prices)
+                    conflict_dates = _provider_conflict_dates(
+                        chunk_context.price_repository.get_symbol_prices(symbol.code),
+                        prices,
+                    ) if getattr(source, "reject_provider_conflicts", False) else []
+                    if conflict_dates:
+                        sample = ", ".join(item.isoformat() for item in conflict_dates[:5])
+                        raise ProviderConflictError(
+                            f"fallback provider conflicts with persisted prices on {sample}",
+                        )
                     if chunk_context.session is not None:
                         with chunk_context.session.begin_nested():
                             saved_prices = chunk_context.price_repository.save_symbol_prices(
                                 symbol.code,
                                 prices,
                                 crawl_job_id=job_id,
-                                provider=type(source).__name__,
+                                provider=source_provider,
                             )
                     else:
                         saved_prices = chunk_context.price_repository.save_symbol_prices(
@@ -499,13 +633,14 @@ def _process_chunk_in_context(
                         latest_date_before=latest_trade_date,
                         latest_date_after=latest_after,
                         trade_date=latest_after,
-                        provider=type(source).__name__,
+                        provider=source_provider,
                         error_class="partial_parse" if invalid_rows else None,
                         error_message=(
                             f"{invalid_rows} invalid rows discarded" if invalid_rows else None
                         ),
                         url=request_url,
                         response_bytes=response_bytes,
+                        retry_count=int(getattr(prices, "retry_count", 0) or 0),
                     )
                 else:
                     existing_prices = chunk_context.price_repository.get_symbol_prices(symbol.code)
@@ -517,9 +652,10 @@ def _process_chunk_in_context(
                         latest_date_before=latest_trade_date,
                         latest_date_after=latest_after,
                         trade_date=latest_after,
-                        provider=type(source).__name__,
+                        provider=source_provider,
                         url=request_url,
                         response_bytes=response_bytes,
+                        retry_count=int(getattr(prices, "retry_count", 0) or 0),
                     )
             except Exception as exc:  # noqa: BLE001
                 logger.warning("failed to sync prices for %s: %s", symbol.code, exc)
@@ -531,7 +667,7 @@ def _process_chunk_in_context(
                     latest_date_before=latest_trade_date,
                     latest_date_after=latest_trade_date,
                     trade_date=latest_trade_date,
-                    provider=type(source).__name__,
+                    provider=source_provider,
                     error_class=type(exc).__name__,
                     error_message=_safe_error_message(exc),
                     url=_failure_url(source, symbol.code, exc),
@@ -541,6 +677,8 @@ def _process_chunk_in_context(
                 )
                 if type(exc).__name__ in {"PriceParseError", "ParseError"}:
                     increment_metric("crawl_parser_error_total")
+                if isinstance(exc, ProviderConflictError):
+                    increment_metric("kiwoom_conflicts")
                 _record_failure_safely(
                     chunk_context=chunk_context,
                     source=source,
@@ -550,12 +688,15 @@ def _process_chunk_in_context(
                 )
 
         target_results[symbol.code] = target
-        _record_target_result_safely(
-            chunk_context=chunk_context,
-            job_id=job_id,
-            symbol=symbol,
-            target=target,
-        )
+        target_result_record = None
+        if record_target_results:
+            target_result_record = _record_target_result_safely(
+                chunk_context=chunk_context,
+                job_id=job_id,
+                symbol=symbol,
+                target=target,
+                lineage=(target_lineage or {}).get(symbol.code),
+            )
 
     unsuccessful_count = sum(
         target.status in {"partial", "failed"}
@@ -609,10 +750,15 @@ def _fetch_chunk_prices(
             return code, None, None, None, True
         started = perf_counter()
         try:
-            rows = source.fetch_daily_prices(code, since_date=latest_dates.get(code))
+            source_since_date = (
+                None
+                if getattr(source, "fetch_full_history_on_fallback", False)
+                else latest_dates.get(code)
+            )
+            rows = source.fetch_daily_prices(code, since_date=source_since_date)
             elapsed = perf_counter() - started
             record_provider_request(
-                type(source).__name__,
+                provider_id(source),
                 elapsed_seconds=elapsed,
                 success=True,
                 retry_count=getattr(rows, "retry_count", 0),
@@ -621,7 +767,7 @@ def _fetch_chunk_prices(
         except Exception as exc:  # noqa: BLE001
             elapsed = perf_counter() - started
             record_provider_request(
-                type(source).__name__,
+                provider_id(source),
                 elapsed_seconds=elapsed,
                 success=False,
                 retry_count=getattr(exc, "retry_count", 0),
@@ -652,6 +798,67 @@ def _fetch_chunk_prices(
         response_meta[code] = response_bytes
 
     return fetched, errors, skipped, response_meta
+
+
+def _provider_conflict_dates(existing: list[Any], incoming: list[Any]) -> list[date]:
+    """Return overlapping dates whose OHLCV differs between providers."""
+    existing_by_date = {row.trade_date: row for row in existing}
+    conflicts: list[date] = []
+    for row in incoming:
+        previous = existing_by_date.get(row.trade_date)
+        if previous is None:
+            continue
+        fields = ("open", "high", "low", "close", "volume")
+        if any(getattr(previous, field) != getattr(row, field) for field in fields):
+            conflicts.append(row.trade_date)
+    return conflicts
+
+
+def _record_fallback_metrics(
+    attempted_codes: set[str],
+    fallback_result: PriceSyncResult,
+    fallback_source: PriceSource,
+) -> None:
+    provider_name = provider_id(fallback_source).lower()
+    if "kiwoom" not in provider_name:
+        return
+    increment_metric("kiwoom_fallback_targets", len(attempted_codes))
+    increment_metric(
+        "kiwoom_recovered_targets",
+        fallback_result.fetched_count + fallback_result.no_new_data_count,
+    )
+
+
+def _fallback_eligible(target: PriceTargetResult) -> bool:
+    """Limit fallback traffic to provider/data availability failures.
+
+    Validation, persistence, and provider-conflict errors are intentionally
+    excluded. Replacing a bad or ambiguous row with another provider would
+    hide the original data-quality problem.
+    """
+    if target.status == "partial":
+        return True
+    if target.status != "failed":
+        return False
+    if target.error_class in {"PriceParseError", "ParseError"}:
+        return True
+    if target.error_class in {"PriceFetchError", "KiwoomApiError"}:
+        return target.http_status is None or target.http_status in {408, 425, 429} or (
+            target.http_status >= 500
+        )
+    if target.error_class in {
+        "ConnectError",
+        "ConnectTimeout",
+        "ReadError",
+        "ReadTimeout",
+        "TimeoutException",
+        "WriteError",
+        "WriteTimeout",
+    }:
+        return True
+    return target.http_status in {408, 425, 429} or (
+        target.http_status is not None and target.http_status >= 500
+    )
 
 def _latest_trade_date(prices: list[Any]) -> date | None:
     if not prices:
@@ -734,16 +941,21 @@ def _record_target_result_safely(
     job_id: int | None,
     symbol: Any,
     target: PriceTargetResult,
-) -> None:
+    lineage: Any | None = None,
+) -> Any | None:
     repository = chunk_context.crawl_target_result_repository
     if repository is None or job_id is None:
-        return
+        return None
 
     values = {
         "job_id": job_id,
         "step_name": "prices",
         "target_type": getattr(symbol, "symbol_type", "stock"),
         "target_key": target.code,
+        "krx_snapshot_id": getattr(lineage, "krx_snapshot_id", None),
+        "instrument_id": getattr(lineage, "instrument_id", None),
+        "price_eligibility": getattr(lineage, "price_eligibility", None),
+        "eligibility_reason": getattr(lineage, "reason_code", None),
         "status": target.status,
         "provider": target.provider,
         "rows_received": target.rows_received,
@@ -761,11 +973,12 @@ def _record_target_result_safely(
     try:
         if chunk_context.session is not None:
             with chunk_context.session.begin_nested():
-                repository.record_result(**values)
+                return repository.record_result(**values)
         else:
-            repository.record_result(**values)
+            return repository.record_result(**values)
     except Exception as record_error:  # noqa: BLE001
         logger.error("failed to record crawl target result for %s: %s", target.code, record_error)
+    return None
 
 
 def _validate_chunk(

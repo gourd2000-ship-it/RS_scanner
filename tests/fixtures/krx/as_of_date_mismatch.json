@@ -1,0 +1,12 @@
+{
+  "fixture_kind": "as_of_date_mismatch",
+  "expected_bas_dd": "20200415",
+  "OutBlock_1": [
+    {
+      "BAS_DD": "20200414",
+      "ISU_CD": "253150",
+      "ISU_NM": "ARIRANG 200선물레버리지",
+      "TDD_CLSPRC": "17170"
+    }
+  ]
+}

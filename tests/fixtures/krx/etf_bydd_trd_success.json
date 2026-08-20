@@ -1,0 +1,40 @@
+{
+  "OutBlock_1": [
+    {
+      "BAS_DD": "20200414",
+      "ISU_CD": "253150",
+      "ISU_NM": "ARIRANG 200선물레버리지",
+      "TDD_CLSPRC": "17170",
+      "CMPPREVDD_PRC": "605",
+      "FLUC_RT": "3.65",
+      "NAV": "17165.22",
+      "TDD_OPNPRC": "16855",
+      "TDD_HGPRC": "17355",
+      "TDD_LWPRC": "16720",
+      "ACC_TRDVOL": "16834",
+      "ACC_TRDVAL": "288494945",
+      "MKTCAP": "8585000000",
+      "INVSTASST_NETASST_TOTAMT": "7724351168",
+      "LIST_SHRS": "500000",
+      "IDX_IND_NM": "코스피 200 선물지수"
+    },
+    {
+      "BAS_DD": "20200414",
+      "ISU_CD": "292750",
+      "ISU_NM": "ARIRANG KRX300",
+      "TDD_CLSPRC": "11640",
+      "CMPPREVDD_PRC": "195",
+      "FLUC_RT": "1.70",
+      "NAV": "11633.32",
+      "TDD_OPNPRC": "11515",
+      "TDD_HGPRC": "11670",
+      "TDD_LWPRC": "11515",
+      "ACC_TRDVOL": "44",
+      "ACC_TRDVAL": "511895",
+      "MKTCAP": "17460000000",
+      "INVSTASST_NETASST_TOTAMT": "15123315739",
+      "LIST_SHRS": "1500000",
+      "IDX_IND_NM": "KRX 300"
+    }
+  ]
+}

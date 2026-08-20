@@ -40,3 +40,8 @@ class PriceSource(Protocol):
     def fetch_benchmark_prices(
         self, market: str, since_date: date | None = None
     ) -> list[BenchmarkPricePayload]: ...
+
+
+def provider_id(source: object) -> str:
+    """Return the stable provider identifier used in persisted metadata."""
+    return str(getattr(source, "provider_name", type(source).__name__))

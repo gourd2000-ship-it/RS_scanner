@@ -1,0 +1,38 @@
+{
+  "OutBlock_1": [
+    {
+      "BAS_DD": "20200414",
+      "ISU_CD": "950170",
+      "ISU_NM": "JTC",
+      "MKT_NM": "KOSDAQ",
+      "SECT_TP_NM": "외국기업(소속부없음)",
+      "TDD_CLSPRC": "5100",
+      "CMPPREVDD_PRC": "125",
+      "FLUC_RT": "2.51",
+      "TDD_OPNPRC": "4940",
+      "TDD_HGPRC": "5150",
+      "TDD_LWPRC": "4940",
+      "ACC_TRDVOL": "112202",
+      "ACC_TRDVAL": "570871860",
+      "MKTCAP": "178528136700",
+      "LIST_SHRS": "35005517"
+    },
+    {
+      "BAS_DD": "20200414",
+      "ISU_CD": "900100",
+      "ISU_NM": "뉴프라이드",
+      "MKT_NM": "KOSDAQ",
+      "SECT_TP_NM": "외국기업(소속부없음)",
+      "TDD_CLSPRC": "717",
+      "CMPPREVDD_PRC": "0",
+      "FLUC_RT": "0.00",
+      "TDD_OPNPRC": "0",
+      "TDD_HGPRC": "0",
+      "TDD_LWPRC": "0",
+      "ACC_TRDVOL": "0",
+      "ACC_TRDVAL": "0",
+      "MKTCAP": "74162628276",
+      "LIST_SHRS": "103434628"
+    }
+  ]
+}

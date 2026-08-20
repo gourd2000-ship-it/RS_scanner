@@ -1,0 +1,32 @@
+{
+  "OutBlock_1": [
+    {
+      "ISU_CD": "KR8392070007",
+      "ISU_SRT_CD": "950110",
+      "ISU_NM": "SBI핀테크솔루션즈",
+      "ISU_ABBRV": "SBI핀테크솔루션즈",
+      "ISU_ENG_NM": "SBI FinTech Solutions Co., Ltd.",
+      "LIST_DD": "20121217",
+      "MKT_TP_NM": "KOSDAQ",
+      "SECUGRP_NM": "주식예탁증권",
+      "SECT_TP_NM": "외국기업(소속부없음)",
+      "KIND_STKCERT_TP_NM": "보통주",
+      "PARVAL": "무액면",
+      "LIST_SHRS": "24656540"
+    },
+    {
+      "ISU_CD": "KR8840120008",
+      "ISU_SRT_CD": "950160",
+      "ISU_NM": "코오롱티슈진",
+      "ISU_ABBRV": "코오롱티슈진",
+      "ISU_ENG_NM": "Kolon TissueGene, Inc.",
+      "LIST_DD": "20171106",
+      "MKT_TP_NM": "KOSDAQ",
+      "SECUGRP_NM": "주식예탁증권",
+      "SECT_TP_NM": "외국기업(소속부없음)",
+      "KIND_STKCERT_TP_NM": "보통주",
+      "PARVAL": "0",
+      "LIST_SHRS": "61117550"
+    }
+  ]
+}

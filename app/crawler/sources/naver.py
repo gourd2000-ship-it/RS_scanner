@@ -1,5 +1,8 @@
+import logging
+import re
 from datetime import date, timedelta
 
+from app.core.config import get_settings
 from app.core.exceptions import PriceFetchError, PriceParseError
 from app.crawler.client import NaverHttpClient
 from app.crawler.parsers.benchmarks import parse_benchmark_prices
@@ -12,11 +15,25 @@ from app.crawler.sources.base import (
     UniverseMarketFetchResult,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class NaverPriceSource(PriceSource):
-    def __init__(self, client: NaverHttpClient | None = None, max_symbol_pages: int = 40, max_price_pages: int = 80) -> None:
+    provider_name = "naver"
+    _SYMBOL_CODE_PATTERN = re.compile(r"[0-9A-Za-z]{6}")
+
+    def __init__(
+        self,
+        client: NaverHttpClient | None = None,
+        max_symbol_pages: int | None = None,
+        max_price_pages: int = 80,
+    ) -> None:
         self.client = client or NaverHttpClient()
-        self.max_symbol_pages = max_symbol_pages
+        self.max_symbol_pages = (
+            max_symbol_pages
+            if max_symbol_pages is not None
+            else get_settings().naver_max_symbol_pages
+        )
         self.max_price_pages = max_price_pages
         self.max_concurrency = getattr(self.client, "max_concurrency", 1)
 
@@ -24,6 +41,11 @@ class NaverPriceSource(PriceSource):
 
     def fetch_symbols(self):
         return self.fetch_symbol_universe().symbols
+
+    @classmethod
+    def is_valid_symbol_code(cls, code: str) -> bool:
+        """Naver universe가 제공하는 종목 식별자 형식을 검증한다."""
+        return bool(cls._SYMBOL_CODE_PATTERN.fullmatch(code))
 
     def fetch_symbol_universe(self) -> SymbolUniverseFetchResult:
         """시장별 페이지 결과와 중간 실패 여부를 함께 반환한다."""
@@ -206,6 +228,11 @@ class NaverPriceSource(PriceSource):
                 seen_codes.add(row.code)
             rows.extend(new_items)
 
+        logger.warning(
+            "Naver %s universe reached configured page hard cap (%d)",
+            market,
+            self.max_symbol_pages,
+        )
         return UniverseMarketFetchResult(
             market=market,
             symbols=rows,

@@ -1,0 +1,32 @@
+{
+  "OutBlock_1": [
+    {
+      "ISU_CD": "KR7338100001",
+      "ISU_SRT_CD": "338100",
+      "ISU_NM": "NH프라임리츠보통주",
+      "ISU_ABBRV": "NH프라임리츠",
+      "ISU_ENG_NM": "NH Prime REIT",
+      "LIST_DD": "20191205",
+      "MKT_TP_NM": "KOSPI",
+      "SECUGRP_NM": "부동산투자회사",
+      "SECT_TP_NM": "",
+      "KIND_STKCERT_TP_NM": "보통주",
+      "PARVAL": "500",
+      "LIST_SHRS": "18660000"
+    },
+    {
+      "ISU_CD": "KYG5307W1015",
+      "ISU_SRT_CD": "900140",
+      "ISU_NM": "엘브이엠씨홀딩스보통주",
+      "ISU_ABBRV": "엘브이엠씨홀딩스",
+      "ISU_ENG_NM": "LVMC Holdings",
+      "LIST_DD": "20101130",
+      "MKT_TP_NM": "KOSPI",
+      "SECUGRP_NM": "외국주권",
+      "SECT_TP_NM": "",
+      "KIND_STKCERT_TP_NM": "보통주",
+      "PARVAL": ".25",
+      "LIST_SHRS": "51120439"
+    }
+  ]
+}

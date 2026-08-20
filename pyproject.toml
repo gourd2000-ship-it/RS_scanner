@@ -8,6 +8,7 @@ dependencies = [
   "beautifulsoup4>=4.12",
   "fastapi>=0.115",
   "httpx>=0.28",
+  "holidays>=0.78",
   "lxml>=5.3",
   "psycopg[binary]>=3.2",
   "pydantic>=2.10",

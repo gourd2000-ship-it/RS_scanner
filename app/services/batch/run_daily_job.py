@@ -2,18 +2,23 @@ import logging
 from datetime import datetime
 
 from app.core.config import get_settings
+from app.core.market_calendar import batch_target_date, krx_market_day_status
 from app.core.notification import get_notification_service
 from app.crawler.sources.base import PriceSource
 from app.crawler.sources.eod import BulkEodSource
 from app.crawler.sources.eod import EodCanaryPolicy
+from app.crawler.sources.krx import KrxUniverseSource
 from app.services.batch.calculate_rs import calculate_rs
 from app.services.batch.context import BatchContext
 from app.services.batch.sync_benchmarks import sync_benchmarks
 from app.services.batch.sync_eod import sync_eod_prices
 from app.services.batch.sync_prices import PriceSyncResult, sync_prices
+from app.services.batch.sync_krx_universe import sync_krx_universe
 from app.services.batch.sync_symbols import sync_symbols
 from app.services.validation.data_quality import validate_crawl_job
 from app.services.validation.report import write_validation_report
+from app.core.metrics import increment_metric
+from app.services.monitoring.crawl_quality_report import ensure_crawl_quality_report
 
 
 logger = logging.getLogger(__name__)
@@ -24,9 +29,27 @@ def run_daily_job(
     context: BatchContext,
     source: PriceSource,
     eod_source: BulkEodSource | None = None,
+    fallback_source: PriceSource | None = None,
+    krx_source: KrxUniverseSource | None = None,
 ) -> dict[str, object]:
     logger.info("starting daily batch")
     started_at = datetime.utcnow()
+    settings = get_settings()
+    context.target_date = batch_target_date(settings)
+    market_status = krx_market_day_status(
+        context.target_date,
+        configured_closed_dates=settings.market_closed_dates,
+    )
+    if not market_status.is_open:
+        logger.info("skipping daily batch for %s: %s", context.target_date, market_status.reason)
+        return {
+            "job_id": None,
+            "skipped": True,
+            "skip_reason": market_status.reason,
+            "trade_date": context.target_date.isoformat(),
+        }
+    if fallback_source is not None or settings.kiwoom_fallback_enabled:
+        logger.warning("legacy Kiwoom fallback is ignored by the daily batch")
     context.price_source = source
 
     # 작업 추적 시작 (선택적)
@@ -39,6 +62,13 @@ def run_daily_job(
         logger.info(f"created crawl job: {job_id}")
 
     try:
+        # KRX is shadow-only: its failure is retained on a separate snapshot
+        # and never changes the Naver symbol or price path below.
+        if context.krx_universe_repository is not None and (
+            krx_source is not None or settings.krx_shadow_ingestion_enabled
+        ):
+            sync_krx_universe(context, krx_source or KrxUniverseSource())
+
         symbols = sync_symbols(context, source)
         benchmarks = sync_benchmarks(context, source)
         use_eod = eod_source is not None and get_settings().eod_provider_enabled
@@ -50,7 +80,12 @@ def run_daily_job(
                 canary_policy=EodCanaryPolicy.from_settings(get_settings()),
             )
             if use_eod
-            else sync_prices(context, source)
+            else sync_prices(
+                context,
+                source,
+                fallback_source=None,
+                fallback_max_requests=None,
+            )
         )
         validation_result = None
         validation_blocked = False
@@ -88,7 +123,10 @@ def run_daily_job(
 
         # 가격 단계 결과에서 실제 종목별 통계를 계산한다.
         price_stats = prices if isinstance(prices, PriceSyncResult) else None
-        universe_degraded = context.universe_snapshot_status in {"partial", "failed"}
+        universe_degraded = (
+            context.universe_snapshot_status in {"partial", "failed"}
+            or context.krx_universe_snapshot_status in {"partial", "failed"}
+        )
         symbols_total = price_stats.target_count if price_stats else len(symbols)
         symbols_succeeded = price_stats.succeeded_count if price_stats else symbols_total
         symbols_failed = price_stats.unsuccessful_count if price_stats else 0
@@ -114,6 +152,12 @@ def run_daily_job(
                 message=job_message,
             )
             logger.info(f"finished crawl job: {job_id}")
+            if context.session is not None:
+                try:
+                    ensure_crawl_quality_report(context.session, crawl_job_id=job_id)
+                except Exception:  # noqa: BLE001
+                    increment_metric("quality_report_write_error")
+                    logger.exception("failed to create crawl quality report for job %s", job_id)
 
         duration = (datetime.utcnow() - started_at).total_seconds()
         if symbols_failed or universe_degraded:
@@ -141,6 +185,8 @@ def run_daily_job(
             "validation": validation_result.to_dict() if validation_result else None,
             "validation_report": validation_report_path,
             "validation_blocked": validation_blocked,
+            "krx_universe_snapshot_id": context.krx_universe_snapshot_id,
+            "krx_universe_snapshot_status": context.krx_universe_snapshot_status,
         }
     except Exception as e:
         error_message = str(e)
@@ -158,6 +204,12 @@ def run_daily_job(
                 message=f"Batch failed: {error_message}",
             )
             logger.error(f"crawl job {job_id} failed: {e}")
+            if context.session is not None:
+                try:
+                    ensure_crawl_quality_report(context.session, crawl_job_id=job_id)
+                except Exception:  # noqa: BLE001
+                    increment_metric("quality_report_write_error")
+                    logger.exception("failed to create crawl quality report for job %s", job_id)
 
         # 실패 알림 전송
         notification_service.send_batch_failure_sync(

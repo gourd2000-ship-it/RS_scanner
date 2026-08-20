@@ -82,9 +82,8 @@ uvicorn app.main_api:app --reload
 # 전체 파이프라인 실행
 python -m app.main_batch
 
-# 특정 작업만 실행
+# Naver universe snapshot과 심볼 동기화만 실행 (가격/RS 미실행)
 python -m app.main_batch --symbols-only
-python -m app.main_batch --prices-only
 ```
 
 ---
@@ -284,6 +283,7 @@ spec:
 | 변수명 | 설명 | 기본값 | 예시 |
 |--------|------|--------|------|
 | `DATABASE_URL` | PostgreSQL 연결 문자열 | - | `postgresql+psycopg://user:pass@localhost:5432/rs_scanner` |
+| `API_DATABASE_URL` | Docker Compose API 컨테이너 전용 PostgreSQL 연결 문자열. 미설정 시 Compose의 `postgres` 서비스 사용 | Compose 내부 기본값 | `postgresql+psycopg://user:pass@postgres:5432/rs_scanner` |
 | `APP_ENV` | 실행 환경 | `development` | `development`, `test`, `production` |
 
 ### 선택 환경변수
@@ -291,6 +291,38 @@ spec:
 | 변수명 | 설명 | 기본값 |
 |--------|------|--------|
 | `NAVER_REQUEST_TIMEOUT` | Naver API 타임아웃 (초) | `30` |
+| `KRX_AUTH_KEY` | KRX Open API 인증키. `.env` 또는 Secret Manager에서만 주입하고 로그·Git에 남기지 않음 | - |
+| `KRX_API_BASE_URL` | KRX 개발 명세서의 운영 API base URL. 인증키·query string은 포함하지 않음 | - |
+| `KIWOOM_FALLBACK_ENABLED` | legacy Kiwoom 폴백 설정. 일일 batch에서는 무시되며 항상 `false` 유지 | `false` |
+| `KIWOOM_FALLBACK_TRANSPORT` | 전환 전 adapter 경로 (`rest` 또는 legacy `file`) | `rest` |
+| `KIWOOM_API_BASE_URL` | Kiwoom REST 운영/모의투자 도메인 | `https://api.kiwoom.com` |
+| `KIWOOM_APP_KEY` | Kiwoom 앱키 (Secret 관리 권장) | - |
+| `KIWOOM_SECRET_KEY` | Kiwoom 시크릿키 (Secret 관리 필수) | - |
+| `KIWOOM_REQUESTS_PER_SECOND` | Kiwoom 요청 속도 제한 | `4` |
+| `KIWOOM_MAX_RETRIES` | Kiwoom 일시 오류 재시도 횟수 | `2` |
+| `KIWOOM_MAX_CONCURRENCY` | Kiwoom 동시 요청 수 | `1` |
+| `KIWOOM_MAX_REQUESTS_PER_BATCH` | 한 배치에서 폴백할 최대 종목 수 | `500` |
+| `KIWOOM_FALLBACK_CODES` | canary용 쉼표 구분 종목 allowlist; 비우면 eligible 대상 전체 | `` |
+| `KIWOOM_MAX_CONTINUATIONS` | 종목별 연속조회 페이지 상한 | `20` |
+| `KIWOOM_ADJUSTED_PRICE_TYPE` | 수정주가 조회 여부 (`1` 권장) | `1` |
+| `KIWOOM_TOKEN_REFRESH_MARGIN_SECONDS` | 토큰 만료 전 갱신 여유 시간 | `60` |
+| `KIWOOM_BRIDGE_DIR` | 전환 전 legacy Sam 파일 브리지 루트 | `/srv/rs_scanner-share/kiwoom` |
+| `KIWOOM_BRIDGE_TIMEOUT` | legacy 브리지 결과 대기 시간 (초) | `120` |
+| `KIWOOM_BRIDGE_POLL_INTERVAL` | legacy 브리지 polling 간격 (초) | `1` |
+| `KIWOOM_BRIDGE_MAX_ROWS_PER_SYMBOL` | legacy 브리지 요청의 종목별 최대 행 수 | `6000` |
+| `KIWOOM_CLI_PROFILE` | Sam이 사용할 선택적 kiwoomcli 프로필 | - |
+| `AGENT_API_ENABLED` | Hermes Agent API emergency off flag | `true` |
+| `AGENT_SERVICE_TOKENS` | Hermes/Sam scope token; Secret으로 주입하며 저장소에 기록하지 않음 | - |
+| `AGENT_ALLOWED_IPS` | Agent API 허용 CIDR 목록; 비어 있으면 제한 없음 | - |
+| `AGENT_FRESHNESS_MAX_AGE_HOURS` | Agent 데이터 freshness 허용 시간 | `36` |
+| `AGENT_RATE_LIMIT` | Agent API 분당 요청 한도 | `60` |
+| `REPAIR_API_ENABLED` | 보존된 legacy Repair API의 첫 번째 활성화 flag | `false` |
+| `LEGACY_REPAIR_API_ENABLED` | legacy Repair API의 두 번째 명시적 활성화 flag | `false` |
+| `REPAIR_CLAIM_LEASE_SECONDS` | Sam 업무 claim lease 시간 | `300` |
+| `REPAIR_MAX_ROWS` | 한 repair 결과의 최대 행 수 | `6000` |
+| `REPAIR_RECONCILER_ENABLED` | legacy 설정. 일일 batch에서는 무시 | `false` |
+| `REPAIR_APPLY_BATCH_SIZE` | 한 번에 반영할 completed repair 수 | `100` |
+| `ANALYSIS_API_ENABLED` | 사용자 요청 기반 Sam 주간 분석 API 활성화 | `false` |
 | `POSTGRES_USER` | PostgreSQL 사용자명 | `rs_scanner` |
 | `POSTGRES_PASSWORD` | PostgreSQL 비밀번호 | `rs_scanner_dev` |
 | `POSTGRES_DB` | 데이터베이스 이름 | `rs_scanner` |
@@ -307,15 +339,58 @@ APP_ENV=development
 
 #### 테스트 (Test)
 ```bash
-TEST_DATABASE_URL=postgresql+psycopg://rs_scanner:rs_scanner_test@localhost:5432/rs_scanner_test
+TEST_DATABASE_URL=postgresql+psycopg://rs_scanner_test:rs_scanner_test_pass@localhost:5433/rs_scanner_test
 APP_ENV=test
 ```
 
 #### 프로덕션 (Production)
 ```bash
 DATABASE_URL=postgresql+psycopg://rs_scanner:SECURE_PASSWORD@db.example.com:5432/rs_scanner
+# Compose API를 별도 DB에 연결할 때만 설정한다. 로컬 Compose는 생략하면 된다.
+# API_DATABASE_URL=postgresql+psycopg://rs_scanner:SECURE_PASSWORD@db.example.com:5432/rs_scanner
 APP_ENV=production
 NAVER_REQUEST_TIMEOUT=60
+KIWOOM_FALLBACK_ENABLED=false
+REPAIR_API_ENABLED=false
+LEGACY_REPAIR_API_ENABLED=false
+REPAIR_RECONCILER_ENABLED=false
+ANALYSIS_API_ENABLED=false
+# AGENT_SERVICE_TOKENS는 Secret Manager에서 주입한다.
+# KIWOOM_APP_KEY와 KIWOOM_SECRET_KEY는 Secret Manager에서 주입한다.
+# KRX_AUTH_KEY는 Secret Manager 또는 gitignore된 .env에서만 주입한다.
+# KRX_API_BASE_URL은 KRX 개발 명세서의 인증키 없는 base URL만 설정한다.
+```
+
+현행 운영 경로는 [주간 분석 PRD](prd-weekly-crawl-quality-analysis.md)다.
+`KIWOOM_FALLBACK_ENABLED`, repair reconciler, 공유 폴더 브리지는 일일 batch에서 사용하지
+않는다. Kiwoom은 Sam이 보고서 evidence를 만들 때 제한 표본으로만 호출한다. 인증정보는
+로그와 리포트에 기록하지 않는다.
+
+Compose 배포에서는 반드시 환경 파일을 명시해 설정과 Secret을 컨테이너에 전달한다.
+기본값은 Repair API와 reconciler가 모두 꺼진 상태이므로, staging canary 승인 전에는
+그대로 유지한다.
+
+```bash
+docker compose --env-file .env.production build api
+docker compose --env-file .env.production up -d api
+```
+
+Sam 분석 API를 켤 때만 `.env.production` 또는 Secret 주입 계층에 아래 값을 설정한다.
+각 역할 token은 분리한다. Compose가 host port를 `127.0.0.1`에 publish하는 것이 첫 번째
+네트워크 경계다. Docker NAT 환경에서는 container가 host 요청을 loopback IP로 보지 않을 수
+있으므로, `AGENT_ALLOWED_IPS`는 실제 source IP를 probe로 확인하기 전에는 비워 둔다.
+내부 API는 신뢰된 reverse proxy 없이 loopback에 직접 바인딩하므로 `X-Forwarded-For`는
+allowlist 판단에 사용하지 않는다.
+
+```text
+ANALYSIS_API_ENABLED=true
+REPAIR_API_ENABLED=false
+LEGACY_REPAIR_API_ENABLED=false
+REPAIR_RECONCILER_ENABLED=false
+KIWOOM_FALLBACK_ENABLED=false
+# Docker gateway/source IP를 별도 probe로 확인한 뒤에만 설정한다.
+AGENT_ALLOWED_IPS=
+AGENT_SERVICE_TOKENS=<operator-token>=analysis:request,analysis:read,analysis:review;<sam-token>=analysis:read,analysis:accept,analysis:submit;<codex-token>=analysis:read,codex:request,codex:result
 ```
 
 ---
@@ -361,12 +436,11 @@ alembic upgrade head
 
 **해결:**
 ```bash
-# 테스트 데이터베이스 재생성
-docker exec rs_scanner_db psql -U rs_scanner -c "DROP DATABASE IF EXISTS rs_scanner_test;"
-docker exec rs_scanner_db psql -U rs_scanner -c "CREATE DATABASE rs_scanner_test;"
+# 전용 테스트 PostgreSQL 시작
+docker-compose -f docker-compose.test.yml up -d postgres_test
 
 # 마이그레이션 재실행
-DATABASE_URL="postgresql+psycopg://rs_scanner:rs_scanner_dev@localhost:5432/rs_scanner_test" alembic upgrade head
+DATABASE_URL="postgresql+psycopg://rs_scanner_test:rs_scanner_test_pass@localhost:5433/rs_scanner_test" alembic upgrade head
 ```
 
 ### 4. Docker 빌드 실패

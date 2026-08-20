@@ -1,13 +1,17 @@
 # RS Scanner 크롤링 개선 및 Hermes 연동 로드맵
 
-상태: 코드 구현 완료 (Gate 3·공급자 계약·staging 운영 검증 대기)  
-작성일: 2026-08-10  
-상세 요구사항: [PRD](prd-crawling-reliability-hermes.md)
+> **2026-08-15 전환 안내:** 아래 repair queue·Kiwoom fallback 내용은 전환 기간의 레거시 기록입니다. 현재 기본 흐름은 배치별 `crawl_quality_reports`를 남기고, 사용자가 요청한 주간 분석에서만 Sam이 제한된 Kiwoom 표본을 검증하는 방식입니다. 운영 계약은 [주간 크롤링 품질 분석 PRD](prd-weekly-crawl-quality-analysis.md)를 기준으로 합니다.
 
-실행 현황 (2026-08-11): P0~P1, EOD 계약/검증 계층, Naver fallback·요청 예산·bounded concurrency,
-Hermes API/adapter, 운영 baseline/metrics/canary 제어기를 반영했다. PostgreSQL migration·API 통합·E2E
-회귀 테스트와 2,400종목 synthetic benchmark를 통과했다. 실제 EOD 공급자 계약, staging coverage/성능,
-provider canary 3회 연속 관측은 외부 계약과 운영 환경 확인 후 진행한다.
+상태: PostgreSQL migration·Repair API·reconciler·synthetic canary 완료 (실제 Sam Kiwoom canary 대기)
+작성일: 2026-08-14
+상세 요구사항: [분석 후속 PRD](prd-crawl-analysis-followup.md), [기반 PRD](prd-crawling-reliability-hermes.md)
+
+실행 현황 (2026-08-14): Naver 주 수집 경로, Kiwoom 보조 공급자 코드, Sam의
+`kiwoom-ohlc-query` 읽기 전용 스킬, 기존 Hermes read-only API 서버 기반이 준비되어 있다.
+다음 autobot 작업은 공유 폴더 브리지를 확장하는 것이 아니라 PostgreSQL repair request/attempt/result,
+Sam 전용 Repair API, 결과 reconciler를 운영 경계에 연결하는 것이다. 코드·contract test는
+구현했고 운영 PostgreSQL migration과 PostgreSQL 기반 synthetic API round trip까지 검증했다.
+실제 Sam의 `kiwoomcli` 호출을 포함한 staging canary는 아직 남아 있다.
 
 ## 1. 목표
 
@@ -30,6 +34,9 @@ provider canary 3회 연속 관측은 외부 계약과 운영 환경 확인 후 
 | 기업 액션 | BatchContext에 price_source가 없어 수정주가 재수집이 연결되지 않음 | P1 |
 | 성능 | 종목별 순차 요청과 0.8~2.5초 지연으로 실행 시간이 길어짐 | P1 |
 | Hermes 제공 | 인증·버전·coverage·신선도 메타데이터를 가진 Agent API가 없음 | P1 |
+| 복구 전달 경로 | 파일 공유 권한·세션 문제로 Sam 결과 전달이 운영상 불안정함 | P0 |
+| 복구 무결성 | Kiwoom 결과를 queue에 기록하고 canonical 반영하기 위한 상태·lease·idempotency가 없음 | P0 |
+| API 경계 | 기존 Agent API는 읽기 전용이며 Sam용 repair mutation scope/endpoint가 없음 | P0 |
 
 ## 3. 상태 정의
 
@@ -212,54 +219,111 @@ Gate 1: P0 단위·통합 테스트 통과 후 다음 Phase로 이동
 예상 기간: CRAWL-05~07 합계 3~5일  
 Gate 2: universe·기업 액션 회귀 테스트와 PostgreSQL 통합 테스트 통과
 
-## 7. Phase 3 - EOD 공급자와 성능 개선
+## 7. Phase 3 - PostgreSQL repair queue와 Sam Kiwoom 업무
 
-목표: 전종목 bulk EOD 수집을 우선하고 Naver는 fallback·backfill로 제한한다.
+목표: Naver를 기본 수집 경로로 유지하면서 실패 종목만 PostgreSQL queue에 등록하고,
+Sam은 제한된 API로 한 건의 읽기 전용 Kiwoom 업무를 수행한다. 결과는 autobot이 검증·반영한다.
+공유 폴더 polling과 Sam의 DB 직접 접근은 목표 경로에 포함하지 않는다.
 
-### CRAWL-08 EOD 공급자 결정
+### CRAWL-08 공급자·업무 계약 확정
 
-- [x] KRX 또는 계약된 EOD 공급자 후보 조사
-- [ ] 라이선스·상업적 사용·요청 제한 확인
-- [ ] 기준일, 시장, 가격 조정 여부, 파일/API 형식 결정
-- [x] 공급자 장애와 fallback 조건 정의
-
-완료 기준:
-
-- 공급자와 계약 조건이 문서화되어 있다.
-- 데이터 사용 범위가 Hermes 제공 범위와 충돌하지 않는다.
-
-### CRAWL-09 EOD adapter와 bulk upsert
-
-- [x] PriceSource 계층에 EOD provider adapter 추가
-- [x] checksum, 기준일, 필수 필드, 중복, 종목 수 검증
-- [x] 시장별 bulk upsert 구현
-- [x] 종목별 fetched/no_new_data/failed 결과 생성
-- [x] provider와 기준일을 target result에 저장
+- [x] Naver를 universe·benchmark·일별 가격 주 공급자로 결정
+- [x] Kiwoom을 실패 종목 전용 보조 공급자로 결정
+- [x] Sam `kiwoom-ohlc-query` 스킬을 국내주식 일봉·읽기 전용으로 완성
+- [x] API server 기반을 준비하고 기존 Hermes read-only API를 운영 계약으로 고정
+- [ ] Kiwoom 계정·IP·rate limit·데이터 사용 범위와 CLI 내부 API ID/TR 매핑 확인
+- [ ] 현재 직접 REST adapter의 일봉 API ID/TR과 응답 parser를 공식 계약·실제 fixture에
+  대조하고, 불일치하면 canary 전에 수정
+- [x] `daily_chart` 요청/결과 JSON 계약과 보안 필드 차단을 [Sam Repair API 문서](sam-repair-api.md)에 반영
 
 완료 기준:
 
-- staging에서 active stock coverage 99.5% 이상을 달성한다.
-- 부분 파일은 저장되지 않고 해당 배치가 partial/failed로 표시된다.
+- Naver 실패, Kiwoom 업무, 결과 제출, canonical 반영의 소유자가 문서화되어 있다.
+- CLI의 일봉 호출이 실제 일봉 결과를 반환하며 문서·코드·CLI 매핑 불일치가 없다.
+- Sam에게 DB credential·공유 폴더 권한·주문 기능을 주지 않는다.
 
-### CRAWL-10 Naver fallback 및 요청 예산
+### CRAWL-09 repair queue migration과 repository
 
-- [x] EOD 누락·실패 종목만 fallback queue에 넣음
-- [x] Naver 전체 이력 backfill 및 corporate action 용도 분리
-- [x] retry와 concurrency 상한 설정
-- [x] provider별 요청 수와 실행 시간 측정
-- [x] 기존 0.8~2.5초 지연 정책의 운영 한계 재검토
+- [x] `crawl_repair_requests` migration 작성
+- [x] `crawl_repair_attempts` migration 작성
+- [x] `crawl_repair_results`를 날짜별 결과 행과 source lineage로 설계
+- [x] `dedupe_key` unique, request 상태 check, result 날짜·OHLC 제약 추가
+- [x] lease(`claim_token`, `lease_expires_at`)와 `next_attempt_at` 인덱스 추가
+- [x] SQLAlchemy 모델·repository·memory fake 구현
+- [x] 기존 Naver 실패 reason code 중 Kiwoom 복구 대상만 idempotent enqueue
 
-코드 검증용 benchmark: `scripts/benchmark_price_sync.py --symbols 2400 --workers 4`.
-실제 staging의 30분·coverage 목표는 OPS-01/Gate 3에서 별도로 확인한다.
+핵심 상태 전이:
+
+```text
+pending → processing → completed → applied
+                    ↘ failed      ↘ conflict / rejected
+pending ← expired processing lease
+```
 
 완료 기준:
 
-- 기준선 대비 외부 요청 수 80% 이상 감소
-- staging 가격 단계 30분 이내
-- coverage 99.5% 이상 유지
+- 같은 job·종목·기준일·reason의 중복 업무가 하나만 생성된다.
+- 재시도별 executor·오류·HTTP/API 상태·행 수·hash를 조회할 수 있다.
+- queue 저장 실패가 Naver 실패를 성공으로 바꾸지 않고 alert/metric을 만든다.
 
-예상 기간: CRAWL-08~10 합계 5~8일  
-Gate 3: canary에서 3회 연속 coverage·최신성·시간 기준 통과
+### CRAWL-10 Sam Repair API
+
+- [x] `POST /internal/v1/repair/requests/claim` 구현
+- [x] `POST /internal/v1/repair/requests/{id}/complete` 구현
+- [x] `POST /internal/v1/repair/requests/{id}/fail` 구현
+- [x] `GET /internal/v1/repair/requests/{id}` 운영 조회 구현
+- [x] `repair:claim`, `repair:submit`, `repair:fail` scope와 별도 service token 적용
+- [x] claim에 `FOR UPDATE SKIP LOCKED`, lease, request version, idempotency 적용
+- [x] 결과 API의 symbol/date/기간/OHLC/adjusted_price/row count 검증
+- [x] 429·인증 오류·빈 응답·부분 결과를 성공으로 저장하지 않는 contract test 추가
+
+Sam 업무의 한 번의 요청은 symbol, from, to, adjusted_price와 request ID만 포함한다.
+Sam은 `kiwoomcli domestic candles daily`를 실행하고 정규화된 결과 또는 제한된 실패
+정보만 반환한다. 상시 실행 모드나 임의 shell 명령은 요구하지 않는다.
+
+완료 기준:
+
+- Sam이 PostgreSQL credential 없이 claim→조회→complete/fail round trip을 수행한다.
+- 오래된 claim token과 중복 complete가 canonical 데이터에 영향을 주지 않는다.
+- API 로그와 결과에 token, secret, 계좌번호, 원본 응답 전문이 남지 않는다.
+
+### CRAWL-11 autobot 결과 reconciler
+
+- [x] completed request를 가져와 결과 행을 재검증
+- [x] request의 job/symbol/trade_date와 결과 행의 일치성 검증
+- [x] Naver 값 부재 시 Kiwoom 결과를 `daily_prices`와 `crawl_target_results`에 idempotent 적용
+- [x] Naver와 값이 다르면 provider fingerprint와 함께 conflict/review_required 기록
+- [x] 적용 transaction 재시작과 `application_status` 기반 recovery 구현
+- [x] applied 결과만 RS 입력으로 승격하고 rejected/conflict는 제외
+- [x] repair 결과 source lineage를 Agent stock snapshot/history에 노출
+
+완료 기준:
+
+- autobot 외의 계정이 canonical 가격과 RS를 직접 수정할 수 없다.
+- 동일 결과를 재처리해도 가격 행과 RS 입력이 중복되지 않는다.
+- completed, applied, conflict, rejected 수가 각각 리포트와 API에서 일치한다.
+
+### CRAWL-12 Kiwoom canary와 전환
+
+- [x] 단계 0: synthetic request로 queue/API 상태 전이와 실패 경로 검증
+- [ ] 단계 1: 005930 한 종목, 짧은 기간으로 실제 읽기 전용 조회
+- [ ] 단계 2: 5~10개 실패 종목, rate limit·중복·충돌 검증
+- [ ] 단계 3: 실제 실패 100~300개 중 allowlist만 대상으로 제한 canary
+- [ ] 각 단계 3회 연속 coverage·최신성·시간·충돌·rate limit 기준 확인
+- [ ] 실패 시 `KIWOOM_FALLBACK_ENABLED=false`로 되돌리고 마지막 정상 dataset을 stale로 제공
+- [ ] 파일 브리지는 canary의 기본 경로로 사용하지 않고 전환 후 비활성화
+
+검증 지표:
+
+```text
+recovery_rate = applied / eligible_repair_requests
+conflict_rate = conflict / completed
+rate_limit_rate = rate_limit_attempts / total_attempts
+queue_age = completed_at - requested_at
+```
+
+예상 기간: CRAWL-08~12 합계 6~10일
+Gate 3: 단일 종목 → 5~10종목 → 100~300종목 canary를 각 3회 관측하고 기준 통과
 
 ## 8. Phase 4 - Hermes Agent API
 
@@ -338,6 +402,10 @@ Gate 4: 내부망 contract test 및 운영 인증 검증 통과
 - [x] corporate-action refetch 통합 테스트
 - [x] agent auth/envelope/ETag/stale contract test
 - [x] 2,400종목 synthetic benchmark harness 및 요청 budget 검증
+- [x] repair request dedupe·lease·재시도 상태 전이 테스트
+- [x] Sam Repair API claim/complete/fail 인증·schema contract test
+- [x] completed 결과의 applied/conflict/rejected reconciler 통합 테스트
+- [x] 429·부분 결과·오래된 claim·중복 제출 회귀 테스트
 - [ ] 실제 종목 수에 가까운 staging 성능 테스트
 
 ### OPS-02 관측과 알림
@@ -351,12 +419,19 @@ Gate 4: 내부망 contract test 및 운영 인증 검증 통과
 - [x] crawl_coverage_rate
 - [x] symbols_deactivated_total
 - [x] hermes_api_errors_total
+- [x] repair_pending/processing/completed/failed_total
+- [x] repair_applied/conflict/rejected_total
+- [x] repair_queue_age_seconds
+- [x] repair_claim_latency_seconds
+- [x] kiwoom_rate_limit_errors와 결과 completeness
 - [x] coverage 99.5% 미만, 최신일 지연, 동일 종목 3회 반복 실패 알림
 
 ### OPS-03 canary와 rollback
 
 - [x] universe inactive 변경은 첫 배포에서 dry-run
-- [x] EOD 공급자는 일부 시장 또는 일부 종목에 canary
+- [x] PostgreSQL queue/API synthetic canary
+- [ ] PostgreSQL queue/API는 실제 Sam 한 종목 canary
+- [ ] Kiwoom은 5~10종목, 이후 100~300 실패 종목으로 단계 확대
 - [ ] 3회 연속 성공 후 전체 시장 확대
 - [x] provider feature flag off 절차
 - [x] 마지막 정상 dataset을 stale로 제공하는 절차
@@ -380,13 +455,15 @@ Gate 4: 내부망 contract test 및 운영 인증 검증 통과
     CRAWL-04 -------------------------------> HERMES-02 -> HERMES-03 -> HERMES-04
     CRAWL-01 -------------------------------> HERMES-01
 
-    CRAWL-02~10 + HERMES-01~04 -> OPS-01 -> OPS-02 -> OPS-03
+    CRAWL-02~12 + HERMES-01~04 -> OPS-01 -> OPS-02 -> OPS-03
 
 병행 가능 작업:
 
 - CRAWL-01과 HERMES-01 설계
 - CRAWL-05 migration 초안과 CRAWL-08 공급자 조사
 - HERMES API mock contract와 Hermes adapter 골격
+- CRAWL-09 queue schema와 CRAWL-10 API contract는 병행 가능하나 API 구현은 migration
+  contract가 고정된 뒤 시작한다.
 
 ## 11. 최종 완료 정의
 
@@ -398,4 +475,7 @@ Gate 4: 내부망 contract test 및 운영 인증 검증 통과
 - [x] 기업 액션 재수집이 실제 source와 연결된다.
 - [ ] 가격 단계가 coverage 99.5% 이상, 목표 시간 이내다.
 - [x] Hermes API가 인증, 버전, freshness, coverage를 제공한다.
+- [x] Naver 실패가 PostgreSQL repair request로 중복 없이 등록된다.
+- [ ] Sam이 제한된 Repair API로 실제 한 건의 읽기 전용 Kiwoom 업무를 처리한다. (synthetic round trip은 완료)
+- [x] 결과가 attempt/result audit을 거쳐 applied/conflict/rejected로 분류된다.
 - [ ] canary와 rollback이 staging에서 실제로 검증된다.

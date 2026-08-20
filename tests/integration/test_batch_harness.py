@@ -1,6 +1,13 @@
 from datetime import date, timedelta
 from decimal import Decimal
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from app.core.base import Base
+import app.models  # noqa: F401
+from app.crawler.sources.krx import KrxUniverseFetchResult
+from app.repositories.krx_universe_repository import KrxUniverseRepository
 from app.schemas.market_data import BenchmarkPricePayload, DailyPricePayload, SymbolPayload
 from app.services.batch.context import build_memory_batch_context
 from app.services.batch.run_daily_job import run_daily_job
@@ -85,3 +92,71 @@ def test_incremental_sync_only_fetches_new_rows():
     assert first["prices"]["000001"] == len(all_symbol_prices)
     assert second["prices"]["000001"] == len(all_symbol_prices)
     assert second["benchmarks"]["KOSPI"] == len(all_benchmark_prices)
+
+
+def test_batch_crawls_etf_and_etn_but_publishes_rs_for_stocks_only():
+    symbols = [
+        SymbolPayload(code="000001", name="Alpha", market="KOSPI"),
+        SymbolPayload(
+            code="0005D0",
+            name="KODEX 미국S&P500커버드콜",
+            market="KOSPI",
+            symbol_type="etf",
+        ),
+        SymbolPayload(
+            code="0013R0",
+            name="테스트 ETN",
+            market="KOSPI",
+            symbol_type="etn",
+        ),
+    ]
+    source = FakePriceSource(
+        symbols=symbols,
+        prices_by_code={
+            "000001": make_prices(100, 2),
+            "0005D0": make_prices(100, 3),
+            "0013R0": make_prices(100, 4),
+        },
+        benchmark_prices_by_market={
+            "KOSPI": make_benchmark("KOSPI"),
+            "KOSDAQ": make_benchmark("KOSDAQ"),
+        },
+    )
+
+    result = run_daily_job(build_memory_batch_context(), source)
+
+    assert result["symbols"] == 3
+    assert set(result["prices"]) == {"000001", "0005D0", "0013R0"}
+    assert result["rs_results"] == {"KOSPI": 1}
+
+
+def test_partial_krx_shadow_snapshot_does_not_block_naver_prices():
+    class PartialKrxSource:
+        def fetch_stock_membership(self, as_of_date: date) -> KrxUniverseFetchResult:
+            return KrxUniverseFetchResult(
+                as_of_date=as_of_date,
+                members=[],
+                complete=False,
+                error_message="KOSDAQ:KrxUniverseFetchError",
+            )
+
+    context = build_memory_batch_context()
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    context.krx_universe_repository = KrxUniverseRepository(sessionmaker(bind=engine)())
+    source = FakePriceSource(
+        symbols=[SymbolPayload(code="000001", name="Alpha", market="KOSPI")],
+        prices_by_code={"000001": make_prices(100, 2)},
+        benchmark_prices_by_market={
+            "KOSPI": make_benchmark("KOSPI"),
+            "KOSDAQ": make_benchmark("KOSDAQ"),
+        },
+    )
+
+    result = run_daily_job(context, source, krx_source=PartialKrxSource())
+
+    assert result["prices"]["000001"] == 260
+    assert context.krx_universe_snapshot_status == "failed"
+    job = context.crawl_job_repository.get_latest("daily_full")
+    assert job is not None
+    assert job.status == "completed_with_errors"

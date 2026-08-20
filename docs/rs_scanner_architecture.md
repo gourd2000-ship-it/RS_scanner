@@ -827,6 +827,12 @@ docs/
 - `NAVER_MIN_DELAY_MS`
 - `NAVER_MAX_DELAY_MS`
 - `NAVER_MAX_RETRIES`
+- `KIWOOM_FALLBACK_ENABLED`
+- `KIWOOM_API_BASE_URL`
+- `KIWOOM_APP_KEY` / `KIWOOM_SECRET_KEY`
+- `KIWOOM_REQUESTS_PER_SECOND`
+- `KIWOOM_MAX_REQUESTS_PER_BATCH`
+- `KIWOOM_FALLBACK_CODES`
 - `SLACK_WEBHOOK_URL`
 
 ### 12.4 법적/운영 리스크 관리
@@ -839,6 +845,10 @@ docs/
 - 캐시 적극 활용
 - 대체 데이터 소스 준비
 - 파서 변경 가능성을 고려한 모듈 분리
+
+Kiwoom REST는 Naver 실패 종목만 대상으로 하는 일봉 폴백으로 제한하고, 인증정보는
+환경변수 또는 Secret Manager에서 주입한다. 주 공급자 전환은 canary와 데이터 사용
+범위 검토 없이 수행하지 않는다.
 
 ---
 

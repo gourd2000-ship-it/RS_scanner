@@ -15,7 +15,7 @@ from app.main_api import app
 # 테스트용 PostgreSQL 데이터베이스 (별도 DB 사용)
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
-    "postgresql+psycopg://rs_scanner:rs_scanner_dev@localhost:5432/rs_scanner_test",
+    "postgresql+psycopg://rs_scanner_test:rs_scanner_test_pass@localhost:5433/rs_scanner_test",
 )
 
 

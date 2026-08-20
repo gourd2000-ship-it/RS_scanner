@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: timescale/timescaledb:latest-pg16
@@ -28,14 +26,49 @@ services:
       dockerfile: Dockerfile
     container_name: rs_scanner_api
     environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-rs_scanner}:${POSTGRES_PASSWORD:-rs_scanner_dev}@postgres:5432/${POSTGRES_DB:-rs_scanner}
+      DATABASE_URL: ${API_DATABASE_URL:-postgresql+psycopg://${POSTGRES_USER:-rs_scanner}:${POSTGRES_PASSWORD:-rs_scanner_dev}@postgres:5432/${POSTGRES_DB:-rs_scanner}}
       APP_ENV: ${APP_ENV:-production}
       NAVER_REQUEST_TIMEOUT: ${NAVER_REQUEST_TIMEOUT:-30}
+      KRX_AUTH_KEY: ${KRX_AUTH_KEY:-}
+      KRX_API_BASE_URL: ${KRX_API_BASE_URL:-}
+      KRX_STK_BYDD_TRD_URL: ${KRX_STK_BYDD_TRD_URL:-}
+      KRX_KSQ_BYDD_TRD_URL: ${KRX_KSQ_BYDD_TRD_URL:-}
+      KRX_STK_ISU_BASE_INFO_URL: ${KRX_STK_ISU_BASE_INFO_URL:-}
+      KRX_KSQ_ISU_BASE_INFO_URL: ${KRX_KSQ_ISU_BASE_INFO_URL:-}
+      KRX_ETF_BYDD_TRD_URL: ${KRX_ETF_BYDD_TRD_URL:-}
+      KRX_ETN_BYDD_TRD_URL: ${KRX_ETN_BYDD_TRD_URL:-}
+      KIWOOM_FALLBACK_ENABLED: ${KIWOOM_FALLBACK_ENABLED:-false}
+      KIWOOM_FALLBACK_TRANSPORT: ${KIWOOM_FALLBACK_TRANSPORT:-rest}
+      KIWOOM_API_BASE_URL: ${KIWOOM_API_BASE_URL:-https://api.kiwoom.com}
+      KIWOOM_APP_KEY: ${KIWOOM_APP_KEY:-}
+      KIWOOM_SECRET_KEY: ${KIWOOM_SECRET_KEY:-}
+      KIWOOM_REQUESTS_PER_SECOND: ${KIWOOM_REQUESTS_PER_SECOND:-4}
+      KIWOOM_MAX_REQUESTS_PER_BATCH: ${KIWOOM_MAX_REQUESTS_PER_BATCH:-500}
+      KIWOOM_FALLBACK_CODES: ${KIWOOM_FALLBACK_CODES:-}
+      KIWOOM_BRIDGE_DIR: ${KIWOOM_BRIDGE_DIR:-/srv/rs_scanner-share/kiwoom}
+      KIWOOM_BRIDGE_TIMEOUT: ${KIWOOM_BRIDGE_TIMEOUT:-120}
+      KIWOOM_BRIDGE_POLL_INTERVAL: ${KIWOOM_BRIDGE_POLL_INTERVAL:-1}
+      KIWOOM_BRIDGE_MAX_ROWS_PER_SYMBOL: ${KIWOOM_BRIDGE_MAX_ROWS_PER_SYMBOL:-6000}
+      KIWOOM_CLI_PROFILE: ${KIWOOM_CLI_PROFILE:-}
+      AGENT_API_ENABLED: ${AGENT_API_ENABLED:-true}
+      AGENT_SERVICE_TOKENS: ${AGENT_SERVICE_TOKENS:-}
+      AGENT_ALLOWED_IPS: ${AGENT_ALLOWED_IPS:-}
+      AGENT_FRESHNESS_MAX_AGE_HOURS: ${AGENT_FRESHNESS_MAX_AGE_HOURS:-36}
+      AGENT_RATE_LIMIT: ${AGENT_RATE_LIMIT:-60}
+      REPAIR_API_ENABLED: ${REPAIR_API_ENABLED:-false}
+      LEGACY_REPAIR_API_ENABLED: ${LEGACY_REPAIR_API_ENABLED:-false}
+      REPAIR_CLAIM_LEASE_SECONDS: ${REPAIR_CLAIM_LEASE_SECONDS:-300}
+      REPAIR_MAX_ROWS: ${REPAIR_MAX_ROWS:-6000}
+      REPAIR_RECONCILER_ENABLED: ${REPAIR_RECONCILER_ENABLED:-false}
+      REPAIR_APPLY_BATCH_SIZE: ${REPAIR_APPLY_BATCH_SIZE:-100}
+      ANALYSIS_API_ENABLED: ${ANALYSIS_API_ENABLED:-false}
     ports:
-      - "${API_PORT:-8000}:8000"
+      - "127.0.0.1:${API_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - /srv/rs_scanner-share:/srv/rs_scanner-share
     networks:
       - rs_scanner_network
     restart: unless-stopped

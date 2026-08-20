@@ -4,8 +4,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 
 from app.api.v1.endpoints.agent import router as agent_router
+from app.api.v1.endpoints.analysis import router as analysis_router
 from app.api.v1.endpoints.crawl import router as crawl_router
+from app.api.v1.endpoints.codex import router as codex_router
 from app.api.v1.endpoints.health import router as health_router
+from app.api.v1.endpoints.repair import router as repair_router
 from app.api.v1.endpoints.rankings import router as rankings_router
 from app.api.v1.endpoints.stocks import router as stocks_router
 from app.core.database import init_db
@@ -67,6 +70,14 @@ tags_metadata = [
         "name": "agent",
         "description": "Hermes용 인증된 읽기 전용 RS 데이터 facade.",
     },
+    {
+        "name": "repair",
+        "description": "Sam 전용 읽기 업무 queue API.",
+    },
+    {
+        "name": "crawl-analysis",
+        "description": "사용자가 요청한 Sam 크롤링 품질 분석 API.",
+    },
 ]
 
 app = FastAPI(
@@ -117,9 +128,31 @@ app.add_exception_handler(Exception, generic_exception_handler)
 # 라우터 등록
 app.include_router(health_router, prefix="/api/v1", tags=["health"])
 app.include_router(agent_router, prefix="/api/v1/agent/v1", tags=["agent"])
+app.include_router(repair_router, prefix="/internal/v1/repair", tags=["repair"])
+app.include_router(analysis_router, prefix="/internal/v1/crawl-analysis", tags=["crawl-analysis"])
+app.include_router(codex_router, prefix="/internal/v1/codex-change-requests", tags=["crawl-analysis"])
 app.include_router(rankings_router, prefix="/api/v1", tags=["rankings"])
 app.include_router(stocks_router, prefix="/api/v1/stocks", tags=["stocks"])
 app.include_router(crawl_router, prefix="/api/v1/crawl", tags=["crawl"])
+
+
+_INTERNAL_SCOPE_BY_OPERATION = {
+    ("/internal/v1/crawl-analysis/quality-reports", "get"): "analysis:read",
+    ("/internal/v1/crawl-analysis/quality-reports/{report_id}", "get"): "analysis:read",
+    ("/internal/v1/crawl-analysis/failures", "get"): "analysis:read",
+    ("/internal/v1/crawl-analysis/target-results", "get"): "analysis:read",
+    ("/internal/v1/crawl-analysis/stock-history/{symbol}", "get"): "analysis:read",
+    ("/internal/v1/crawl-analysis/requests", "post"): "analysis:request",
+    ("/internal/v1/crawl-analysis/requests/{request_id}", "get"): "analysis:read",
+    ("/internal/v1/crawl-analysis/requests/{request_id}/quality-reports", "get"): "analysis:read",
+    ("/internal/v1/crawl-analysis/requests/{request_id}/accept", "post"): "analysis:accept",
+    ("/internal/v1/crawl-analysis/requests/{request_id}/report-hash", "post"): "analysis:submit",
+    ("/internal/v1/crawl-analysis/requests/{request_id}/report", "post"): "analysis:submit",
+    ("/internal/v1/codex-change-requests", "post"): "codex:request",
+    ("/internal/v1/codex-change-requests/{change_request_id}", "get"): "analysis:read",
+    ("/internal/v1/codex-change-requests/{change_request_id}/review", "post"): "analysis:review",
+    ("/internal/v1/codex-change-requests/{change_request_id}/result", "post"): "codex:result",
+}
 
 
 def custom_openapi():
@@ -142,6 +175,23 @@ def custom_openapi():
             "description": "개발 서버",
         },
     ]
+    components = openapi_schema.setdefault("components", {})
+    security_schemes = components.setdefault("securitySchemes", {})
+    security_schemes["InternalBearerAuth"] = {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque service token",
+        "description": (
+            "Internal API only. A role-specific bearer token is required. "
+            "The x-required-scopes extension on each operation lists the exact scope. "
+            "Do not place token values in reports, source control, or OpenAPI examples."
+        ),
+    }
+    for (path, method), required_scope in _INTERNAL_SCOPE_BY_OPERATION.items():
+        operation = openapi_schema.get("paths", {}).get(path, {}).get(method)
+        if operation is not None:
+            operation["security"] = [{"InternalBearerAuth": []}]
+            operation["x-required-scopes"] = [required_scope]
 
     app.openapi_schema = openapi_schema
     return app.openapi_schema

@@ -23,6 +23,10 @@ class CrawlTargetResultRepository:
         status: str,
         *,
         target_type: str = "stock",
+        krx_snapshot_id: int | None = None,
+        instrument_id: int | None = None,
+        price_eligibility: str | None = None,
+        eligibility_reason: str | None = None,
         provider: str | None = None,
         rows_received: int = 0,
         rows_persisted: int = 0,
@@ -49,6 +53,10 @@ class CrawlTargetResultRepository:
             self.session.add(result)
 
         result.target_type = target_type
+        result.krx_snapshot_id = krx_snapshot_id
+        result.instrument_id = instrument_id
+        result.price_eligibility = price_eligibility
+        result.eligibility_reason = eligibility_reason
         result.status = status
         result.provider = provider
         result.attempt_count = (result.attempt_count or 0) + 1

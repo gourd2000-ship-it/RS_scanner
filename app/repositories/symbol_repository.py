@@ -80,16 +80,27 @@ class SymbolRepository:
         return [SymbolPayload(code=row.code, name=row.name, market=row.market, symbol_type=row.symbol_type) for row in rows]
 
     def list_price_targets(self) -> list[SymbolPayload]:
-        """기본 가격 수집 대상: 활성 상태인 일반 주식만 반환한다."""
+        """가격 수집 대상: 활성 상태인 모든 분류의 종목을 반환한다.
+
+        ETF/ETN도 가격 이력은 보존해야 하므로 크롤링 대상에는 포함한다.
+        RS 계산처럼 일반 주식만 필요한 소비자는 ``list_stocks_only``를
+        사용한다.
+        """
+        rows = self.session.scalars(
+            select(Symbol)
+            .where(Symbol.is_active.is_(True))
+            .order_by(Symbol.market, Symbol.code)
+        ).all()
+        return [SymbolPayload(code=row.code, name=row.name, market=row.market, symbol_type=row.symbol_type) for row in rows]
+
+    def list_stocks_only(self) -> list[SymbolPayload]:
+        """RS 계산 등 일반 주식만 필요한 작업의 대상."""
         rows = self.session.scalars(
             select(Symbol)
             .where(Symbol.is_active.is_(True), Symbol.symbol_type == "stock")
             .order_by(Symbol.market, Symbol.code)
         ).all()
         return [SymbolPayload(code=row.code, name=row.name, market=row.market, symbol_type=row.symbol_type) for row in rows]
-
-    def list_stocks_only(self) -> list[SymbolPayload]:
-        return self.list_price_targets()
 
     def get_by_code(self, code: str) -> SymbolPayload | None:
         row = self.session.scalar(select(Symbol).where(Symbol.code == code))

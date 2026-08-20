@@ -75,6 +75,7 @@ class DailyPriceItem(BaseModel):
     close: Decimal = Field(description="종가")
     volume: int = Field(description="거래량")
     change_rate: Decimal = Field(description="등락률")
+    source: str | None = Field(default=None, description="가격 출처")
 
 
 class RsScoreItem(BaseModel):

@@ -13,6 +13,10 @@ class MemoryCrawlTargetResult:
         step_name: str,
         target_type: str,
         target_key: str,
+        krx_snapshot_id: int | None,
+        instrument_id: int | None,
+        price_eligibility: str | None,
+        eligibility_reason: str | None,
         status: str,
         provider: str | None,
         attempt_count: int,
@@ -35,6 +39,10 @@ class MemoryCrawlTargetResult:
         self.step_name = step_name
         self.target_type = target_type
         self.target_key = target_key
+        self.krx_snapshot_id = krx_snapshot_id
+        self.instrument_id = instrument_id
+        self.price_eligibility = price_eligibility
+        self.eligibility_reason = eligibility_reason
         self.status = status
         self.provider = provider
         self.attempt_count = attempt_count
@@ -66,6 +74,10 @@ class MemoryCrawlTargetResultRepository:
         status: str,
         *,
         target_type: str = "stock",
+        krx_snapshot_id: int | None = None,
+        instrument_id: int | None = None,
+        price_eligibility: str | None = None,
+        eligibility_reason: str | None = None,
         provider: str | None = None,
         rows_received: int = 0,
         rows_persisted: int = 0,
@@ -89,6 +101,10 @@ class MemoryCrawlTargetResultRepository:
                 step_name=step_name,
                 target_type=target_type,
                 target_key=target_key,
+                krx_snapshot_id=krx_snapshot_id,
+                instrument_id=instrument_id,
+                price_eligibility=price_eligibility,
+                eligibility_reason=eligibility_reason,
                 status=status,
                 provider=provider,
                 attempt_count=0,
@@ -110,6 +126,10 @@ class MemoryCrawlTargetResultRepository:
             self._next_id += 1
 
         result.target_type = target_type
+        result.krx_snapshot_id = krx_snapshot_id
+        result.instrument_id = instrument_id
+        result.price_eligibility = price_eligibility
+        result.eligibility_reason = eligibility_reason
         result.status = status
         result.provider = provider
         result.attempt_count += 1

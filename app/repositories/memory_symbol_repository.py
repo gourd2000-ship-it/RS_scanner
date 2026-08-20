@@ -30,11 +30,8 @@ class MemorySymbolRepository:
         return list(self._symbols.values())
 
     def list_price_targets(self) -> list[SymbolPayload]:
-        return [
-            s
-            for s in self._symbols.values()
-            if s.code in self._active_codes and s.symbol_type == "stock"
-        ]
+        """가격 수집 대상: 활성 상태인 모든 분류의 종목."""
+        return [s for s in self._symbols.values() if s.code in self._active_codes]
 
     def reconcile_missing(self, incoming_codes: set[str], **_: object) -> list[str]:
         missing_codes = sorted(self._active_codes - incoming_codes)
@@ -42,7 +39,12 @@ class MemorySymbolRepository:
         return missing_codes
 
     def list_stocks_only(self) -> list[SymbolPayload]:
-        return self.list_price_targets()
+        """RS 계산 등 일반 주식만 필요한 작업의 대상."""
+        return [
+            s
+            for s in self._symbols.values()
+            if s.code in self._active_codes and s.symbol_type == "stock"
+        ]
 
     def get_by_code(self, code: str) -> SymbolPayload | None:
         return self._symbols.get(code)

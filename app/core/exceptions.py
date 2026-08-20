@@ -51,8 +51,35 @@ class PriceFetchError(CrawlError):
         self.response_bytes = response_bytes
 
 
+class KiwoomApiError(PriceFetchError):
+    """Raised when Kiwoom returns an application-level error response."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        url: str,
+        api_code: int | str | None = None,
+        http_status: int | None = None,
+        retry_count: int = 0,
+        response_bytes: int | None = None,
+    ) -> None:
+        super().__init__(
+            message,
+            url=url,
+            http_status=http_status,
+            retry_count=retry_count,
+            response_bytes=response_bytes,
+        )
+        self.api_code = api_code
+
+
 class ValidationError(Exception):
     """Raised when domain validation fails."""
+
+
+class ProviderConflictError(ValidationError):
+    """Raised when a fallback provider disagrees with persisted primary data."""
 
 
 # HTTP 예외

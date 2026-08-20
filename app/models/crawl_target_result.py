@@ -26,6 +26,14 @@ class CrawlTargetResult(Base):
     step_name: Mapped[str] = mapped_column(String(50), index=True)
     target_type: Mapped[str] = mapped_column(String(50), default="stock")
     target_key: Mapped[str] = mapped_column(String(255), index=True)
+    krx_snapshot_id: Mapped[int | None] = mapped_column(
+        ForeignKey("krx_universe_snapshots.id"), nullable=True, index=True
+    )
+    instrument_id: Mapped[int | None] = mapped_column(
+        ForeignKey("instruments.id"), nullable=True, index=True
+    )
+    price_eligibility: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    eligibility_reason: Mapped[str | None] = mapped_column(String(100), nullable=True)
     status: Mapped[str] = mapped_column(String(30), index=True)
     provider: Mapped[str | None] = mapped_column(String(100), nullable=True)
     attempt_count: Mapped[int] = mapped_column(Integer, default=0)

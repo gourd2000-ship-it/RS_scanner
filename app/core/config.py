@@ -6,7 +6,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        populate_by_name=True,
+    )
 
     app_env: str = Field(default="local", alias="APP_ENV")
     app_name: str = Field(default="rs-scanner", alias="APP_NAME")
@@ -22,6 +27,30 @@ class Settings(BaseSettings):
         ge=1,
         alias="NAVER_MAX_REQUESTS_PER_BATCH",
     )
+    naver_max_symbol_pages: int = Field(
+        default=100,
+        ge=1,
+        alias="NAVER_MAX_SYMBOL_PAGES",
+    )
+    # KRX Open API 인증키는 source 호출 시에만 사용하며 저장소·로그에 남기지 않는다.
+    krx_auth_key: Optional[str] = Field(default=None, alias="KRX_AUTH_KEY")
+    krx_api_base_url: Optional[str] = Field(default=None, alias="KRX_API_BASE_URL")
+    krx_stk_bydd_trd_url: Optional[str] = Field(default=None, alias="KRX_STK_BYDD_TRD_URL")
+    krx_ksq_bydd_trd_url: Optional[str] = Field(default=None, alias="KRX_KSQ_BYDD_TRD_URL")
+    krx_stk_isu_base_info_url: Optional[str] = Field(default=None, alias="KRX_STK_ISU_BASE_INFO_URL")
+    krx_ksq_isu_base_info_url: Optional[str] = Field(default=None, alias="KRX_KSQ_ISU_BASE_INFO_URL")
+    krx_etf_bydd_trd_url: Optional[str] = Field(default=None, alias="KRX_ETF_BYDD_TRD_URL")
+    krx_etn_bydd_trd_url: Optional[str] = Field(default=None, alias="KRX_ETN_BYDD_TRD_URL")
+    krx_shadow_ingestion_enabled: bool = Field(
+        default=False, alias="KRX_SHADOW_INGESTION_ENABLED"
+    )
+    universe_authority: str = Field(
+        default="naver_last_completed", alias="UNIVERSE_AUTHORITY"
+    )
+    universe_canary_markets: str = Field(default="", alias="UNIVERSE_CANARY_MARKETS")
+    universe_mapping_rate_threshold: float = Field(
+        default=0.995, ge=0.0, le=1.0, alias="UNIVERSE_MAPPING_RATE_THRESHOLD"
+    )
     crawl_retry_max_attempts: int = Field(
         default=2, ge=1, alias="CRAWL_RETRY_MAX_ATTEMPTS"
     )
@@ -33,9 +62,64 @@ class Settings(BaseSettings):
         alias="NAVER_USER_AGENT",
     )
 
+    # Kiwoom REST fallback.  It is disabled by default; enabling it requires
+    # credentials to be supplied through a secret store/environment.
+    kiwoom_fallback_enabled: bool = Field(
+        default=False, alias="KIWOOM_FALLBACK_ENABLED"
+    )
+    kiwoom_fallback_transport: str = Field(
+        default="rest", alias="KIWOOM_FALLBACK_TRANSPORT"
+    )
+    kiwoom_api_base_url: str = Field(
+        default="https://api.kiwoom.com", alias="KIWOOM_API_BASE_URL"
+    )
+    kiwoom_app_key: Optional[str] = Field(default=None, alias="KIWOOM_APP_KEY")
+    kiwoom_secret_key: Optional[str] = Field(default=None, alias="KIWOOM_SECRET_KEY")
+    kiwoom_request_timeout: float = Field(
+        default=10.0, gt=0.0, alias="KIWOOM_REQUEST_TIMEOUT"
+    )
+    kiwoom_max_retries: int = Field(default=2, ge=0, alias="KIWOOM_MAX_RETRIES")
+    kiwoom_max_concurrency: int = Field(
+        default=1, ge=1, alias="KIWOOM_MAX_CONCURRENCY"
+    )
+    # Kiwoom documents a higher domestic query ceiling; keep an application
+    # headroom below it so retries and token refreshes do not burst the limit.
+    kiwoom_requests_per_second: float = Field(
+        default=4.0, gt=0.0, le=5.0, alias="KIWOOM_REQUESTS_PER_SECOND"
+    )
+    kiwoom_max_requests_per_batch: int = Field(
+        default=500, ge=1, alias="KIWOOM_MAX_REQUESTS_PER_BATCH"
+    )
+    kiwoom_fallback_codes: str = Field(default="", alias="KIWOOM_FALLBACK_CODES")
+    kiwoom_max_continuations: int = Field(
+        default=20, ge=1, alias="KIWOOM_MAX_CONTINUATIONS"
+    )
+    kiwoom_adjusted_price_type: str = Field(
+        default="1", alias="KIWOOM_ADJUSTED_PRICE_TYPE"
+    )
+    kiwoom_token_refresh_margin_seconds: int = Field(
+        default=60, ge=0, alias="KIWOOM_TOKEN_REFRESH_MARGIN_SECONDS"
+    )
+    kiwoom_bridge_dir: str = Field(
+        default="/srv/rs_scanner-share/kiwoom", alias="KIWOOM_BRIDGE_DIR"
+    )
+    kiwoom_bridge_timeout: float = Field(
+        default=120.0, gt=0.0, alias="KIWOOM_BRIDGE_TIMEOUT"
+    )
+    kiwoom_bridge_poll_interval: float = Field(
+        default=1.0, gt=0.0, alias="KIWOOM_BRIDGE_POLL_INTERVAL"
+    )
+    kiwoom_bridge_max_rows_per_symbol: int = Field(
+        default=6000, ge=1, alias="KIWOOM_BRIDGE_MAX_ROWS_PER_SYMBOL"
+    )
+    kiwoom_cli_profile: Optional[str] = Field(
+        default=None, alias="KIWOOM_CLI_PROFILE"
+    )
+
     batch_timezone: str = Field(default="Asia/Seoul", alias="BATCH_TIMEZONE")
     batch_market_close_hour: int = Field(default=17, alias="BATCH_MARKET_CLOSE_HOUR")
     batch_chunk_size: int = Field(default=200, alias="BATCH_CHUNK_SIZE")
+    market_closed_dates: str = Field(default="", alias="MARKET_CLOSED_DATES")
 
     # Universe completeness guard.  The ratio is applied per market when a
     # previous active universe exists; the absolute minimum protects a first
@@ -61,6 +145,27 @@ class Settings(BaseSettings):
     agent_allowed_ips: str = Field(default="", alias="AGENT_ALLOWED_IPS")
     agent_freshness_max_age_hours: int = Field(default=36, ge=1, alias="AGENT_FRESHNESS_MAX_AGE_HOURS")
     agent_rate_limit: int = Field(default=60, ge=1, alias="AGENT_RATE_LIMIT")
+
+    # Sam repair API.  It is disabled until queue migration and canary approval
+    # are complete; its scopes still live in the separate service-token entry.
+    repair_api_enabled: bool = Field(default=False, alias="REPAIR_API_ENABLED")
+    legacy_repair_api_enabled: bool = Field(
+        default=False, alias="LEGACY_REPAIR_API_ENABLED"
+    )
+    repair_claim_lease_seconds: int = Field(
+        default=300, ge=30, le=3600, alias="REPAIR_CLAIM_LEASE_SECONDS"
+    )
+    repair_max_rows: int = Field(default=6000, ge=1, le=10000, alias="REPAIR_MAX_ROWS")
+    repair_reconciler_enabled: bool = Field(
+        default=False, alias="REPAIR_RECONCILER_ENABLED"
+    )
+    repair_apply_batch_size: int = Field(
+        default=100, ge=1, le=1000, alias="REPAIR_APPLY_BATCH_SIZE"
+    )
+
+    # Explicit weekly/ad-hoc analysis API.  It is independent from the legacy
+    # repair API and never schedules Sam from a crawl completion path.
+    analysis_api_enabled: bool = Field(default=False, alias="ANALYSIS_API_ENABLED")
 
     # Hermes client adapter
     hermes_api_base_url: str = Field(default="", alias="HERMES_API_BASE_URL")

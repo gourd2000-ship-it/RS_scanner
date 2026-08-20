@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, String
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base import Base
@@ -29,4 +29,13 @@ class Symbol(Base):
         ForeignKey("symbol_universe_snapshots.id"),
         nullable=True,
         index=True,
+    )
+    instrument_id: Mapped[int | None] = mapped_column(
+        ForeignKey("instruments.id"), nullable=True, index=True
+    )
+    legacy_code: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
+    legacy_state: Mapped[str | None] = mapped_column(String(30), nullable=True, index=True)
+    legacy_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    legacy_audit_run_id: Mapped[int | None] = mapped_column(
+        ForeignKey("universe_audit_runs.id"), nullable=True, index=True
     )

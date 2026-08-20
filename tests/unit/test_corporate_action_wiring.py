@@ -40,6 +40,14 @@ class RefetchSource:
         return [price(0, 100), price(1, 110)]
 
 
+class ConflictingRefetchSource(RefetchSource):
+    reject_provider_conflicts = True
+
+    def fetch_daily_prices(self, code: str, since_date=None):
+        self.calls.append((code, since_date))
+        return [price(0, 100), price(1, 110)]
+
+
 def make_context():
     context = build_memory_batch_context()
     context.symbol_repository.upsert_many(
@@ -86,3 +94,19 @@ def test_corporate_action_refetch_failure_is_recorded():
     assert failure.target_type == "corporate_action"
     assert failure.url == "https://provider.test/refetch/000001"
     assert failure.retry_count == 1
+
+
+def test_corporate_action_refetch_does_not_overwrite_provider_conflict():
+    context = make_context()
+    source = ConflictingRefetchSource()
+    context.price_source = source
+
+    assert _refetch_adjusted_prices(context, ["000001"]) == 0
+    assert context.price_repository.get_symbol_prices("000001")[0].close == Decimal("90")
+
+    result = context.crawl_target_result_repository.list_by_job(
+        context.job_id,
+        step_name="corporate_action",
+    )[0]
+    assert result.status == "failed"
+    assert result.error_class == "ProviderConflictError"

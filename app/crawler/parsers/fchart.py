@@ -16,10 +16,12 @@ class ParsedPriceRows(list[DailyPricePayload]):
         *,
         invalid_rows: int = 0,
         response_bytes: int | None = None,
+        retry_count: int = 0,
     ) -> None:
         super().__init__(rows or [])
         self.invalid_rows = invalid_rows
         self.response_bytes = response_bytes
+        self.retry_count = retry_count
 
 
 def parse_fchart_prices(raw_text: str) -> ParsedPriceRows:

@@ -1,4 +1,4 @@
-from app.crawler.sources.base import PriceSource
+from app.crawler.sources.base import PriceSource, provider_id
 from app.services.batch.context import BatchContext
 from app.services.rs.policy import MARKET_BENCHMARKS
 
@@ -15,7 +15,7 @@ def sync_benchmarks(context: BatchContext, source: PriceSource):
                     MARKET_BENCHMARKS[market],
                     prices,
                     crawl_job_id=context.job_id,
-                    provider=type(source).__name__,
+                    provider=provider_id(source),
                 )
             else:
                 rows_by_market[market] = context.price_repository.save_benchmark_prices(

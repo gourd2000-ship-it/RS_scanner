@@ -73,6 +73,8 @@ def record_provider_request(
     elapsed = max(0.0, float(elapsed_seconds))
     increment_metric("crawl_provider_latency_seconds", elapsed)
     increment_metric(f"crawl_provider_latency_seconds.{key}", elapsed)
+    if "kiwoom" in key:
+        increment_metric("kiwoom_latency_seconds", elapsed)
 
 
 def record_batch_duration(elapsed_seconds: float) -> None:

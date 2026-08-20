@@ -1,6 +1,7 @@
 import logging
 import re
 from collections import defaultdict
+from time import perf_counter
 from datetime import date
 from decimal import Decimal
 from hashlib import sha256
@@ -8,6 +9,9 @@ from hashlib import sha256
 from sqlalchemy import select
 
 from app.core.config import get_settings
+from app.core.exceptions import ProviderConflictError
+from app.core.metrics import increment_metric, record_provider_request
+from app.crawler.sources.base import provider_id
 from app.models.symbol import Symbol
 from app.repositories.data_quality_repository import DataQualityRepository
 from app.services.batch.context import BatchContext
@@ -23,6 +27,20 @@ def _latest_date(prices) -> date | None:
     if not prices:
         return None
     return max(row.trade_date for row in prices)
+
+
+def _provider_conflict_dates(existing, incoming) -> list[date]:
+    """Return overlapping dates whose OHLCV differs between providers."""
+    existing_by_date = {row.trade_date: row for row in existing}
+    conflicts: list[date] = []
+    for row in incoming:
+        previous = existing_by_date.get(row.trade_date)
+        if previous is None:
+            continue
+        fields = ("open", "high", "low", "close", "volume")
+        if any(getattr(previous, field) != getattr(row, field) for field in fields):
+            conflicts.append(row.trade_date)
+    return conflicts
 
 
 def _source_url(source, code: str) -> str | None:
@@ -62,6 +80,7 @@ def _record_refetch_result(
     latest_date_before: date | None = None,
     latest_date_after: date | None = None,
     error: Exception | None = None,
+    retry_count: int = 0,
 ) -> None:
     repository = getattr(context, "crawl_target_result_repository", None)
     job_id = getattr(context, "job_id", None)
@@ -74,7 +93,7 @@ def _record_refetch_result(
         "target_type": "corporate_action",
         "target_key": code,
         "status": status,
-        "provider": type(source).__name__,
+        "provider": provider_id(source),
         "rows_received": rows_received,
         "rows_persisted": rows_persisted,
         "latest_date_before": latest_date_before,
@@ -85,7 +104,7 @@ def _record_refetch_result(
         "response_bytes": getattr(error, "response_bytes", None) if error else None,
         "error_class": type(error).__name__ if error else None,
         "error_message": _safe_refetch_message(error) if error else None,
-        "retry_count": getattr(error, "retry_count", 0) if error else 0,
+        "retry_count": getattr(error, "retry_count", retry_count) if error else retry_count,
     }
     try:
         if context.session is not None:
@@ -147,20 +166,44 @@ def _refetch_adjusted_prices(
         return 0
 
     refetched = 0
+    source_provider = provider_id(source)
+    is_kiwoom = "kiwoom" in source_provider.lower()
+    if is_kiwoom:
+        increment_metric("kiwoom_fallback_targets", len(codes))
     for code in codes:
         existing_prices = context.price_repository.get_symbol_prices(code)
         latest_before = _latest_date(existing_prices)
+        fetch_started = perf_counter()
+        provider_fetch_recorded = False
         try:
             prices = source.fetch_daily_prices(code, since_date=None)
+            if is_kiwoom:
+                record_provider_request(
+                    source_provider,
+                    elapsed_seconds=perf_counter() - fetch_started,
+                    success=True,
+                    retry_count=int(getattr(prices, "retry_count", 0) or 0),
+                )
+                provider_fetch_recorded = True
             if prices:
                 invalid_rows = int(getattr(prices, "invalid_rows", 0) or 0)
                 validate_prices(prices)
+                conflict_dates = (
+                    _provider_conflict_dates(existing_prices, prices)
+                    if getattr(source, "reject_provider_conflicts", False)
+                    else []
+                )
+                if conflict_dates:
+                    sample = ", ".join(item.isoformat() for item in conflict_dates[:5])
+                    raise ProviderConflictError(
+                        f"fallback provider conflicts with persisted prices on {sample}"
+                    )
                 if context.session is not None:
                     context.price_repository.save_symbol_prices(
                         code,
                         prices,
                         crawl_job_id=context.job_id,
-                        provider=type(source).__name__,
+                        provider=provider_id(source),
                     )
                 else:
                     context.price_repository.save_symbol_prices(code, prices)
@@ -174,8 +217,11 @@ def _refetch_adjusted_prices(
                     rows_persisted=len(prices),
                     latest_date_before=latest_before,
                     latest_date_after=latest_after,
+                    retry_count=int(getattr(prices, "retry_count", 0) or 0),
                 )
                 refetched += 1
+                if is_kiwoom:
+                    increment_metric("kiwoom_recovered_targets")
             else:
                 _record_refetch_result(
                     context,
@@ -187,6 +233,15 @@ def _refetch_adjusted_prices(
                 )
         except Exception as exc:  # noqa: BLE001
             logger.warning("수정주가 재수집 실패 %s: %s", code, exc)
+            if is_kiwoom and not provider_fetch_recorded:
+                record_provider_request(
+                    source_provider,
+                    elapsed_seconds=perf_counter() - fetch_started,
+                    success=False,
+                    retry_count=getattr(exc, "retry_count", 0),
+                )
+            if isinstance(exc, ProviderConflictError):
+                increment_metric("kiwoom_conflicts")
             _record_refetch_result(
                 context,
                 code=code,

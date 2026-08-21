@@ -59,3 +59,28 @@ def test_reconciliation_run_upgrade_preserves_precreated_table(monkeypatch):
 
     assert create_table.call_count == 0
     inspector.has_table.assert_called_once_with("universe_reconciliation_runs")
+
+
+def test_canary_decision_upgrade_preserves_precreated_table(monkeypatch):
+    """A development ``create_all`` must not block the audit-log migration."""
+    migration_path = (
+        Path(__file__).parents[2]
+        / "alembic/versions/g3a4b5c6d7e8_add_universe_canary_decisions.py"
+    )
+    spec = importlib.util.spec_from_file_location("canary_decisions_migration", migration_path)
+    assert spec is not None and spec.loader is not None
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    inspector = Mock()
+    inspector.has_table.return_value = True
+
+    monkeypatch.setattr(migration.op, "get_bind", Mock(return_value=object()), raising=False)
+    monkeypatch.setattr(migration.sa, "inspect", Mock(return_value=inspector))
+    create_table = Mock()
+    monkeypatch.setattr(migration.op, "create_table", create_table)
+    monkeypatch.setattr(migration.op, "create_index", Mock())
+
+    migration.upgrade()
+
+    assert create_table.call_count == 0
+    inspector.has_table.assert_called_once_with("universe_canary_decisions")

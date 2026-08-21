@@ -18,6 +18,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # In local development, application startup can call ``create_all`` before
+    # Alembic runs. The model schema is equivalent, so preserve that table and
+    # advance the revision rather than failing on DuplicateTable.
+    if sa.inspect(op.get_bind()).has_table("universe_canary_decisions"):
+        return
     op.create_table(
         "universe_canary_decisions",
         sa.Column("id", sa.Integer(), nullable=False),

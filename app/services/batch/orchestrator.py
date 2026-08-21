@@ -1,5 +1,6 @@
 """배치 작업 오케스트레이터 - 단계별 트랜잭션 관리 및 체크포인트 시스템"""
 
+import json
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -416,11 +417,13 @@ class BatchOrchestrator:
         items_processed = 0
         items_failed = 0
         checkpoint_status = "completed"
+        selection_metadata = None
         if isinstance(result, PriceSyncResult):
             items_processed = result.target_count
             items_failed = result.unsuccessful_count
             if items_failed:
                 checkpoint_status = "completed_with_errors"
+            selection_metadata = result.universe_selection_metadata
         elif isinstance(result, ValidationResult):
             items_processed = result.run.expected_symbols
             items_failed = result.run.error_count + result.run.critical_count
@@ -451,6 +454,11 @@ class BatchOrchestrator:
                     status=checkpoint_status,
                     items_processed=items_processed,
                     items_failed=items_failed,
+                    step_metadata=(
+                        json.dumps({"universe_selection": selection_metadata}, sort_keys=True)
+                        if selection_metadata is not None
+                        else None
+                    ),
                 )
 
         # 단계 완료 알림 전송

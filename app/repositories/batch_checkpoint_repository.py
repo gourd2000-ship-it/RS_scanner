@@ -74,10 +74,12 @@ class BatchCheckpointRepository:
         checkpoint.items_processed = items_processed
         checkpoint.items_failed = items_failed
         if step_metadata:
-            checkpoint.step_metadata = step_metadata
+            checkpoint.step_metadata = _merge_step_metadata(
+                checkpoint.step_metadata,
+                step_metadata,
+            )
         self.session.flush()
         return checkpoint
-
     def fail_step(
         self,
         job_id: int,
@@ -189,3 +191,19 @@ class BatchCheckpointRepository:
             return set(metadata.get("chunks_completed", []))
         except json.JSONDecodeError:
             return set()
+
+
+def _merge_step_metadata(
+    existing: str | None,
+    incoming: str,
+) -> str:
+    """Merge JSON metadata so completed steps retain restart evidence."""
+    try:
+        existing_data = json.loads(existing) if existing else {}
+        incoming_data = json.loads(incoming)
+    except json.JSONDecodeError:
+        return incoming
+    if not isinstance(existing_data, dict) or not isinstance(incoming_data, dict):
+        return incoming
+    existing_data.update(incoming_data)
+    return json.dumps(existing_data, sort_keys=True)

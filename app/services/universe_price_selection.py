@@ -16,6 +16,19 @@ class UniversePriceSelection:
     lineage_by_code: dict[str, UniversePriceTarget]
     authority_by_market: dict[str, str]
     fallback_reason_by_market: dict[str, str | None]
+    approved_reconciliation_run_id: int | None
+    approved_krx_snapshot_id: int | None
+    target_count_by_market: dict[str, int]
+
+    def to_audit_metadata(self) -> dict[str, object]:
+        """Return the immutable target-selection decision for batch evidence."""
+        return {
+            "approved_reconciliation_run_id": self.approved_reconciliation_run_id,
+            "approved_krx_snapshot_id": self.approved_krx_snapshot_id,
+            "authority_by_market": dict(self.authority_by_market),
+            "fallback_reason_by_market": dict(self.fallback_reason_by_market),
+            "target_count_by_market": dict(self.target_count_by_market),
+        }
 
 
 def select_price_targets(
@@ -54,6 +67,7 @@ def select_price_targets(
     lineage_by_code: dict[str, UniversePriceTarget] = {}
     authority_by_market: dict[str, str] = {}
     fallback_reason_by_market: dict[str, str | None] = {}
+    target_count_by_market: dict[str, int] = {}
     for market, naver_market_targets in sorted(naver_by_market.items()):
         decision = choose_universe_authority(
             settings,
@@ -97,12 +111,18 @@ def select_price_targets(
             target_codes.update(target.code for target in naver_market_targets)
         authority_by_market[market] = decision_authority
         fallback_reason_by_market[market] = fallback_reason
+        target_count_by_market[market] = sum(
+            target.code in target_codes for target in naver_market_targets
+        )
 
     return UniversePriceSelection(
         target_codes=frozenset(target_codes),
         lineage_by_code=lineage_by_code,
         authority_by_market=authority_by_market,
         fallback_reason_by_market=fallback_reason_by_market,
+        approved_reconciliation_run_id=approved_run.id if approved_run is not None else None,
+        approved_krx_snapshot_id=approved_run.krx_snapshot_id if approved_run is not None else None,
+        target_count_by_market=target_count_by_market,
     )
 
 

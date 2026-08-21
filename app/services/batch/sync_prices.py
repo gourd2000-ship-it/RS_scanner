@@ -57,6 +57,7 @@ class PriceSyncResult(dict[str, Any]):
     def __init__(self) -> None:
         super().__init__()
         self.target_results: dict[str, PriceTargetResult] = {}
+        self.universe_selection_metadata: dict[str, object] | None = None
 
     def add_target(self, target: PriceTargetResult) -> None:
         self.target_results[target.code] = target
@@ -190,6 +191,11 @@ def sync_prices(
         if selection is not None:
             target_codes = set(selection.target_codes)
             target_lineage = selection.lineage_by_code
+            selection_metadata = selection.to_audit_metadata()
+        else:
+            selection_metadata = None
+    else:
+        selection_metadata = None
     all_symbols = _list_price_targets(context)
     if target_codes is not None:
         target_code_set = set(target_codes)
@@ -198,6 +204,7 @@ def sync_prices(
     logger.info("sync_prices: %d eligible symbols to process", total_symbols)
 
     result = PriceSyncResult()
+    result.universe_selection_metadata = selection_metadata
     if not all_symbols:
         logger.warning("no eligible symbols found, skipping price sync")
         record_price_sync_metrics(result)

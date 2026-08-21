@@ -85,6 +85,13 @@ def test_krx_canary_replaces_only_the_enabled_market_with_eligible_targets():
     assert selection.authority_by_market == {"KOSDAQ": "naver_last_completed", "KOSPI": "krx"}
     assert selection.lineage_by_code["005930"].instrument_id == samsung.id
     assert "100001" not in selection.lineage_by_code
+    assert selection.to_audit_metadata() == {
+        "approved_reconciliation_run_id": 1,
+        "approved_krx_snapshot_id": snapshot.id,
+        "authority_by_market": {"KOSDAQ": "naver_last_completed", "KOSPI": "krx"},
+        "fallback_reason_by_market": {"KOSDAQ": "market_not_in_canary", "KOSPI": None},
+        "target_count_by_market": {"KOSDAQ": 1, "KOSPI": 2},
+    }
 
 
 def test_pending_reconciliation_run_forces_naver_fallback_before_canary_approval():

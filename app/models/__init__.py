@@ -36,6 +36,7 @@ from app.models.rs_score import RsScore
 from app.models.symbol_universe_snapshot import SymbolUniverseSnapshot
 from app.models.universe_audit import UniverseAuditDecision, UniverseAuditRun
 from app.models.universe_reconciliation import UniverseReconciliationRun
+from app.models.universe_canary_decision import UniverseCanaryDecision
 from app.models.symbol import Symbol
 
 __all__ = [
@@ -74,4 +75,5 @@ __all__ = [
     "UniverseAuditDecision",
     "UniverseAuditRun",
     "UniverseReconciliationRun",
+    "UniverseCanaryDecision",
 ]

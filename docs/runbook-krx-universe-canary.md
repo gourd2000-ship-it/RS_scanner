@@ -20,7 +20,17 @@
    `python scripts/approve_universe_reconciliation.py --run-id <id> --approved-by <operator>`.
 3. Confirm the batch-generated reconciliation JSON report in `reports/krx_universe/` and retain it.
    The CLI `scripts/report_universe_reconciliation.py` remains available for an on-demand read-only report.
-4. Record the daily decision using the template below. Run for two trading days in one market before expanding.
+4. After reviewing and approving the current reconciliation run, record the daily
+   decision from immutable batch evidence:
+
+   ```bash
+   python scripts/record_universe_canary_decision.py \
+     --job-id <job-id> --market KOSPI --decision continue --approved-by <operator>
+   ```
+
+   The command rejects a KRX decision when the current reconciliation run or the
+   immutable target-selection run is not approved. Run for two trading days in one
+   market before expanding.
 5. After expansion, retain five consecutive trading-day reports before an authority cutover decision.
 
 Until ETF/ETN membership is independently approved, a stock KRX canary replaces only

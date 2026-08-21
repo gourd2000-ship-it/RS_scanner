@@ -97,6 +97,16 @@ def test_record_canary_decision_derives_immutable_evidence_from_price_checkpoint
     assert decision.operator_decision == "continue"
     assert decision.approved_by == "ops-reviewer"
 
+    reconciliation.report = {"mapping_rate": 0.994}
+    with pytest.raises(ValueError, match="매핑률"):
+        record_canary_decision(
+            session,
+            crawl_job_id=job.id,
+            market="KOSPI",
+            operator_decision="continue",
+            approved_by="ops-reviewer",
+        )
+
 
 def test_record_canary_decision_allows_expand_after_two_prior_krx_continues():
     engine = create_engine("sqlite://")

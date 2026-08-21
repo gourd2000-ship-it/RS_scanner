@@ -5,6 +5,7 @@ import json
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.models.batch_checkpoint import BatchCheckpoint
 from app.models.krx_universe import KrxUniverseSnapshot
 from app.models.symbol_universe_snapshot import SymbolUniverseSnapshot
@@ -70,6 +71,7 @@ def record_canary_decision(
     selected_run_id = metadata.get("approved_reconciliation_run_id")
     selected_snapshot_id = metadata.get("approved_krx_snapshot_id")
     selected_run = session.get(UniverseReconciliationRun, selected_run_id) if selected_run_id else None
+    mapping_rate = _mapping_rate(observed_run)
     if authority == "krx":
         if observed_run is None or observed_run.status != "approved":
             raise ValueError("KRX canary decision에는 현재 reconciliation run의 운영자 승인이 필요합니다")
@@ -77,6 +79,11 @@ def record_canary_decision(
             raise ValueError("KRX canary decision에는 승인된 immutable reconciliation run이 필요합니다")
         if selected_run.krx_snapshot_id != selected_snapshot_id:
             raise ValueError("immutable reconciliation snapshot 증거가 일치하지 않습니다")
+        threshold = get_settings().universe_mapping_rate_threshold
+        if mapping_rate is None or mapping_rate < threshold:
+            raise ValueError(
+                f"KRX canary decision에는 현재 매핑률 {threshold:.3f} 이상이 필요합니다"
+            )
     if normalized_decision == "expand":
         prior_continue_count = session.scalar(
             select(func.count())
@@ -90,7 +97,6 @@ def record_canary_decision(
         if prior_continue_count < 2:
             raise ValueError("expand 전에는 같은 시장에서 두 거래일의 continue decision이 필요합니다")
 
-    mapping_rate = _mapping_rate(observed_run)
     existing = session.scalar(
         select(UniverseCanaryDecision).where(
             UniverseCanaryDecision.trade_date == observed_snapshot.as_of_date,

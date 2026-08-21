@@ -29,8 +29,9 @@
    ```
 
    The command rejects a KRX decision when the current reconciliation run or the
-   immutable target-selection run is not approved. Run for two trading days in one
-   market before expanding.
+   immutable target-selection run is not approved, or when the current mapping rate
+   is below `UNIVERSE_MAPPING_RATE_THRESHOLD`. Run for two trading days in one market
+   before expanding.
 5. After expansion, retain five consecutive trading-day reports before an authority cutover decision.
 
 Until ETF/ETN membership is independently approved, a stock KRX canary replaces only

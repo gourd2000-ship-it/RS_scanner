@@ -1,5 +1,12 @@
 # PRD: Sam 주간 크롤링 품질 분석과 Codex 개선 루프
 
+> 2026-09-05 범위 개정: 최우선 개발 요구사항은
+> [백테스트 데이터 구축 PRD](prd-krx-universe-authority.md)다.
+> 본문의 Kiwoom 표본 전용·원시 행 미보관 정책은 Sam 분석 업무에 한정한다.
+> 앱 내부 백테스트 수집은 키움 REST 기간 조회와 관측 보존/upsert를 사용하며,
+> Sam repair queue 도입이나 주간 분석 완료를 선행조건으로 요구하지 않는다.
+> Sam의 DB 쓰기 금지는 유지하며 본 문서의 추가 운영 기능은 후순위다.
+
 - 상태: autobot 구현·배포 검증 완료 / Sam token 주입 및 gourd 측 실행 절차 적용 대기
 - 작성일: 2026-08-15
 - 대상: RS Scanner (autobot), Hermes Sam (gourd), 사용자 실행 Codex

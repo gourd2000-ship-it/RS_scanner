@@ -1,73 +1,46 @@
-# KRX 기준 유니버스 실행 로드맵
+# 백테스트 데이터 구축 로드맵
 
-상태: P0 반영 완료 · P1~P2 구현 및 운영 migration 적용 완료 · P1 첫 daily shadow completed 관측 완료 · P3 Naver 가격 경로의 시장별 canary 연결/runbook 준비 완료, 5거래일 운영 관측 및 승인 대기<br>
-작성일: 2026-08-20<br>
-기준 PRD: [KRX 기준 유니버스와 가격 대상 정합성 복구](prd-krx-universe-authority.md)<br>
-상세 작업 목록: [tasks/todo.md](../tasks/todo.md)<br>
-구현 설계·의존성: [tasks/plan.md](../tasks/plan.md)
+개정일: 2026-09-05 · 최우선 작업: 역사 유니버스 → OHLC → 검증 → RS/데이터셋<br>
+기준: [PRD](prd-krx-universe-authority.md), [계획](../tasks/plan.md), [TODO](../tasks/todo.md)
 
-## 1. 목표
+## 현재 상태
 
-Naver 가격 수집은 유지하되 KRX를 종목 정체성과 상장 상태의 기준 원장으로 삼는다.
-각 가격 배치는 마지막 `completed` 기준 snapshot에서 만들어진 불변 target set을 사용해야
-하며, legacy 코드·거래정지·공급자 미매핑은 성공률과 별도의 사유로 집계한다.
+키움 인증과 삼성전자 일봉 600행 조회는 완료됐다(BT00).
+장기/상폐종목 제공 범위와 전체 적재는 미완료다. 기존 유니버스·검증·관측·API 기반을
+재사용하며 아래 단계에 필요한 부분만 확장한다.
 
-## 2. 실행 순서
+## 실행 순서
 
-```text
-P0 Naver 복구
-  T01 페이지 완료 보장 ──> T02 식별자 검증 ──> T03 audit dry-run
-                                                └─> T04 승인 반영/재검증
-
-P1 KRX shadow
-  T05 외부 계약 확정 ──> T06 snapshot 저장소 ──> T07 KRX source
-                                                └─> T08 daily shadow 실행 ──> T09 차이 관측
-
-P2 canonical/eligibility
-  T10 identity schema ──> T11 reconciliation ──> T12 immutable target builder ──> T13 운영 API
-
-P3 canary
-  T14 feature flag/canary ──> T15 5거래일 운영 검증 및 전환 결정
-```
-
-T05는 KRX 인증키·서비스 승인·사용 조건이라는 외부 선행조건이므로, 실제 source 호출과
-batch 연결(T07~T08)은 승인된 서비스의 무비밀 fixture를 확보한 뒤 진행한다. T06의 additive
-저장소는 기존 Naver target 경로와 분리되어 있어 먼저 구현할 수 있다.
-
-## 3. Phase별 결과와 게이트
-
-| Phase | 작업 | 산출물 | 다음 단계 게이트 |
+| 단계 | 작업 | 결과 | 다음 단계 기준 |
 |---|---|---|---|
-| P0 | T01~T04 | completed snapshot·승인 반영 완료 · 다음 가격 배치 재검증 대기 | active 형식 오류 0, target/result 수 일치 |
-| P1 | T05~T09 | KRX snapshot, membership, fixture, shadow diff report | completed snapshot 5거래일, 차이 설명·승인 가능 |
-| P2 | T10~T13 | canonical identity, provider mapping, target lineage, 운영 조회 API | legacy 요청 0, target builder shadow 결과 승인 |
-| P3 | T14~T15 | canary 설정, daily dashboard, rollback runbook, 전환 결정 | KRX authority 5거래일 안정·매핑률 99.5% 이상 |
+| 1. 역사 명부 | BT01~BT03 | 공급 범위 표본, 종목 정체성, 상장/상폐 이력 import | CP1: 상폐·코드 재사용·정정 근거 검증 |
+| 2. 기간 수집 | BT04~BT06B | 날짜별 대상, bounded 키움 조회, upsert/resume CLI | CP2a/CP2b: 현재 active에 의존하지 않는 대상과 재개 검증 |
+| 3. 품질 | BT07~BT08 | 결측·이상치 마킹 및 coverage | CP3: 가격 0행 종목/정지/기업행위를 분리해 검증 |
+| 4. 재현성 | BT09~BT11 | 불변 버전, 역사 RS, 기간 API | CP4: canonical 갱신 후 이전 dataset 재현 |
+| 5. 운영 적재 | BT12~BT13 | 실측 실행안 → 사용자 승인 → 적재/replay | CP5: 승인 범위·coverage·버전 재현 보고 |
 
-각 phase 게이트를 통과하기 전에는 다음 phase의 쓰기 경로를 production에서 활성화하지
-않는다. 특히 P1은 shadow write만 허용하고, P2 전까지 기존 가격 target을 변경하지 않는다.
+검증 가능한 표본 흐름을 완성한 뒤 대량으로 확장한다. 최신 KRX authority 전환,
+5거래일 shadow, Sam repair 시스템 확대는 위 단계의 선행조건이 아니다.
+체크포인트는 코드/데이터 검증 기준이다. 단계마다 반복적인 사용자 승인을 요구하지 않는다.
+대량 적재는 사용자가 요청한 “시간 예상 후 승인” 경계를 BT12에서 지킨다.
 
-## 4. 핵심 운영 지표
+## 계획 크기와 시간 추정
 
-| 지표 | P0 기준 | P3 목표 | 경보/조치 |
-|---|---:|---:|---|
-| active 형식 오류 코드 | 171 | 0 | 즉시 target 제외 후보 보고 |
-| latest snapshot 밖 active | 265 | 0 (승인 예외 제외) | reconcile 차단 및 검토 |
-| KRX snapshot completed 비율 | 미측정 | 최근 5거래일 100% | last completed fallback |
-| KRX↔Naver price 매핑률 | 미측정 | 99.5% 이상 | mapping 급감 alert |
-| 원인 불명 Naver 빈 응답 | 171 legacy 포함 | 기준선 대비 80% 이상 감소 | legacy/policy 재분석 |
-| price eligible coverage | 91.581% | 95% 이상 관측 | reason별 quality case 생성 |
+BT01~BT12는 대부분 3~5개 파일 단위의 작업이다. BT06A는 저장 스키마,
+BT06B는 upsert/재개 연결로 분리한다. 공급 범위가 확인되기 전에는 달력 기준 완료일을 확정하지 않는다.
 
-## 5. 롤백 원칙
+수집 시간 추정은 종목별 필요 페이지 합계 × 실측 요청 지연/속도 제한에
+재시도·DB 저장·품질 검증·역사 RS 계산 시간을 더해 범위로 보고한다.
+관측 버전과 인덱스 증가도 저장량에 포함한다. 이전의 “2~5시간”은 네이버 기반의
+거친 추정이므로 키움 전체 적재 실행안에 그대로 적용하지 않는다.
 
-- 롤백 대상은 feature flag와 target-builder 선택뿐이다.
-- KRX snapshot, mapping, audit 기록과 기존 가격/RS 이력은 삭제하지 않는다.
-- KRX snapshot이 partial/failed이거나 mapping rate가 급감하면
-  `naver_last_completed` target set으로 돌아간다.
-- 자동 비활성화와 KRX canary 선택은 `completed` KRX snapshot과 승인된 reconciliation run이 있을 때만 허용한다.
+## 후순위
 
-## 6. 구현 전 결정 필요 사항
+- BT14: 같은 이력 수집기를 이용한 최신 상장/상폐/시장 이전 증분 갱신. 기존 안전한
+  last-completed 운영을 유지하며, 전체 최신 유니버스 전환은 필요할 때 별도 수행한다.
+- ETF/ETN 확대, 운영 대시보드, 5거래일 authority canary, Sam 분석/repair 확대, RS 산식 변경.
+- 심볼 오류가 역사 식별을 막는 경우만 BT02에서 필요한 범위로 처리한다.
 
-1. KRX Open API의 정확한 서비스 ID, 인증키 발급, 호출 한도, 재배포 조건을 운영 계정으로 확인한다.
-2. ETF/ETN을 기본 price target에 계속 포함할지, 별도 feature flag로 분리할지 결정한다.
-3. 거래정지·신규상장·상장폐지 진행 종목을 `expected_no_trade`로 처리하는 정책을 승인한다.
-4. KRX 기준일이 Naver 가격 기준일보다 늦게 도착할 때의 허용 지연과 fallback 기간을 결정한다.
+기존 T01~T15/HB01~HB08/R01~R03 기록은
+[개정 전 TODO](../tasks/todo.legacy-20260905.md)에 보존했다.
+[개정 전 로드맵](roadmap_krx_universe.legacy-20260905.md)은 작업 이력이며 현재 실행 순서가 아니다.

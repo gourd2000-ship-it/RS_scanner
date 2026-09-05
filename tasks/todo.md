@@ -1,377 +1,305 @@
-# KRX 기준 유니버스 작업 목록
+# 백테스트 데이터 구축 TODO
 
-기준 PRD: [docs/prd-krx-universe-authority.md](../docs/prd-krx-universe-authority.md)
-상위 계획: [tasks/plan.md](plan.md)
-검증 기본 명령: `TELEGRAM_ENABLED=false NOTIFICATION_ENABLED=false .venv/bin/pytest -q` 및 `git diff --check`
+개정일: 2026-09-05<br>
+기준: [PRD](../docs/prd-krx-universe-authority.md), [로드맵](../docs/roadmap_krx_universe.md), [계획](plan.md)<br>
+현재 최우선: BT01. BT00 외 항목은 이 개정으로 구현 완료 처리하지 않는다.
 
-## P0 — 안전한 Naver 유니버스 복구
+## 완료 기반
 
-## Task T01: Naver 페이지 완료 조건과 상한 경보
+- [x] BT00: 키움 REST 키 주입, API 기동, 인증 및 삼성전자 일봉 1페이지 조회 확인.
+  2026-09-05 HTTP 200 / 600행 / 2024-03-19~2026-09-04 / continuation=true.
+  장기/상폐 이력 및 upsert는 이 완료 범위에 포함하지 않는다.
 
-**상태:** 구현 완료 · 운영 snapshot 검증 대기
+기존 가격 upsert·관측·품질 case·v2 API 골격을 재사용한다.
+종전 T/HB/R 상태와 운영 증거는 [보관 TODO](todo.legacy-20260905.md)에 보존했다.
+신규로 표시된 파일/테스트는 구현 예정이며 아직 실행된 검증 결과가 아니다.
+공통 검증은 해당 테스트에 `.venv/bin/pytest -q`를 사용하고,
+`git diff --check`를 수행한다. DB 테스트는 격리된 테스트 PostgreSQL을 사용한다.
 
-**설명:** KOSPI/KOSDAQ universe가 고정 40페이지에서 항상 partial이 되는 문제를 제거한다.
-빈/반복 페이지는 정상 완료로 처리하고, 별도 설정 hard cap 도달은 명시적인 partial과 경보로 남긴다.
+## BT01: 역사 공급 범위 표본 검증
 
-**Acceptance criteria:**
-- [ ] 페이지 종료·반복·요청 오류·hard cap의 snapshot 상태가 구분된다.
-- [ ] 현재 시장 규모에서 completed snapshot을 생성할 수 있다.
-- [ ] hard cap은 환경 설정으로 조정 가능하며 도달 사실이 metric/log에 남는다.
+- [ ] 공급자별 source matrix와 익명화 fixture·표본 실측
 
-**Verification:**
-- [ ] `pytest -q tests/unit/test_naver_universe_source.py tests/unit/test_universe_snapshot.py`
-- [ ] fixture 기반으로 completed/partial 페이지 경로를 확인한다.
+키움 연동 완료 상태에서 상폐·장기 이력의 실제 제공 범위와 KRX/KIND 역사 명부 입수 경로를 확인한다.
 
-**Dependencies:** 없음
-**Files likely touched:** `app/core/config.py`, `app/crawler/sources/naver.py`, `tests/unit/test_naver_universe_source.py`, `tests/unit/test_universe_snapshot.py`
-**Estimated scope:** M
+**완료 기준**
 
-## Task T02: 공급자 식별자 계약과 parser 회귀 방어
+- [ ] 현재 상장·상폐·시장 이전·기업행위·2013년 이전 사례를 포함한 5~10개 표본에 응답 범위/미지원 사유와 출처를 기록한다.
+- [ ] 연속조회 2페이지 이상, 중복 경계, 고정 base_dt와 수정주가 기준을 검증한다.
+- [ ] 명부 완전성·자료 이용/보관 조건·대체 공급자 필요 여부를 보고한다. 전체 기간 수집 가능성을 추정으로 완료 처리하지 않는다.
 
-**상태:** 구현 완료
+**검증:** 기존 tests/unit/test_kiwoom_client.py, test_kiwoom_source.py + 신규 tests/unit/test_historical_source_contract.py; 소량 read-only 표본 리포트 확인.
 
-**설명:** Naver code를 숫자로 축소하지 않고 정확한 영숫자 문자열로 유지한다. 4/5자리 legacy
-코드는 새 ingest에서 받아들이지 않고 관측 가능한 invalid 후보로 분류한다.
+**의존성:** BT00 · **크기:** M
 
-**Acceptance criteria:**
-- [ ] `0005A0`, `00088K`, 선행 0이 있는 식별자가 변형 없이 저장된다.
-- [ ] 길이/형식 오류는 snapshot을 silent success로 만들지 않는다.
-- [ ] ETF endpoint 실패가 기존 확정 유형을 `stock`으로 덮어쓰지 않는다.
+**예상 파일:** `docs/backtest_source_contract.md (신규)`, `scripts/probe_historical_sources.py (신규)`, `tests/unit/test_historical_source_contract.py (신규)`.
 
-**Verification:**
-- [ ] `pytest -q tests/unit/test_parsers.py tests/unit/test_naver_universe_source.py tests/unit/test_universe_snapshot.py`
-- [ ] parser fixture에 영숫자·잘린 legacy·중복 code 사례가 있다.
+## BT02: 역사 종목 정체성과 코드 구간
 
-**Dependencies:** 없음
-**Files likely touched:** `app/crawler/parsers/symbols.py`, `app/services/batch/sync_symbols.py`, `tests/unit/test_parsers.py`, `tests/unit/test_universe_snapshot.py`
-**Estimated scope:** M
+- [ ] 기간별 코드로 과거 종목을 식별하는 경로
 
-## Task T03: Legacy/stale universe audit dry-run CLI
+기존 Instrument/ProviderSymbol을 재사용하여 코드 재사용과 재상장을 표현할 최소 식별자 변경을 구현한다.
 
-**상태:** 구현 및 completed snapshot 기준 운영 DB dry-run 완료 · 운영자 승인 대기
+**완료 기준**
 
-**설명:** DB를 변경하지 않고 invalid legacy, prefix collision, stale active, latest snapshot 누락
-후보를 JSON/CSV report로 생성한다. job 65 기준선과 후보 수를 재현 가능하게 만든다.
+- [ ] 동일 코드의 서로 다른 종목/상장 구간이 자동 병합되지 않으며 이름만으로 연결하지 않는다.
+- [ ] krx_short_code 전역 unique와 symbol 기반 FK의 변경/보존 경로를 migration에서 검증한다.
+- [ ] 선행 0·영숫자를 보존하고 중복/겹치는 provider code 유효기간을 거절하거나 ambiguous로 기록한다.
 
-**Acceptance criteria:**
-- [ ] CLI는 write 없이 후보별 원래 code, 후보 code, 증거, reason code를 출력한다.
-- [ ] 6자리 계약 위반과 last completed snapshot 누락을 서로 다른 reason으로 집계한다.
-- [ ] 출력에는 기준 snapshot/job ID와 생성 시각이 포함된다.
+**검증:** 신규 tests/unit/test_historical_identity.py 및 기존 canonical migration/materialization 테스트; 복원 테스트 DB에서 migration과 기존 가격 FK 보존 검사.
 
-**Verification:**
-- [ ] `pytest -q tests/unit/test_universe_audit.py`
-- [ ] staging 복원 DB에서 CLI를 실행해 후보 수와 report schema를 확인한다.
+**의존성:** BT01 · **크기:** M
 
-**Dependencies:** T01, T02
-**Files likely touched:** `app/services/universe_audit.py`, `scripts/audit_universe.py`, `tests/unit/test_universe_audit.py`
-**Estimated scope:** S
+**예상 파일:** `app/models/instrument.py`, `app/services/canonical_universe.py`, `alembic/versions/<revision>_historical_identity.py (신규)`, `tests/unit/test_historical_identity.py (신규)`.
 
-**운영 증거 (2026-08-20):** completed Naver snapshot 14(4,299건)를 기준으로 읽기 전용
-report를 생성했다. 후보는 206건이며 `invalid_legacy` 171건, `prefix_collision` 38건,
-`missing_from_latest_snapshot`·`stale_active` 각 206건이다. 단일 대체 code가 확인된
-legacy 후보는 38건이다. report는 `reports/universe_audit/universe_audit_20260820_024945.*`에
-저장했으며, 이 단계에서는 DB를 변경하지 않았다.
+## BT03: 상장·상폐 이벤트 import
 
-## Task T04: 승인 기반 legacy correction/deactivation과 P0 재검증
+- [ ] 출처와 정정 이력을 가진 역사 명부
 
-**상태:** 구현·운영자 승인·반영 완료 · 다음 가격 배치 target/result 재검증 대기
+BT01에서 검증한 한 가지 파일/API 경로부터 원문 근거가 있는 역사 이벤트를 저장한다. 추가 공급자 connector는 같은 계약을 재사용한다.
 
-**설명:** T03 report의 승인된 항목만 별도 audit record와 함께 비활성화 또는 mapping 후보로
-표시한다. 가격·RS 이력은 삭제하지 않고 target-only 재실행 후 품질 report를 비교한다.
+**완료 기준**
 
-**Acceptance criteria:**
-- [ ] 적용 명령은 승인 run ID 없이는 write하지 않는다.
-- [ ] legacy 행의 원래 값, 결정, reason, 적용 시각이 영속화된다.
-- [ ] active 형식 오류와 legacy Naver 가격 요청이 0건이며 P0 전후 quality report가 비교된다.
+- [ ] 상장·상폐·시장 이전·정지/재개·코드변경에 effective 시점, published_at(없으면 unknown), observed_at, 출처/hash를 저장한다.
+- [ ] 같은 자료 재입력은 중복을 만들지 않고 정정/충돌은 이전 버전을 보존한다.
+- [ ] 현재 명부 누락이나 첫/마지막 가격을 확정 상폐/상장 근거로 쓰지 않는다.
 
-**Verification:**
-- [ ] `pytest -q tests/unit/test_universe_audit.py tests/unit/test_universe_snapshot.py tests/unit/test_price_sync_results.py`
-- [ ] staging DB에서 dry-run → approved apply → target-only replay를 수행한다.
+**검증:** 신규 tests/unit/test_listing_history.py 및 tests/integration/test_listing_history.py; 상폐 효력일/마지막 거래일이 다른 fixture replay.
 
-**Dependencies:** T03
-**Files likely touched:** `alembic/versions/<revision>_add_universe_audit_runs.py`, `app/models/universe_audit.py`, `app/repositories/universe_audit_repository.py`, `scripts/apply_universe_audit.py`, `tests/unit/test_universe_audit.py`
-**Estimated scope:** M
+**의존성:** BT02 · **크기:** M
 
-**운영 증거 (2026-08-20):** audit run 1에서 snapshot 14 기준 206개 decision을 사용자 승인으로
-적용했다. 적용 뒤 active universe는 4,299개, active 형식 오류는 0개, snapshot 14 밖 active는
-0개다. 비활성화된 종목의 `daily_prices` 25,949행과 `rs_scores` 744행은 보존됐다. post-apply
-dry-run report는 0개 후보를 반환했다.
+**예상 파일:** `app/models/listing_event.py (신규)`, `alembic/versions/<revision>_listing_events.py (신규)`, `scripts/import_listing_history.py (신규)`, `tests/unit/test_listing_history.py (신규)`, `tests/integration/test_listing_history.py (신규)`.
 
-## Checkpoint P0
+### CP1: 역사 명부
 
-- [x] T01~T04 focused tests와 `git diff --check`가 통과한다.
-- [x] 최신 Naver snapshot은 `completed`이고 active 형식 오류는 0이다.
-- [ ] price target count = prices 단계 `crawl_target_results` count를 확인한다.
-- [x] 운영자가 P0 후보 적용을 승인하고 audit trail로 반영했다.
+- [ ] 상폐 표본·코드 재사용·원문 정정 및 미확인 coverage가 설명된다.
 
-**다음 가격 배치 검증 명령:** `TELEGRAM_ENABLED=false NOTIFICATION_ENABLED=false .venv/bin/python scripts/verify_price_target_results.py`
-(`target_count_matches_results: true`가 P0 마지막 count gate의 통과 조건이다.)
+## BT04: 시점 유니버스와 기대 거래일
 
-## P1 — KRX master shadow ingestion
+- [ ] 날짜별 membership와 가격 수집 대상 manifest
 
-## Task T05: KRX 외부 계약, secret, fixture 승인
+상장 구간을 거래 캘린더와 결합해 가격 유무와 무관한 날짜별 기대 대상과 수집 manifest를 생성한다.
 
-**상태:** KOSPI/KOSDAQ membership API 선정 · 운영 호출/독립 대조 및 ETF/ETN 검증 대기
+**완료 기준**
 
-**설명:** 구현 전에 KRX 서비스 ID, 인증·호출 제한·라이선스·응답 필드를 확정하고 비밀값을
-secret store에 등록한다. 실제 response를 민감정보 없이 fixture로 고정한다.
+- [ ] 상장/상폐/시장 이전 경계일, 정리매매, 정지 후 재개를 [from,to) 규칙으로 재현한다.
+- [ ] 현재 is_active와 미래 상폐 사실로 과거 후보를 제외하지 않으며 당시 시장으로 필터링한다.
+- [ ] observed/inferred/unknown, 유형 제외, 명부 완전성, 기대 거래일 분모를 출력한다. unknown을 제외한 집합을 전체라고 표시하지 않는다.
 
-**Acceptance criteria:**
-- [ ] KOSPI/KOSDAQ 주식·ETF·ETN의 source contract와 기준일 필드가 문서화된다.
-- [ ] 인증키는 repository와 report에 노출되지 않는다.
-- [ ] 정상/빈/오류/기준일 불일치 fixture가 승인된다.
+**검증:** 신규 tests/unit/test_historical_universe.py; 가격 없는 상폐 종목도 manifest에 나타나는 fixture 확인.
 
-**Verification:**
-- [ ] 운영 계정으로 허용된 sample request를 실행하고 status/field contract를 기록한다.
-- [ ] secret scanner와 fixture review에서 credential이 검출되지 않는다.
+**의존성:** BT03 · **크기:** M
 
-**Dependencies:** 없음 (외부 승인 필요)
-**Files likely touched:** `docs/krx-universe-source-contract.md`, `tests/fixtures/krx/`, `.env.example`
-**Estimated scope:** S
-**Blocker:** `stk_bydd_trd`/`ksq_bydd_trd`의 서비스 활용 승인, 운영 응답 fixture, KRX 화면과의 count/code 대조
+**예상 파일:** `app/services/historical_universe.py (신규)`, `app/repositories/listing_history_repository.py (신규)`, `tests/unit/test_historical_universe.py (신규)`.
 
-**기준 결정 (2026-08-20):** KRX 공식 설명이 “상장되어 있는 주권”의 매매정보라고 명시한
-`stk_bydd_trd`와 `ksq_bydd_trd`를 주식 membership 기준으로 사용한다. `stk_isu_base_info`,
-`ksq_isu_base_info`는 ISIN/상장일/명칭 보강용이다. membership 변경은 최근 마감 거래일 호출과
-KRX 전종목 시세·KIND 상장종목현황의 count/code 대조 후에만 활성화한다. ETF/ETN은 동일 대조를
-통과하기 전까지 shadow 관측으로 유지한다. Open API의 비상업적 이용조건도 운영 전 확인한다.
-KOSPI/KOSDAQ 일별매매 응답 fixture도 확보했다. 코스닥 membership API ID는 `ksq_bydd_trd`다.
+## BT05: 기간 제한 키움 페이지 수집
 
-## Task T06: KRX snapshot과 membership 저장 기반
+- [ ] 전체 이력을 메모리에 누적하지 않는 기간 수집기
 
-**상태:** 구현 완료 · migration 적용 및 schema/revision 정합성 확인 완료
+기존 KiwoomRestClient 위에 요청 기간과 준비 기간을 처리하는 bounded iterator를 추가한다.
 
-**설명:** KRX 기준일 master를 재현 가능한 snapshot과 membership으로 저장하는 additive schema,
-ORM, repository를 만든다. 아직 기존 `symbols`나 price target은 변경하지 않는다.
+**완료 기준**
 
-**Acceptance criteria:**
-- [x] snapshot에는 provider, as-of date, 상태, 시장/유형별 count/hash, 오류가 저장된다.
-- [x] membership은 snapshot별 instrument 식별과 listing/trading 상태를 재현한다.
-- [x] completed snapshot만 current 후보로 조회되고 partial/failed는 승격되지 않는다.
+- [ ] start/end와 RS 준비 기간을 구분하고 기준일·조정정책·거래소를 고정한다.
+- [ ] 페이지 단위 메모리, 속도/총 요청 예산, 기간 도달 종료, 반복/빈 페이지·429·타임아웃을 처리한다.
+- [ ] 상폐/미지원 응답을 명시적으로 반환하고 파서 탈락 행의 수/사유를 보존한다.
 
-**Verification:**
-- [x] `pytest -q tests/unit/test_krx_universe_snapshot.py`
-- [x] 기존 DB backup 이후 KRX schema/revision 정합성을 확인한다. (기존 테이블·index·constraint를 검증하고 Alembic revision `c9d0e1f2a3b4`로 stamp)
+**검증:** 기존 kiwoom 테스트 + 신규 tests/unit/test_kiwoom_history.py; 가짜 다중 페이지 응답에서 호출 상한·반복 종료·메모리 크기 검사.
 
-**Dependencies:** T05
-**Files likely touched:** `alembic/versions/<revision>_add_krx_universe_snapshots.py`, `app/models/krx_universe_snapshot.py`, `app/models/krx_universe_membership.py`, `app/repositories/krx_universe_repository.py`, `tests/unit/test_krx_universe_snapshot.py`
-**Estimated scope:** M
+**의존성:** BT01, BT04 · **크기:** M
 
-**구현 결과 (2026-08-20):** `krx_universe_snapshots`와 `krx_universe_memberships`는 기존
-`symbols`, `daily_prices`, `rs_scores`를 수정하지 않는 additive schema다. migration revision은
-`c9d0e1f2a3b4`이며, source 수집·batch 연결은 T07/T08에서 수행한다.
+**예상 파일:** `app/crawler/sources/kiwoom_history.py (신규)`, `app/crawler/kiwoom_client.py`, `app/crawler/parsers/kiwoom.py`, `tests/unit/test_kiwoom_history.py (신규)`.
 
-## Task T07: KRX universe source와 parser
+## BT06A: 수집 실행·checkpoint 저장
 
-**상태:** parser/source 구현 완료 · 운영 endpoint 및 서비스 승인 연결 확인 완료
+- [ ] 재개에 필요한 실행 manifest와 저장 상태
 
-**설명:** 승인된 KRX contract와 fixture를 사용해 시장·상품유형별 목록을 요청하고 typed result로
-반환한다. 오류·빈 응답·기준일 불일치는 completed 결과가 될 수 없다.
+수집 manifest와 확정 chunk 진행 상태를 저장할 최소 스키마를 추가한다.
 
-**Acceptance criteria:**
-- [x] KOSPI/KOSDAQ stock fetch 결과가 market/type/as-of metadata를 보존한다. (ETF/ETN은 shadow 확장 대기)
-- [x] code/name/listing status의 필수값 검증이 있다. (ISIN은 T06 저장 시 기본정보와 보강)
-- [x] transport/응답 schema 오류는 `complete=False` 결과로 분리된다.
+**완료 기준**
 
-**Verification:**
-- [x] `pytest -q tests/unit/test_krx_universe_source.py tests/unit/test_krx_universe_parser.py`
-- [x] T05 fixture를 replay한다.
-- [x] `KRX_API_BASE_URL`과 `stk_bydd_trd`/`ksq_bydd_trd` 활용 승인을 확인한 실호출이 `complete=True`다. (2020-04-14, 2,329종목)
+- [ ] run_id에 대상 명부/기간/조정 기준/예산을 고정하고 resume 요청의 설정 불일치를 거절한다.
+- [ ] 종목별 확정 구간과 재시도/실패 상태를 보존하며 단순 token 보관에만 의존하지 않는다.
+- [ ] additive migration으로 기존 가격·배치·관측 이력을 보존한다.
 
-**Dependencies:** T05, T06
-**Files likely touched:** `app/crawler/sources/krx.py`, `app/crawler/parsers/krx.py`, `app/crawler/sources/base.py`, `tests/unit/test_krx_universe_source.py`, `tests/unit/test_krx_universe_parser.py`
-**Estimated scope:** M
+**검증:** 신규 tests/unit/test_backfill_state.py; 테스트 DB migration/reload 후 동일 checkpoint 확인.
 
-**구현 결과 (2026-08-20):** source는 `AUTH_KEY` header와 `basDd`만 사용하며 인증키를 URL,
-fixture, 오류 메시지에 남기지 않는다. KOSPI 또는 KOSDAQ 중 하나라도 오류·빈 응답·시장/기준일
-불일치면 `complete=False`다. KRX 개발 명세서의 운영 base URL을 `KRX_API_BASE_URL`로 주입해야
-실호출을 시작한다.
+**의존성:** BT05 · **크기:** M
 
-## Task T08: Daily batch KRX shadow ingestion
+**예상 파일:** `app/models/historical_backfill_run.py (신규)`, `alembic/versions/<revision>_historical_backfill_runs.py (신규)`, `tests/unit/test_backfill_state.py (신규)`.
 
-**상태:** 구현 완료 · 운영 migration 적용 및 첫 daily completed snapshot 관측 완료 · 5거래일 관측 대기
+### CP2a: 기간 수집 기반
 
-**설명:** Naver 가격/target 경로를 바꾸지 않은 채, daily batch에 KRX snapshot 생성과 complete
-validation을 연결한다. 실패는 batch 관측으로 남기되 기존 active 상태는 건드리지 않는다.
+- [ ] 시점 대상·페이지/요청 제한·manifest/checkpoint가 테스트로 검증된다.
 
-**Acceptance criteria:**
-- [x] KRX shadow 단계는 crawl job과 연결된 snapshot을 남긴다.
-- [x] partial/failed KRX fetch는 기존 Naver active/price target을 변경하지 않는다.
-- [x] shadow 단계 실패가 price 단계 실행 여부를 바꾸지 않는 정책이 테스트된다.
+## BT06B: 관측 보존 upsert와 재개 CLI
 
-**Verification:**
-- [x] `pytest -q tests/integration/test_batch_harness.py tests/unit/test_krx_universe_snapshot.py tests/unit/test_krx_universe_sync.py`
-- [x] fake KRX source로 completed/partial 배치 경로를 재생한다.
+- [ ] dry-run과 실제 적재를 구분하는 재개 가능한 작업
 
-**Dependencies:** T06, T07
-**Files likely touched:** `app/services/batch/sync_krx_universe.py`, `app/services/batch/context.py`, `app/services/batch/orchestrator.py`, `tests/integration/test_batch_harness.py`, `tests/unit/test_krx_universe_sync.py`
-**Estimated scope:** M
+BT05의 페이지를 기존 PriceRepository/observation 구조에 연결하고 chunk 저장과 checkpoint를 구성한다.
 
-## Task T09: KRX/Naver shadow diff report와 metrics
+**완료 기준**
 
-**상태:** 구현 완료 · 첫 운영 reconciliation report 생성 완료 · 5거래일 관측 대기
+- [ ] start/end·종목/시장·dry-run·run_id/resume·요청 예산을 제공하고 insert/update/unchanged/conflict/failed/unsupported를 구분한다.
+- [ ] chunk commit과 checkpoint의 일관성을 지키고 강제 종료/만료 cursor 뒤 재시도해도 canonical 중복이나 완료 구간 누락이 없다.
+- [ ] provider·조정기준·원본 hash·run_id를 보존한다. 충돌은 case 후보로 남기고 갱신 정책을 벗어난 덮어쓰기를 거절한다.
 
-**설명:** 최신 completed KRX snapshot과 Naver snapshot의 시장/유형별 count, exact code match,
-unmatched, ambiguous, legacy candidate를 운영자가 조회할 수 있게 한다.
+**검증:** 신규 tests/integration/test_backfill_resume.py; 격리 PostgreSQL에서 동일 입력 2회 및 commit 경계 강제 중단 후 결과 비교.
 
-**Acceptance criteria:**
-- [x] diff report에는 두 snapshot ID, as-of date, count, reason별 sample이 있다.
-- [x] mapping rate 급감과 KRX snapshot partial은 metric/alert로 노출된다.
-- [x] report 생성은 active, price target, mapping 데이터를 변경하지 않는다.
+**의존성:** BT06A · **크기:** M
 
-**Verification:**
-- [x] `pytest -q tests/unit/test_universe_reconciliation_report.py tests/unit/test_crawl_metrics.py`
-- [x] approved fixture로 exact/ambiguous/unmatched 결과를 확인한다.
+**예상 파일:** `scripts/backfill_historical_prices.py (신규)`, `app/services/historical_backfill.py (신규)`, `app/repositories/price_repository.py`, `tests/integration/test_backfill_resume.py (신규)`.
 
-**Dependencies:** T08
-**Files likely touched:** `app/services/monitoring/universe_reconciliation.py`, `app/services/monitoring/crawl_metrics.py`, `scripts/report_universe_reconciliation.py`, `tests/unit/test_universe_reconciliation_report.py`
-**Estimated scope:** M
+### CP2b: 저장 재개
 
-**운영 증거 (2026-08-20):** job 69에서 KRX snapshot 2가 2026-08-19 기준으로
-`completed`(2,763 주식)됐고 Naver snapshot 17과 exact mapping 2,763건,
-mapping rate 100%를 기록했다. 범위 밖 ETF/ETN 1,534건과 범위 내 Naver-only 2건은
-legacy 후보와 분리해 보고한다. reconciliation run 1은 운영자 검토 전
-`pending_review` 상태다.
+- [ ] 중단·재실행·충돌 fixture에서 가격/관측/진행 상태가 일치한다.
 
-## Checkpoint P1
+## BT07: 기간 결측 검증
 
-- [ ] T05~T09 focused tests와 migration smoke test가 통과한다.
-- [ ] 최근 5거래일 KRX snapshot이 모두 completed다.
-- [ ] 운영자가 market/type count, unmatched, ambiguous diff를 검토·승인했다.
-- [ ] shadow ingestion이 기존 price target을 변경하지 않았음을 확인한다.
+- [ ] 결측을 숨기지 않는 기간 coverage와 case
 
-## P2 — canonical identity와 immutable target
+기대 종목·거래일과 실제 관측을 비교해 가격 행이 전혀 없는 종목까지 validation case를 만든다.
 
-## Task T10: Canonical instrument·provider symbol·exclusion schema
+**완료 기준**
 
-**상태:** 구현 및 운영 DB migration 적용 완료
+- [ ] 휴장/상장 전/상폐 후와 기대 거래일의 결측, 확인된 정지, 요청 실패/미지원, 신규상장 준비 기간 부족을 구분한다.
+- [ ] 가격 없는 종목·날짜/연속 구간에도 reason/evidence/version을 저장한다.
+- [ ] 명부·유니버스·가격·유효가격 coverage를 시장/연도/상폐 여부별 분자·분모와 함께 내고 미확인 명부 분모는 unknown 처리한다.
 
-**설명:** KRX instrument identity, 공급자 심볼, 정책 제외 사유를 additive schema로 도입하고
-기존 `symbols`에 nullable instrument FK만 추가한다.
+**검증:** 신규 tests/unit/test_historical_gaps.py; 행이 0개인 상폐 종목, 휴장, 정지, 신규상장 fixture.
 
-**Acceptance criteria:**
-- [ ] instrument는 KRX code/ISIN와 market/type/listing 상태를 저장한다.
-- [ ] provider symbol은 provider별 유효기간과 mapping 상태를 보존한다.
-- [ ] 기존 `symbols`, `daily_prices`, `rs_scores` 조회와 FK가 깨지지 않는다.
+**의존성:** BT04, BT06B · **크기:** M
 
-**Verification:**
-- [ ] `pytest -q tests/unit/test_instrument_repository.py`
-- [ ] `alembic upgrade head`와 기존 API integration test를 실행한다.
+**예상 파일:** `app/services/validation/historical_gaps.py (신규)`, `app/services/validation/data_quality.py`, `app/services/validation/report.py`, `tests/unit/test_historical_gaps.py (신규)`.
 
-**Dependencies:** T06
-**Files likely touched:** `alembic/versions/<revision>_add_instruments.py`, `app/models/instrument.py`, `app/models/provider_symbol.py`, `app/models/universe_exclusion.py`, `tests/unit/test_instrument_repository.py`
-**Estimated scope:** M
+## BT08: 이상치·기업행위 검증
 
-## Task T11: KRX↔Naver reconciliation과 legacy mapping 후보
+- [ ] 기간별 정책에 근거한 quality flags
 
-**상태:** 구현 및 운영 DB migration 적용 완료
+기존 OHLC 검사를 재사용하고 날짜별 정책 및 기업행위 근거로 수익률 이상과 공급자 충돌을 분류한다.
 
-**설명:** exact code → ISIN → 시장/유형/정규화 name 순으로 후보를 만들되, 이름 단독 매칭은
-자동 반영하지 않는다. 결과는 approval 가능한 reconciliation run으로 저장한다.
+**완료 기준**
 
-**Acceptance criteria:**
-- [ ] exact, matched, unmatched, ambiguous, invalid_legacy 상태가 구분된다.
-- [ ] strict prefix legacy 후보는 evidence와 함께 제안만 하고 자동 적용하지 않는다.
-- [ ] reconciliation은 idempotent하며 동일 snapshot 조합을 재실행해도 결과가 일관된다.
+- [ ] OHLC/거래량 오류와 극단수익률 경고를 구분하며 공급자 부호 표기·분할·병합·배당락 fixture를 포함한다.
+- [ ] 과거 제도 변경/정리매매 예외를 정책 버전으로 다루고 오늘의 가격제한이나 0거래량만으로 자동 제외하지 않는다.
+- [ ] 관측·검증 case·제외/보정 결정을 보존하며 같은 입력/정책 replay의 판정이 동일하다.
 
-**Verification:**
-- [ ] `pytest -q tests/unit/test_universe_reconciliation.py`
-- [ ] code 충돌·이름 중복·ISIN match fixture를 확인한다.
+**검증:** 기존 tests/unit/test_data_quality_validation.py + 신규 tests/unit/test_historical_anomalies.py; 기업행위 정상 급변과 잘못된 가격의 분리 검증.
 
-**Dependencies:** T09, T10
-**Files likely touched:** `app/services/universe_reconciliation.py`, `app/repositories/provider_symbol_repository.py`, `app/repositories/universe_reconciliation_repository.py`, `tests/unit/test_universe_reconciliation.py`
-**Estimated scope:** M
+**의존성:** BT06B · **크기:** M
 
-## Task T12: Immutable price/RS target builder와 lineage
+**예상 파일:** `app/services/validation/rules.py`, `app/services/validation/historical_policy.py (신규)`, `app/services/validation/clean_layer.py`, `tests/unit/test_historical_anomalies.py (신규)`.
 
-**상태:** target builder/lineage 및 Naver 가격 batch 연결 완료 · completed snapshot 쌍의 shadow 관측/승인 대기
+### CP3: 품질
 
-**설명:** 마지막 completed KRX member, matched Naver symbol, listing/eligibility 정책으로 price
-target을 한 번 생성한다. RS target은 stock과 history/freshness 규칙을 추가로 적용한다.
+- [ ] 가격 없는 종목과 정지/기업행위를 구분하고 판정이 replay된다.
 
-**Acceptance criteria:**
-- [ ] partial/failed KRX snapshot은 last completed target set을 유지한다.
-- [ ] `expected_no_trade`, `excluded`, `review_required`는 분모와 이유가 재현된다.
-- [ ] `crawl_target_results`에서 job의 target snapshot, instrument, eligibility를 추적한다.
+## BT09: 불변 데이터셋 버전 저장
 
-**Verification:**
-- [ ] `pytest -q tests/unit/test_universe_target_builder.py tests/unit/test_price_sync_results.py tests/integration/test_batch_harness.py`
-- [ ] 기존 `list_price_targets()`와 shadow 결과의 차이를 report로 확인한다.
+- [ ] 기존 데이터를 다시 읽을 수 있는 불변 manifest
 
-**Dependencies:** T10, T11
-**Files likely touched:** `app/services/universe_target_builder.py`, `app/services/batch/sync_prices.py`, `app/repositories/symbol_repository.py`, `app/models/crawl_target_result.py`, `tests/unit/test_universe_target_builder.py`
-**Estimated scope:** M
+기존 관측/event revision을 고정하는 manifest와 immutable 참조 또는 export를 만든다.
 
-## Task T13: Universe/reconciliation/eligibility 운영 조회
+**완료 기준**
 
-**상태:** 읽기 전용 API 및 운영 DB migration 적용 완료
+- [ ] 가격·membership revision·조정 기준·정책·준비 기간·범위·coverage·watermark·hash를 manifest에 고정한다.
+- [ ] 같은 canonical 행을 update하고 신규 관측을 넣어도 이전 dataset의 가격/유니버스는 변하지 않는다.
+- [ ] 보존기간·만료와 historical_reconstructed/as_known_at 가능 범위를 명시한다. 최대 ID만으로 불변성을 주장하지 않는다.
 
-**설명:** 운영자가 KRX/Naver snapshot, mapping 상태, exclusion reason, job target lineage를
-읽기 전용 API와 일일 report에서 확인할 수 있게 한다.
+**검증:** 신규 tests/integration/test_backtest_snapshot.py; 공개 직후 동일 가격 행 upsert/이벤트 정정 전후 기존 snapshot hash 비교.
 
-**Acceptance criteria:**
-- [ ] API는 pagination과 snapshot/job filter를 제공하며 민감한 source credential을 노출하지 않는다.
-- [ ] report는 eligible과 excluded/expected-no-trade를 분리해 coverage를 계산한다.
-- [ ] 기존 `/api/v1/crawl/universe-snapshots` 응답은 호환성을 유지한다.
+**의존성:** BT07, BT08 · **크기:** M
 
-**Verification:**
-- [ ] `pytest -q tests/integration/api/test_crawl_api.py tests/unit/test_universe_operations_api.py`
-- [ ] authorized/unauthorized 요청과 빈 결과를 확인한다.
+**예상 파일:** `app/models/backtest_dataset.py (신규)`, `alembic/versions/<revision>_backtest_datasets.py (신규)`, `app/services/backtest_snapshot.py (신규)`, `tests/integration/test_backtest_snapshot.py (신규)`.
 
-**Dependencies:** T11, T12
-**Files likely touched:** `app/api/v1/endpoints/crawl.py`, `app/schemas/universe.py`, `app/services/monitoring/crawl_metrics.py`, `tests/unit/test_universe_operations_api.py`, `tests/integration/api/test_crawl_api.py`
-**Estimated scope:** M
+## BT10: 날짜별 역사 RS 재계산
 
-## Checkpoint P2
+- [ ] 날짜별 RS와 재현 가능한 input lineage
 
-- [ ] T10~T13 focused tests, migration smoke test, 기존 API integration tests가 통과한다.
-- [ ] target-builder shadow 차이와 legacy mapping 후보가 운영자에게 승인됐다.
-- [ ] legacy 코드의 Naver 가격 요청이 0건이며 job별 target lineage를 재현할 수 있다.
+고정된 가격과 당시 유니버스를 현 RS 계산기에 연결하고 결과 lineage를 dataset의 최종 manifest에 고정한다.
 
-## P3 — canary와 운영 전환
+**완료 기준**
 
-## Task T14: Authority feature flag, 시장 canary, fallback
+- [ ] D까지의 가격과 D의 적격 집합만 사용하며 미래 가격 추가가 D의 RS를 바꾸지 않는다.
+- [ ] 253개 관측 준비 기간 및 신규상장/결측 부족을 처리하고 RS null 사유·이용 가능 시각을 남긴다.
+- [ ] 산식/quality/universe 버전과 RS run을 고정하며 기존 rs_scores를 무검증 재사용하지 않는다.
 
-**상태:** authority/canary/fallback 정책 및 Naver 가격 batch 연결 완료 · reconciliation 승인 및 5거래일 운영 canary 대기
+**검증:** 기존 tests/unit/test_rs_calculator.py + 신규 tests/unit/test_historical_rs.py; 날짜별 집합과 미래 입력 불변 fixture.
 
-**설명:** KRX authoritative target builder를 market별로 제한 활성화하고, 실패 조건에서
-`naver_last_completed`로 되돌리는 feature flag와 alert를 만든다.
+**의존성:** BT09 · **크기:** M
 
-**Acceptance criteria:**
-- [ ] `UNIVERSE_AUTHORITY`와 canary market 설정은 안전한 기본값을 가진다.
-- [ ] KRX partial/outage/mapping 급감에서 target set 변경과 자동 비활성화가 차단된다.
-- [ ] canary 적용 market과 fallback 사유가 batch/job metadata에 남는다.
+**예상 파일:** `app/services/historical_rs.py (신규)`, `app/services/rs/calculator.py`, `app/services/backtest_snapshot.py (신규)`, `tests/unit/test_historical_rs.py (신규)`.
 
-**Verification:**
-- [ ] `pytest -q tests/unit/test_universe_authority_flag.py tests/integration/test_batch_harness.py`
-- [ ] fake completed/partial/outage source로 KOSPI와 KOSDAQ canary를 재생한다.
+## BT11: 백테스트 API 계약 완성
 
-**Dependencies:** T12, T13
-**Files likely touched:** `app/core/config.py`, `app/services/universe_target_builder.py`, `app/services/batch/orchestrator.py`, `tests/unit/test_universe_authority_flag.py`, `tests/integration/test_batch_harness.py`
-**Estimated scope:** M
+- [ ] 가격·RS·유니버스·품질이 결합된 재현 가능한 기간 API
 
-## Task T15: 5거래일 운영 검증과 전환 결정
+기존 v2 기간 API를 역사 dataset에 연결하고 가격 없는 기대 행 및 보존 버전 재조회를 제공한다.
 
-**상태:** runbook 준비 완료 · 5거래일 운영 관측 및 운영자 승인 대기
+**완료 기준**
 
-**설명:** canary 2거래일 후 전체 대상에 대해 5거래일 동안 snapshot 상태, mapping rate,
-coverage, exclusion reason, rollback 여부를 검토하고 전환 또는 롤백 결정을 기록한다.
+- [ ] 필수 start/end, page_size 기본 1000/최대 5000, cursor, backtest:read를 유지하고 dataset_id로 과거 버전을 다시 조회한다.
+- [ ] 가격 null·RS null 사유·당시 시장/상장/거래 상태·quality·coverage를 노출하며 엄격 모드의 제외와 partial을 설명한다.
+- [ ] cursor를 snapshot/필터에 묶고 페이지별 ETag, 버전 만료 오류, 전 페이지 누락/중복 없음, 기존 365일 API 호환을 검증한다.
 
-**Acceptance criteria:**
-- [ ] 5거래일의 daily 운영 report와 decision log가 보존된다.
-- [ ] KRX completed 100%, price-eligible mapping rate 99.5% 이상, legacy request 0건을 확인한다.
-- [ ] 기준 미달 시 rollback 실행·원인·후속 작업이 기록된다.
+**검증:** tests/unit/test_backtest_api.py 확장 + 신규 tests/integration/test_backtest_replay.py; 2015~2025 예시와 상폐/시장 이전/결측 fixture로 전 페이지 비교.
 
-**Verification:**
-- [ ] 운영 runbook을 staging에서 한 번 연습한다.
-- [ ] `git diff --check` 및 전체 quality gate를 실행한다.
+**의존성:** BT10 · **크기:** M
 
-**Dependencies:** T14
-**Files likely touched:** `docs/runbook-krx-universe-canary.md`, `scripts/report_universe_reconciliation.py`, `reports/krx_universe/`
-**Estimated scope:** S
+**예상 파일:** `app/api/v1/endpoints/backtest.py`, `app/schemas/agent.py`, `tests/unit/test_backtest_api.py`, `tests/integration/test_backtest_replay.py (신규)`, `docs/agent_api.md`.
 
-## Checkpoint Complete
+### CP4: 재현성
 
-- [ ] T14~T15와 전체 quality gate가 통과한다.
-- [ ] PRD 14절 수용 기준을 검토해 모두 충족했음을 decision log에 남긴다.
-- [ ] 운영자가 KRX authority 전체 전환 또는 명시적 rollback을 승인한다.
+- [ ] 같은 canonical 행을 갱신한 뒤에도 이전 dataset의 전 페이지 및 RS가 동일하다.
+
+## BT12: 실측 실행안과 대량 적재 승인
+
+- [ ] 기간·비용·실행 명령이 고정된 승인 대상
+
+표본과 dry-run을 바탕으로 사용자가 승인할 수 있는 단일 실행 manifest를 만든다.
+
+**완료 기준**
+
+- [ ] 목표/준비 기간, 대상 명부 버전, 시장/유형/상폐 종목 수, 제공 불가 구간, 갱신 정책을 확정한다.
+- [ ] 페이지당 행 수·지연·재시도·저장/검증/RS 시간을 실측하여 예상 시간 범위와 추가 DB/관측/인덱스 용량 및 여유 공간을 계산한다.
+- [ ] 명령·manifest hash·request/디스크 예산·중단/재개 방법과 함께 사용자의 실행 승인을 기록한다. 이전의 2~5시간 추정은 승인 근거로 재사용하지 않는다.
+
+**검증:** backfill CLI dry-run 리포트/명령 옵션 대조; 신규 tests/unit/test_backfill_estimate.py; 운영 가격 쓰기 없는 예상안 검토.
+
+**의존성:** BT11 · **크기:** M
+
+**예상 파일:** `scripts/backfill_historical_prices.py (신규)`, `app/services/historical_backfill.py (신규)`, `tests/unit/test_backfill_estimate.py (신규)`, `docs/backtest_backfill_runbook.md (신규)`.
+
+## BT13: 승인 범위 적재와 최종 replay
+
+- [ ] 검수 가능한 역사 dataset와 적재/품질 보고서
+
+BT12 승인 범위에 한해 수집·검증·RS·dataset 생성을 실행하고 결과를 검수한다.
+
+**완료 기준**
+
+- [ ] 승인 manifest와 실제 실행이 일치하며 완료/미확보/실패·재시도 수 및 전체 소요/용량을 보고한다.
+- [ ] 상폐 종목이 과거 대상에 포함되고 survivor-only 대비 집합 차이와 명부/가격/RS coverage가 보고된다.
+- [ ] 동일 dataset 전 페이지 hash/RS 재현, 결측·상폐 손익 미확인 표시, 기존 API 회귀를 통과한다. coverage 미확인은 partial로 공개한다.
+
+**검증:** 검증용 PostgreSQL의 관련 통합 테스트 및 dataset replay; 운영 실행 결과와 승인안 대조.
+
+**의존성:** BT12 · **크기:** M
+
+**예상 파일:** `docs/backtest_backfill_runbook.md (신규)`, `reports/backtest/<run_id>/ (실행 산출물)`, `tasks/todo.md`.
+
+### CP5: 운영 결과
+
+- [ ] 승인 범위·대상/미확보 수·생존편향 관련 coverage·최종 dataset replay가 보고된다.
+
+## 후순위 BT14: 최신 유니버스 증분 유지
+
+- [ ] BT13 이후, 같은 역사 이벤트 import에 신규 상장·상폐·시장 이전 증분을 연결한다.
+- [ ] partial 명부로 자동 상폐 처리하지 않고 마지막 검증 상태와 근거를 유지한다.
+- [ ] 과거 이벤트 정정이 기존 dataset을 바꾸지 않고 새 revision을 만드는지 검증한다.
+
+**의존성:** BT13. **검증:** listing history replay와 기존 daily universe 회귀.
+세부 구현 파일은 BT13 결과를 보고 확정한다.
+
+5거래일 authority 전환·운영 dashboard 확대·Sam repair 확대·ETF/ETN·RS 산식 개선은
+후순위 backlog다. 백테스트 P0의 진행 게이트로 되살리지 않는다.

@@ -1,5 +1,11 @@
 # RS Scanner 크롤링 개선 및 Hermes 연동 로드맵
 
+> 2026-09-05 우선순위 개정: 현재 최우선 실행 계획은
+> [백테스트 데이터 구축 로드맵](roadmap_krx_universe.md)이다.
+> 키움 REST 인증·일봉 1페이지 조회는 완료됐으며, 장기/상폐 이력 확인과 앱 내부 기간 수집이 다음 과제다.
+> 아래 Sam 표본 전용·repair queue·운영 canary 규칙은 백테스트 작업의 선행조건이 아니다.
+> 기존 일일 배치 운영 이력은 보존하고 미완료 확장은 후순위로 둔다.
+
 > **2026-08-15 전환 안내:** 아래 repair queue·Kiwoom fallback 내용은 전환 기간의 레거시 기록입니다. 현재 기본 흐름은 배치별 `crawl_quality_reports`를 남기고, 사용자가 요청한 주간 분석에서만 Sam이 제한된 Kiwoom 표본을 검증하는 방식입니다. 운영 계약은 [주간 크롤링 품질 분석 PRD](prd-weekly-crawl-quality-analysis.md)를 기준으로 합니다.
 
 상태: PostgreSQL migration·Repair API·reconciler·synthetic canary 완료 (실제 Sam Kiwoom canary 대기)

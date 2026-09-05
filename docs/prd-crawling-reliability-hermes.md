@@ -1,5 +1,10 @@
 # PRD: 크롤링 신뢰성 개선 및 Hermes Agent 데이터 API
 
+> 2026-09-05 우선순위 개정: 신규 개발은
+> [백테스트 데이터 구축 PRD](prd-krx-universe-authority.md)를 최우선으로 한다.
+> 본문의 일일 Naver/제한된 Kiwoom 폴백과 최신 유니버스 정책은 해당 운영 경로에 한정한다.
+> 역사 명부·기간 OHLC·품질·불변 dataset 구축에 repair queue나 최신 authority 전환을 요구하지 않는다.
+
 문서 상태: Draft  
 작성일: 2026-08-10  
 대상 시스템: RS Scanner  

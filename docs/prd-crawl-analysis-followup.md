@@ -1,5 +1,9 @@
 # PRD: 크롤링 분석 보고서 기반 운영 정합성 및 RS 품질 개선
 
+> 2026-09-05 우선순위 개정: [백테스트 데이터 구축 PRD](prd-krx-universe-authority.md)가
+> 역사 수집·품질의 상위 계약이다. 아래 Kiwoom bulk 비범위와 Sam repair 필수 경로는
+> 보관된 일일 복구 설계에만 해당한다. 백테스트는 앱 내부 REST 수집기를 사용한다.
+
 - 상태: Archived for legacy repair (2026-08-15부터 주간 분석 workflow가 기본 운영 경로)
 - 작성일: 2026-08-14
 - 대상 시스템: RS Scanner

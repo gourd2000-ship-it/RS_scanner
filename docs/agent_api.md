@@ -24,7 +24,7 @@ manager에서 주입한다.
 - ANALYSIS_API_ENABLED: 사용자 요청 기반 Sam 분석 API feature flag. 기본값은 false다.
 - REPAIR_API_ENABLED 및 LEGACY_REPAIR_API_ENABLED: 보존된 repair API를 명시적으로 열 때만 함께 true로 둔다. 일일 batch의 기본 경로는 아니다.
 
-허용 scope는 rs:read, stock:read, status:read이며, agent router에는
+허용 scope는 rs:read, stock:read, status:read, backtest:read이며, agent router에는
 배치 실행·재수집 mutation endpoint를 포함하지 않는다.
 
 ## Versioned endpoints
@@ -53,6 +53,23 @@ manager에서 주입한다.
 
 data_status는 complete, partial, stale, unavailable 중 하나다.
 unavailable인 데이터 조회는 503과 Retry-After를 반환한다.
+
+## Backtest dataset API (v2)
+
+`GET /api/v1/agent/v2/backtest/dataset`은 `backtest:read` 전용의 읽기 API다.
+`start`, `end`는 필수이고 `markets=KOSPI,KOSDAQ`, `page_size`(기본 1,000, 최대 5,000),
+`cursor`를 받는다. 기간 자체에는 365 거래일 제한이 없으며, 응답 크기만 cursor
+페이지네이션으로 제한한다.
+
+각 행은 해당 거래일의 OHLCV, 같은 날짜의 RS(없으면 `null`), 그리고 유니버스 상태를
+포함한다. 응답의 `dataset_id`, 복합 `watermark`, `coverage`, `ETag`를 함께 보관해
+백테스트 입력을 식별한다. cursor는 기간·시장·watermark에 묶인다. 다음 페이지 전 원본
+데이터가 바뀌면 API는 409을 반환하므로 첫 페이지부터 다시 읽어야 한다.
+
+`universe.status=listed_observed`는 그 거래일 또는 그 이전의 완료된 KRX snapshot에서
+실제 membership을 확인했음을 뜻한다. 과거 snapshot이 없는 구간은 현재 상장 상태를
+소급 적용하지 않고 `unknown`으로 반환한다. `delisted_recorded`와
+`not_listed_recorded`는 `symbols`의 명시적 상장·상폐일만으로 판정된 경우다.
 
 ## Sam 주간 분석 API (현행 내부 계약)
 

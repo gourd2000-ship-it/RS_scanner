@@ -1,366 +1,176 @@
-# PRD: KRX 기준 유니버스와 가격 대상 정합성 복구
+# PRD: 백테스트용 역사적 유니버스·OHLC·품질 검증
 
-문서 상태: Draft<br>
-작성일: 2026-08-19<br>
-대상 시스템: RS Scanner<br>
-선행 문서: [크롤링 신뢰성 개선 PRD](prd-crawling-reliability-hermes.md), [데이터 품질 검증 PRD](prd-data-quality-pipeline.md)
+상태: 우선순위 개정안 · 키움 인증/일봉 1페이지 검증 완료 · 역사 데이터 구축 미완료<br>
+개정일: 2026-09-05<br>
+실행 순서: [로드맵](roadmap_krx_universe.md) → [구현 계획](../tasks/plan.md) → [TODO](../tasks/todo.md)
 
-## 1. 결론과 우선순위
+## 1. 최우선 목표와 문서 우선순위
 
-현재 가격 크롤링 성공률 저하의 첫 번째 원인은 가격 공급자 자체보다 **가격 대상
-유니버스가 완전하고 식별 가능한 최신 스냅샷으로 확정되지 않는 것**이다. 이 PRD는
-KRX를 상장 종목의 기준 원장(authoritative master)으로 도입하고, Naver는 가격
-공급자와 심볼 매핑 검증 공급자로 유지한다.
+과거 날짜에 실제 존재했던 KOSPI·KOSDAQ 종목을 상장폐지 종목까지 포함해 복원하고,
+그 기간의 OHLCV·RS·상장/거래 상태·품질 표시를 재현 가능한 백테스트 데이터로 제공한다.
+최신 유니버스의 운영 전환이나 일일 크롤링 성공률 개선은 이 목표의 선행 게이트가 아니다.
 
-구현은 아래 우선순위를 따른다.
+이 문서가 백테스트 수집과 품질에 관한 최상위 PRD다. 기존 PRD의
+“Kiwoom은 Sam 표본에만 사용”, “전종목 수집은 비범위”, “5거래일 shadow 후 다음 단계”
+규칙은 백테스트 전용 작업에 적용하지 않는다. 앱 내부의 키움 REST 수집 작업을 사용한다.
+일일 Naver 배치와 Sam 분석의 기존 운영 계약은 해당 업무 범위에서 유지한다.
 
-| 우선순위 | 단계 | 목적 | 배포 판단 |
-|---|---|---|---|
-| P0 | 유니버스 긴급 복구 | 잘린 코드·40페이지 상한으로 생긴 잘못된 대상을 제거 가능한 상태로 만든다 | KRX 없이도 즉시 시행 |
-| P1 | KRX master 동기화 | 상장·상장폐지·시장·상품유형의 기준 데이터를 확보한다 | KRX 인증키·fixture 승인 후 |
-| P2 | 적격성/심볼 매핑 분리 | 상장 여부, 당일 가격 대상, RS 대상 및 Naver 식별자를 분리한다 | P1 canary 통과 후 |
-| P3 | 운영 전환 | KRX snapshot을 daily 기준으로 전환하고 지표·롤백을 운영한다 | 5거래일 shadow 비교 통과 후 |
+기존 상세 설계와 완료 기록은 [개정 전 PRD](prd-krx-universe-authority.legacy-20260905.md)에 보관한다.
+새 구현에서는 이미 있는 저장소·검증기를 재사용하고, 같은 목적의 queue/API/운영 계층을 다시 만들지 않는다.
 
-이 PRD는 Kiwoom 전종목 수집, 가격 공급자 교체, RS 산식 변경을 포함하지 않는다.
+## 2. 확인된 기반과 남은 일
 
-## 2. 배경 및 확인된 기준선
-
-2026-08-19의 최신 품질 리포트(job 65)와 DB를 기준으로 확인한 사실은 다음과 같다.
-
-| 항목 | 관측값 | 의미 |
-|---|---:|---|
-| 가격 크롤링 대상 | 4,086 | `is_active=True`인 주식·ETF·ETN 전체 |
-| 성공 또는 신규 데이터 없음 | 3,742 | 현 success-rate 분자 |
-| 실패 | 344 | 현 coverage 91.581%의 직접 원인 |
-| 최신 Naver snapshot 관측 종목 | 3,821 | 가격 대상보다 265개 적음 |
-| 최근 snapshot 상태 | 모두 `partial` | KOSPI가 `max_symbol_pages=40`에 도달 |
-| 형식이 깨진 active 코드 | 171 | 과거 숫자 전용 parser가 영숫자 코드를 잘라 저장 |
-| 깨진 코드의 job 65 실패 | 171 | 모두 `fchart response has no data rows` |
-| 최신 snapshot에 있는 유효 코드의 실패 | 138 | 대다수 `OHLC fields must be positive` |
-
-예를 들어 실제 식별자 `0005A0`, `00088K`가 이전에는 `0005`, `00088`로 저장됐다.
-현재 parser는 영숫자 식별자를 보존하도록 수정돼 있지만, 기존 `symbols` 행은 자동으로
-수정 또는 비활성화되지 않는다. 잘린 171개만 올바르게 제외 또는 정정해도 현 정의의
-성공률은 약 95.6%까지 회복할 수 있다. 남는 실패는 거래정지·상장상태·Naver OHLC
-정합성을 별도 판정해야 한다.
-
-## 3. 문제 정의
-
-현재 `symbols.code` 한 필드는 다음 네 가지 역할을 동시에 가진다.
-
-1. 상장 종목의 정체성
-2. Naver 요청용 심볼
-3. 가격 수집 대상의 키
-4. RS 결과의 식별자
-
-Naver HTML을 40페이지까지만 수집해 만든 partial snapshot에서는 비활성화를 막는다.
-이는 정상 종목의 오삭제 방지에는 맞지만, 과거의 잘린 코드·상장폐지·더 이상 관측되지
-않는 종목도 active로 남기는 결과를 낳는다. 또한 상장돼 있어도 거래정지 또는 당일
-시세가 없는 종목을 가격 실패와 동등하게 세고 있다.
-
-목표 상태는 다음과 같다.
-
-```text
-KRX instrument master (상장 기준 원장)
-  -> 완전성 검증된 KRX universe snapshot
-  -> instrument status + provider symbol mapping
-  -> price-eligible universe (Naver 요청 대상)
-  -> RS-eligible universe (가격·이력·정책 통과 대상)
-```
-
-Naver 수집 결과는 KRX master를 덮어쓰지 않는다. Naver에만 존재하거나 심볼이 맞지
-않는 항목은 명시적으로 `unmatched`로 기록하고 운영 검토 대상으로 남긴다.
-
-## 4. 목표와 성공 기준
-
-### 4.1 제품 목표
-
-1. KOSPI·KOSDAQ 주식과, 가격 수집 정책에 포함되는 ETF·ETN의 당일 기준 목록을
-   KRX master에서 재현 가능하게 만든다.
-2. 공급자별 심볼을 instrument identity와 분리하여, 한 공급자의 코드 형식 변경이
-   종목 정체성을 훼손하지 않게 한다.
-3. `listed`, `price_eligible`, `rs_eligible`을 구분하여 성공률의 분모를 설명 가능하게
-   만든다.
-4. 완전성 검증된 snapshot에서만 active 상태와 유니버스 변경을 반영한다.
-5. 과거 잘린 코드와 stale active 항목을 감사 가능하고 되돌릴 수 있게 정리한다.
-
-### 4.2 정량 완료 기준
-
-| 지표 | P0 완료 | P3 운영 전환 완료 |
-|---|---:|---:|
-| active 중 길이/형식 오류 코드 | 0 | 0 |
-| KRX snapshot `completed` 비율 | 해당 없음 | 최근 5거래일 100% |
-| 최신 completed snapshot 밖 active 대상 | 0 (승인된 예외 제외) | 0 |
-| KRX↔Naver 매핑률 | 측정만 | price-eligible의 99.5% 이상 |
-| 원인 불명 Naver 빈 응답 | 기준선 대비 80% 이상 감소 | 지속 감시 |
-| 가격 대상 성공률 | 95% 이상을 목표로 관측 | `eligible` 정의와 함께 보고 |
-
-성공률 95%는 품질 목표이지, 거래정지/상장폐지/휴장 종목을 성공으로 위장해 달성하는
-지표가 아니다. 이들은 별도 제외 사유와 개수로 반드시 노출한다.
-
-## 5. 범위와 비범위
-
-### 범위
-
-- KRX Open API 또는 계약된 KRX export를 통한 기준 종목 master ingestion
-- KOSPI, KOSDAQ, ETF, ETN의 시장·상품유형·상장 상태 동기화
-- Naver 심볼 매핑, 형식 검증, shadow 비교
-- universe snapshot 확장, price/RS 적격성 정책, 운영 API·리포트
-- 기존 잘린 코드 및 stale active 레코드의 dry-run, 승인, 재처리
-
-### 비범위
-
-- KRX 가격 데이터를 일일 가격의 새 주 공급자로 바꾸는 작업
-- Kiwoom 자동 폴백 또는 전종목 수집
-- KONEX, ELW, 채권, 파생상품을 RS universe에 추가하는 작업
-- 원본 가격값을 자동 수정하거나 기존 price history를 삭제하는 작업
-- RS 산식과 랭킹 화면의 재설계
-
-## 6. 외부 계약 및 데이터 원칙
-
-KRX Open API는 인증키 신청과 서비스별 활용 신청·승인이 필요하다. 구현 전 운영
-계정으로 필요한 서비스의 이용 권한, 호출 한도, 재배포 조건을 확인한다.
-
-- KRX는 유가증권·코스닥 종목기본정보 및 ETF/ETN 관련 서비스를 제공한다.
-- 인증키·이용 승인 절차는 [KRX Open API 이용 방법](https://openapi.krx.co.kr/contents/OPP/INFO/OPPINFO003.jsp)을 따른다.
-- 서비스 선택은 [KRX Open API 서비스 목록](https://openapi.krx.co.kr/contents/OPP/INFO/service/OPPINFO004.cmd)에서 확정한다.
-
-다음 규칙은 필수다.
-
-- 종목코드는 숫자로 변환하지 않고 원문 문자열로 저장한다. 선행 0과 영숫자 문자를 보존한다.
-- code의 유효성은 `^[0-9A-Za-z]{6}$` 같은 **공급자 계약별 규칙**으로 검증한다. 숫자 6자리만 강제하지 않는다.
-- KRX 단축코드와 Naver 심볼은 우연히 같더라도 독립 필드로 저장한다.
-- KRX 응답의 기준일·수집 시각·응답 hash·파서 버전을 snapshot에 보존한다.
-- KRX 연결 실패나 불완전 snapshot은 기존 completed universe를 변경하지 않는다.
-
-## 7. 데이터 설계
-
-### 7.1 새/변경 엔터티
-
-기존 `symbols`는 API·가격 이력 FK와의 호환을 위해 당장 제거하지 않는다. P2에서
-`instruments`를 canonical identity로 도입하고, 점진적으로 소비자를 전환한다.
-
-| 엔터티 | 핵심 필드 | 용도 |
+| 영역 | 확인된 기반 | 이번에 완성할 범위 |
 |---|---|---|
-| `instruments` | `id`, `krx_short_code`, `isin`, `name`, `market`, `security_type`, `listed_at`, `delisted_at`, `listing_status` | KRX 기준 종목 정체성 |
-| `provider_symbols` | `instrument_id`, `provider`, `provider_symbol`, `valid_from`, `valid_to`, `mapping_status`, `evidence_snapshot_id` | Naver 등 공급자별 심볼 |
-| `instrument_universe_snapshots` | `provider=krx`, `as_of_date`, `status`, 시장별 count/hash, 원본 hash, 오류 | KRX master 수집 단위 |
-| `instrument_snapshot_memberships` | `snapshot_id`, `instrument_id`, `market`, `security_type`, `listing_status`, `trading_status` | 해당 기준일의 재현 가능한 구성 |
-| `universe_reconciliation_runs` | `krx_snapshot_id`, `naver_snapshot_id`, counts, diff, decision, approved_by | shadow 비교·승인 기록 |
-| `universe_exclusions` | `instrument_id`, `scope`, `reason_code`, `valid_from/to`, evidence | 가격/RS 정책 제외 사유 |
+| 키움 REST | OAuth, 속도 제한, 재시도, 연속조회 코드. 2026-09-05 삼성전자 일봉 HTTP 200, 600행(2024-03-19~2026-09-04), 다음 페이지 있음 | 실제 연속조회, 장기 이력, 상폐/코드변경 종목 지원 범위와 수정주가 의미 확인 |
+| 가격 저장 | 종목·거래일 upsert와 append-only price observations | 기간 제한, 안정적인 종목 정체성, 출처/조정 기준, 충돌 보존, 중단 후 재개 |
+| 종목 정보 | instruments/provider_symbols, KRX snapshot/membership | 상장·상폐·시장 이전·정지의 과거 유효기간 및 출처 |
+| 품질 검증 | validation_runs/cases, 행 단위 OHLC·거래량 검사, correction/exclusion, RS lineage | 기간 전체의 기대 거래일 대비 결측과 당시 제도/기업행위를 고려한 이상치 |
+| 백테스트 API | 기간·cursor·page_size·backtest:read·메타데이터 골격 | 역사적 membership, 가격 없는 행, 역사 RS, 불변 버전과 재현성 |
 
-`symbols`에는 전환 기간에 `instrument_id` nullable FK, `legacy_code`, `legacy_state`를
-추가한다. 기존 `daily_prices.symbol_id`와 `rs_scores.symbol_id`는 유지한다. 과거 코드를
-다른 코드로 in-place 변경하지 않는다. 올바른 instrument와의 연결을 만든 후 명시적인
-마이그레이션으로만 사용 경로를 전환한다.
+위 상태는 이번 세션의 조회 결과와 저장소 코드에 근거한다. 키움 1페이지 성공은
+전체 기간·전체 종목 수집 완료를 뜻하지 않는다. 기존 DB의 최소 거래일이 2013년이라는
+사실도 모든 종목이 그때부터 저장됐다는 뜻이나 공급자의 제공 시작일이라는 뜻이 아니다.
 
-### 7.2 상태 계약
+## 3. 1차 범위
 
-| 상태 | 값 예시 | 소유자 | 가격 성공률 분모 포함 |
-|---|---|---|---|
-| `listing_status` | listed, delisted, suspended, unknown | KRX master | `listed`만 후보 |
-| `mapping_status` | matched, unmatched, ambiguous, invalid_legacy | reconciliation | `matched`만 후보 |
-| `price_eligibility` | eligible, expected_no_trade, excluded, review_required | policy | `eligible`만 포함 |
-| `rs_eligibility` | eligible, insufficient_history, stale, excluded | RS/validator | RS 후보만 포함 |
+- KOSPI·KOSDAQ의 보통주를 1차 기준으로 삼고, 요청 기간에 상장 구간이 겹치는
+  현재 상장/상폐 종목을 모두 포함한다. 우선주·SPAC 등은 유형과 제외 사유를 보존하며
+  포함 정책을 manifest에 명시한다. ETF·ETN·KONEX 확장은 후순위다.
+- start/end 필수, 양끝 날짜 포함. 제품 차원의 365일 제한은 두지 않는다.
+  실제 지원 범위와 부족한 구간은 공급자·종목·연도별로 공개한다.
+- 예시 조회 2015-01-01~2025-12-31은 API 회귀 시나리오다. 전체 적재 기간의 승인은 아니다.
+  2013년 이전 표본도 조사하고, 최초 적재 기간은 실측 실행 계획에 명시한다.
+- 시작일 RS에 필요한 준비 기간을 별도 수집한다. 현 252거래일 수익률 계산은 기준값을
+  포함한 최소 253개 관측이 필요하다. 신규상장 이력 부족은 결측과 구분한다.
+- 전략 엔진과 매매 UI 구현은 범위 밖이다. 상폐 시 보유 포지션 처리에 필요한 마지막
+  거래일·정리매매·합병/현금청산 근거와 미확인 상태는 데이터 계약에 포함한다.
 
-`expected_no_trade`는 거래정지·상장 당일·정책상 가격이 없는 상태를 나타낸다. 이 상태는
-Naver 요청을 생략하거나 별도 관측으로 남기며 `fetched`나 `no_new_data`로 위장하지 않는다.
+## 4. 데이터 공급과 시점 원칙
 
-## 8. 기능 요구사항
-
-### FR-01. Naver 유니버스 수집의 즉시 복구
-
-1. `max_symbol_pages=40`을 고정 안전 한도로 사용하지 않는다. 페이지의 빈 결과 또는
-   반복 페이지를 정상 종료 조건으로 사용하며, 별도 hard cap은 설정값과 alert로 둔다.
-2. hard cap 도달 시 snapshot은 `partial`이며, price 단계는 마지막 completed universe를
-   사용한다. partial snapshot의 혼합 active 목록을 새 기준으로 사용하지 않는다.
-3. parser는 `code` query parameter 전체를 보존하고, 길이 6이 아닌 코드는
-   `invalid_legacy_candidate`로 기록한다.
-4. Naver ETF endpoint 실패는 ETF 유형을 stock으로 바꾸는 근거가 될 수 없다. 유형은
-   마지막 확정 KRX master 또는 `unknown`으로 보존한다.
-
-### FR-02. KRX master ingestion
-
-1. scheduler는 장 마감 후 KRX의 기준일 master를 수집한다.
-2. KOSPI/KOSDAQ 주식, ETF, ETN을 독립 fetch하고, market/security type별 결과를 기록한다.
-3. 필수값은 KRX 식별자, 종목명, 시장, 상품유형, 상장 상태, 기준일이다. API가 제공하면
-   ISIN, 상장/상장폐지일, 거래정지 상태를 포함한다.
-4. 개별 feed의 오류·빈 응답·기준일 불일치가 있으면 snapshot은 `partial/failed`다.
-5. 이전 completed snapshot 대비 시장·유형별 증감률, 중복 code/ISIN, 형식 오류,
-   비정상 대량 신규/삭제를 검증한다.
-6. snapshot이 `completed`일 때만 member set을 current KRX universe로 승격한다.
-
-### FR-03. KRX↔Naver mapping 및 reconciliation
-
-1. 1차 key는 정확한 코드 문자열, 2차 후보는 ISIN, 시장·상품유형·정규화한 종목명이다.
-2. 이름만 일치하는 경우 자동 매핑하지 않는다. `ambiguous` 또는 `review_required`로 남긴다.
-3. legacy code가 올바른 6자리 코드의 strict prefix이고 이름·시장·유형이 일치하면
-   자동 정정 후보로 제시할 수 있으나, 적용은 dry-run 보고서와 승인 뒤에만 한다.
-4. active이지만 KRX snapshot에 없는 행은 `stale_active_candidate`로 생성한다. 상장폐지로
-   즉시 단정하지 않고 KRX 상태와 마지막 관측일을 증거로 저장한다.
-5. KRX에는 있으나 Naver에 없는 price-eligible 항목은 Naver 요청하지 않고
-   `provider_symbol_unavailable`로 분류·집계한다.
-
-### FR-04. 적격성 기반 가격·RS 대상 확정
-
-가격 수집 직전에 immutable target set을 생성한다.
-
-```text
-price target
- = latest completed KRX member
-   AND listing_status = listed
-   AND mapping_status = matched
-   AND price_eligibility = eligible
-```
-
-RS target은 위 집합 중 `security_type=stock`과 최소 가격 이력·freshness 규칙을 통과한
-항목이다. ETF/ETN은 price history 수집 여부를 별도 feature flag로 결정하며 기본 RS
-대상에는 포함하지 않는다.
-
-`crawl_target_results`에는 대상이 된 기준 snapshot ID, instrument ID, 적격성 결정과
-제외 사유를 기록한다. 이렇게 해야 이후 success-rate의 분모를 재현할 수 있다.
-
-### FR-05. 운영 관측 및 API
-
-운영 API와 일일 report는 아래를 제공한다.
-
-- latest KRX snapshot 및 Naver snapshot 상태, 기준일, 시장·유형별 count
-- KRX-only, Naver-only, matched, ambiguous, invalid legacy code 수
-- price eligible / expected no trade / excluded / RS eligible 수와 사유별 count
-- deactivation·legacy correction 후보의 dry-run 목록과 승인 상태
-- job별 target snapshot ID와 coverage를 함께 포함한 성공률
-
-기존 `/api/v1/crawl/universe-snapshots`를 유지하고, KRX snapshot과 reconciliation을
-표현할 새 read-only endpoint를 추가한다. 수정·승인 endpoint는 별도의 운영 권한과
-감사 로그를 요구한다.
-
-## 9. 구현 계획
-
-### P0 — 유니버스 긴급 복구 (1~2일)
-
-1. `NaverPriceSource.max_symbol_pages`를 설정화하고 페이지 종료 기반으로 변경한다.
-2. parser·`SymbolPayload`에 code 형식 검증을 추가하고, 영숫자 6자리 회귀 fixture를
-   확대한다.
-3. DB audit CLI를 만든다. 결과는 `invalid_legacy`, `prefix_collision`,
-   `stale_active`, `missing_from_latest_snapshot`별 CSV/JSON dry-run으로 저장한다.
-4. job 65와 최신 Naver full snapshot을 대조하여 잘린 171개 코드의 정정/비활성화 후보를
-   만든다.
-5. 운영자 승인 후에만 legacy 행을 `is_active=False`로 전환하고 reason·원래 값을
-   audit table에 보존한다. 가격·RS 이력은 삭제하지 않는다.
-6. 새 completed Naver snapshot을 만든 뒤, 대상 전용 가격 재실행과 quality validation을
-   수행한다.
-
-완료 조건: 최근 Naver snapshot이 `completed`, active 형식 오류가 0, 가격 대상과 target
-result 수가 일치한다.
-
-### P1 — KRX master ingestion과 shadow mode (3~5일)
-
-1. KRX 서비스 신청, secret 등록, sample response 고정(fixture) 및 호출량 계약을 확인한다.
-2. `KrxUniverseSource`와 typed response/parser를 구현한다.
-3. KRX snapshot·membership migration/model/repository를 추가한다.
-4. daily 배치에서 Naver 기존 sync와 병렬로 KRX snapshot을 **쓰기만** 수행한다. active와
-   price target은 변경하지 않는다.
-5. 시장·유형별 count, code/ISIN 중복, KRX↔Naver mapping diff를 `reports/`와 운영 API에
-   기록한다.
-
-Gate: 5거래일 동안 KRX snapshot이 모두 completed이고, 미매핑·이상 증감이 운영자에게
-설명 가능해야 한다.
-
-### P2 — canonical identity와 적격성 전환 (4~6일)
-
-1. `instruments`, `provider_symbols`, `universe_exclusions`, reconciliation audit migration을
-   추가한다.
-2. 현 `symbols`를 KRX instrument에 연결한다. 자동 연결되지 않는 행은 legacy 상태로
-   남기며 수동 승인 목록을 만든다.
-3. price/RS target builder를 구현하고, 기존 `list_price_targets()`와 결과를 shadow 비교한다.
-4. `crawl_target_results`와 validation report에 instrument/snapshot/eligibility lineage를
-   기록한다.
-5. trading status와 zero OHLC를 `expected_no_trade`, `provider_invalid_row`,
-   `review_required`로 분류한다.
-
-Gate: shadow target의 차이가 승인됐고, legacy 코드의 가격 요청이 0건이며, 신규 target
-builder의 전체 수와 target result 수가 일치한다.
-
-### P3 — 운영 전환 및 정리 (2~3일 + 5거래일 관찰)
-
-1. feature flag `UNIVERSE_AUTHORITY=krx`를 canary 환경에서 켠다.
-2. KOSPI 또는 KOSDAQ 한 시장부터 2거래일 canary 적용 후 전체로 확장한다.
-3. 5거래일 동안 coverage, mapping rate, exclusion reason, stale count, KRX snapshot 상태를
-   매일 검토한다.
-4. 기준 미달 시 `UNIVERSE_AUTHORITY=naver_last_completed`로 즉시 롤백한다. schema와
-   historical audit record는 유지한다.
-5. 안정화 후, 승인된 stale/invalid legacy 행만 비활성화하고 legacy 목록을 보존한다.
-
-## 10. 마이그레이션 및 안전 절차
-
-1. DB migration은 additive로 시작한다. `symbols.code` unique 제약과 기존 FK를 첫 배포에서
-   변경하지 않는다.
-2. legacy 정리는 `DELETE`가 아니라 `is_active=False`, `legacy_state`, reason, run ID를
-   기록하는 방식으로 한다.
-3. 자동 비활성화의 입력은 항상 `completed` KRX snapshot이어야 하며, 해당 snapshot과
-   reconciliation run의 hash를 저장한다.
-4. production 적용 전 staging DB restore에서 audit CLI의 candidate 수, duplicate 영향,
-   가격/RS 조회 회귀를 검증한다.
-5. 롤백은 feature flag와 target builder 선택만 되돌린다. 이미 기록한 snapshot, mapping,
-   audit 데이터는 삭제하지 않는다.
-
-## 11. 테스트 계획
-
-### 단위 테스트
-
-- 숫자·영숫자 6자리 code 보존, 선행 0 보존, 4/5자리 legacy code 거절
-- Naver 페이지의 empty/repeated/cap/error 종료 상태
-- KRX response의 시장·유형·상태 parsing 및 기준일 검증
-- KRX↔Naver exact match, prefix collision, 이름 중복, ambiguous 매핑
-- eligibility 상태별 price/RS target 생성
-
-### 통합 테스트
-
-- partial KRX/Naver snapshot에서 active 상태와 target 기준이 변하지 않음
-- completed snapshot에서만 stale candidate가 비활성화됨
-- job target snapshot ID와 target-result count가 일치함
-- legacy code 정리 후 기존 daily_prices/rs_scores FK와 API 조회가 유지됨
-- feature flag 양쪽에서 동일 입력에 대해 재현 가능한 target 목록을 생성함
-
-### 운영 검증
-
-- job 65 replay: 171개의 invalid legacy Naver 요청이 사라졌는지 확인
-- P0 재실행 뒤 quality report의 `NAVER_EMPTY_RESPONSE`, coverage, stale 수 비교
-- P1 shadow 5거래일: 시장·유형별 count와 mapping diff 승인
-- P3 canary: 기존 경로 대비 RS 후보 수, 기준일 coverage, API 응답 회귀 확인
-
-## 12. 위험과 결정 필요 사항
-
-| 위험/결정 | 영향 | 완화 또는 결정 시점 |
+| 데이터 | 수집 경로 | 확인 및 대체 기준 |
 |---|---|---|
-| KRX API 승인·한도·라이선스 | P1 일정과 데이터 사용 범위 | 구현 시작 전 서비스 신청과 계약 확인 |
-| KRX와 Naver의 심볼 체계 차이 | 자동 mapping 오판 가능 | ISIN 우선, ambiguous 자동 적용 금지 |
-| 거래정지 정의 부재 | 성공률 왜곡 또는 RS 누락 | P2 전에 product policy 승인 |
-| ETF/ETN 가격 수집 필요성 | 분모와 실행 시간이 달라짐 | P2에서 product owner가 명시 결정 |
-| KRX snapshot 지연/실패 | 잘못된 비활성화 위험 | last completed fallback과 feature flag |
-| 과거 `symbols` 행 중복 | FK/이력 연결 오류 | additive mapping, delete 금지, staged approval |
+| 상장·상폐·시장 이전 이력 | KRX/KIND의 역사 자료 또는 허용된 파일 import | 전체 폐지종목 목록과 기간 coverage를 먼저 확인. 현재 명부 차이만으로 상폐 판정 금지 |
+| 과거 OHLCV | 앱 내부 Kiwoom REST 일봉 수집 | 상폐 종목·과거 한계·연속조회 실측. 미지원은 reason 기록 후 KRX/허용된 역사 공급자 검토 |
+| 가격 비교 | 기존 Naver 관측 또는 확보한 기준가격 | 같은 거래소·종목·날짜·조정 기준으로만 비교 |
+| 거래일·정지·기업행위 | 기존 calendar + 역사적 정지/기업행위 근거 | 근거 없는 상태는 unknown. 단순 무응답으로 휴장/정지 추론 금지 |
 
-## 13. 산출물 체크리스트
+키움 일봉 TR은 ka10081이다. 수정주가는 base_dt에 따라 적용되는 기업행위가 달라지므로
+기준일을 실행 내내 고정하고 원주가/수정주가와 조정 기준일을 별도로 기록한다.
+공식 계약: [키움 일봉 가이드](https://openapi.kiwoom.com/m/guide/apiguide/07/ka10081).
+KRX/KIND의 정확한 역사 서비스·필드·보관/이용 조건과 coverage는 BT01에서 확인한다.
+미확인 서비스가 상폐 가격까지 제공한다고 가정하지 않는다.
 
-- [ ] KRX API 권한·secret·fixture·사용 조건 검증 문서
-- [ ] Naver 페이지 상한/형식 검증 P0 patch 및 회귀 테스트
-- [ ] legacy/stale audit CLI와 approval runbook
-- [ ] KRX snapshot/membership migration·source·repository·tests
-- [ ] KRX↔Naver reconciliation report/API
-- [ ] instrument/provider symbol/eligibility migration과 target builder
-- [ ] feature flags, canary dashboard, rollback runbook
-- [ ] job 65 전후 coverage 및 failure reason 비교 보고서
+역사적 효력일 effective_from/to, 원문 발표 시각 published_at(확인 가능한 경우),
+시스템 수집 시각 observed_at을 구분한다. 사후 수집한 이력은 역사 복원 근거로 쓸 수 있지만,
+발표 시각을 모르면 “당시 알려진 정보만 사용한 데이터”라고 표시하지 않는다.
+데이터 공개 모드는 historical_reconstructed와 as_known_at을 구분하고,
+as_known_at은 필요한 발표 시각/가격 버전 근거가 확보된 범위에서만 제공한다.
 
-## 14. 수용 기준
+## 5. 기능 요구사항
 
-이 PRD는 다음을 모두 충족할 때 완료로 판단한다.
+### FR-BT01: 역사 종목 식별과 상장 이력
 
-1. KRX 기준 snapshot이 5거래일 연속 completed다.
-2. 가격 크롤링은 항상 마지막 completed authoritative snapshot의 immutable target set을
-   사용한다.
-3. active target에 6자리 계약을 만족하지 않는 legacy 코드가 없고, 해당 요청이 0건이다.
-4. KRX↔Naver 미매핑·제외·거래정지 항목은 성공률과 별도로 reason code와 함께 조회된다.
-5. partial snapshot, KRX outage, mapping 급감 시 자동 비활성화가 일어나지 않고 alert가
-   발생한다.
-6. canary와 전체 전환에서 기존 가격 이력·RS 조회 API·일일 배치의 재실행이 회귀 없이
-   동작한다.
+- 현재 is_active와 독립적인 security identity 및 유효기간별 provider code를 사용한다.
+  코드 재사용·재상장·합병 후 신종목을 자동 병합하지 않는다.
+- 기존 instruments.krx_short_code의 전역 unique 제약과 symbols 기반 가격 FK가 역사적
+  코드 재사용을 표현할 수 있는지 먼저 검토한다. 기존 이력을 보존하는 migration과
+  식별자 전환 테스트 없이는 제약 변경/가격 재연결을 적용하지 않는다.
+- 상장, 상폐, 시장 이전, 정지/재개, 코드변경의 근거와 정정 버전을 보존한다.
+  상장 상태와 거래 가능 상태는 분리한다.
+- 이력의 효력 구간은 [valid_from, valid_to)로 정규화한다. 상폐 효력일과 마지막 거래일이
+  다르면 별도 저장하며, 정리매매 기간도 실제 근거대로 포함한다.
+- observed/inferred/unknown과 충돌 사유를 기록한다. 첫/마지막 OHLC 날짜를 상장/상폐일로
+  확정하지 않는다. 현재 명부에 없는 종목도 과거 이력이 겹치면 수집 대상이다.
+
+### FR-BT02: 날짜별 유니버스와 커버리지
+
+- 요청 기간과 겹치는 상장 구간에서 종목 집합을 만들고 날짜별 당시 시장·유형을 적용한다.
+  미래 상폐 사실을 이용해 과거 매수 후보를 사전에 제거하지 않는다.
+- 엄격 모드는 근거 없는 membership을 적격으로 채택하지 않는다. 다만 unknown 종목과
+  제외 수는 별도 공개한다. unknown을 뺀 부분집합을 “생존편향 제거 완료”라고 표시하지 않는다.
+- 기준 명부 자체의 완전성, 유니버스 근거 coverage, 기대 가격 대비 가격 coverage,
+  유효 가격 coverage, RS coverage를 시장·연도·상폐 여부별로 각각 제공한다.
+  명부 전체 크기를 모르면 그 완전성 비율은 null/unknown이다.
+- membership가 있는데 가격 행이 없더라도 결과/결측 보고서에 나타나야 한다.
+  가격 테이블만 조회해 실패 종목이 사라지는 구조를 금지한다.
+
+### FR-BT03: 범위 제한 과거 수집과 upsert
+
+- CLI는 start/end, 시장/종목 필터, 요청 예산·속도, dry-run, run_id/resume를 지원한다.
+  신규/갱신/동일/충돌/실패/미지원 수와 예상 호출·시간·디스크를 출력한다.
+- 종목·페이지 단위로 읽고 chunk 단위로 commit한다. 재시작해도 중복 canonical 행이 생기지
+  않으며, continuation key 만료 시 마지막 확정 구간에서 재조회/중복 제거한다.
+- 공급자 원본 또는 이용 조건에 맞는 정규화 관측을 보존하고 source, 수집시각,
+  요청 기준일, parser version, hash, run_id를 연결한다. 같은 내용 재시도는 중복 저장을 억제한다.
+- 신규 유효 가격은 반영하고, 기존 값 갱신은 명시된 동일 공급자/조정 기준 정책을 따른다.
+  출처 간 충돌·다른 조정 기준은 별도 observation/case로 남긴다.
+- bulk 실행 직전 대상 명부·기간·준비 기간·버전·호출량·시간 범위·저장량·갱신 정책을
+  manifest로 고정한다. 사용자의 “예상 후 승인” 지시에 따라 대량 적재는 승인 후 실행한다.
+
+### FR-BT04: 결측·이상치의 결정적 검증과 마킹
+
+| 검사 | 판정/마킹 | 백테스트 처리 |
+|---|---|---|
+| 상장 구간 × 역사 거래일 대비 행 없음 | MISSING_EXPECTED_BAR | 가격 null, 사유 노출. 자동 보간 금지 |
+| 확인된 휴장·상장 전·상폐 후 | OUTSIDE_TRADING_INTERVAL | 기대 가격 분모 제외, 근거 기록 |
+| 확인된 거래정지/정리매매 | SUSPENDED / LIQUIDATION_TRADING | 상태와 가격 유무를 분리. 정리매매를 통째로 제외하지 않음 |
+| 공급자 미지원·요청 실패 | PROVIDER_UNAVAILABLE / FETCH_FAILED | 기대 관측은 유지, 성공으로 집계 금지 |
+| null·비유한·음수/0 가격·OHLC 범위 모순·음수 거래량 | INVALID_OHLC / INVALID_VOLUME | 원본 보존, 유효 입력에서 제외 |
+| 날짜 중복·정렬 역전·반복 페이지 | DUPLICATE_DATE / PAGINATION_ANOMALY | 중복 제거 또는 충돌 보류, 누락 점검 |
+| 극단 수익률·장기 동일 가격·거래량 급변 | EXTREME_RETURN / STALE_PRICE_CANDIDATE | 우선 경고. 기업행위/정지 근거와 함께 판정 |
+| 분할·병합·배당락·조정 기준 충돌 | CORPORATE_ACTION / ADJUSTMENT_CONFLICT | 버전/기준 기록, 무조건 이상치 삭제 금지 |
+
+가격제한 규칙은 시장·날짜·상품과 예외를 갖는 버전 정책으로 관리한다.
+오늘의 등락 제한을 전 기간에 적용하지 않는다. 공급자의 부호 표기 의미도 fixture로
+확인한 뒤 정규화한다. 음수값을 무조건 절댓값으로 바꾸지 않는다.
+거래량 0만으로 결측/거래정지를 확정하지 않는다.
+
+case는 종목·날짜 또는 결측 구간·rule_version·severity·reason·evidence·decision을 가진다.
+동일 입력/정책 replay는 같은 판정을 내며, 재조회로 해결돼도 이전 case와 관측을 보존한다.
+실거래 가능한 상태/가격 품질/RS 적격성은 서로 별도 필드다.
+
+### FR-BT05: 역사 RS와 재현 가능한 dataset
+
+- 날짜 D의 RS는 D까지의 가격 및 D의 당시 적격 유니버스로 계산한다. 현행 RS 산식과
+  universe/quality 정책 버전을 고정하며, 기존 rs_scores를 lineage 확인 없이 재사용하지 않는다.
+- RS null은 insufficient_history, missing_price, invalid_price 등 사유를 제공한다.
+  D 종가로 계산한 RS의 이용 가능 시각을 명시해 D 이전 체결에 사용하는 미래참조를 막는다.
+- dataset manifest는 선택된 가격 관측·membership/event revision·RS run·정책 버전,
+  조정 기준, 요청 범위, 준비 기간, coverage, 수집 watermark, content hash를 고정한다.
+- 최대 row ID만으로 버전을 만들지 않는다. 기존 canonical 행의 in-place upsert 후에도
+  이전 dataset은 보존된 observation/revision 또는 immutable export로 동일하게 재조회돼야 한다.
+- 재현성은 동일 입력 재생의 보장이다. 최신 수정주가로 만든 역사 복원 데이터가
+  자동으로 당시 알려진 가격 버전까지 보장하는 것은 아니다.
+- 상폐 포지션의 현금청산/합병 대가 미확인은 terminal_value_unknown으로 제공한다.
+  마지막 가격을 무기한 연장하거나 상폐 수익을 0으로 자동 가정하지 않는다.
+
+### FR-BT06: 기존 백테스트 API 완성
+
+GET /api/v1/agent/v2/backtest/dataset
+
+start/end 필수, markets, cursor, page_size를 지원한다. 기본 1,000/최대 5,000행,
+총 기간 상한 없음, backtest:read 전용 scope, 기존 365일 endpoint 유지.
+날짜별 가격·RS·유니버스·품질/결측 사유를 함께 제공하고 가격 없는 기대 행도 노출한다.
+
+dataset_id를 사용한 이전 버전 재조회 계약을 추가하고 cursor를 그 버전과 필터에 묶는다.
+ETag는 해당 페이지 표현을 식별하며 다른 페이지에는 별도 값을 사용한다.
+dataset_id·watermark·coverage·ETag 및 coverage 분모 정의를 응답 계약에 포함한다.
+불변 snapshot 보존기간/만료를 공개하고, 만료된 dataset은 조용히 최신값으로 대체하지 않는다.
+현재 골격의 max-ID watermark와 현재 Symbol.market 필터는 각각 버전/역사 시장 문제로
+보완 대상이다. 엄격 모드와 부분 데이터 표시도 BT11에서 계약 테스트로 고정한다.
+
+## 6. 완료 기준과 후순위
+
+1. 검증된 명부 범위에서 상장·상폐·시장 이전·코드 재사용 표본의 경계일이 재현되고,
+   상폐 종목이 그 이전 날짜의 대상에 포함된다.
+2. 승인 범위의 모든 기대 종목·거래일이 유효 가격 또는 명시적인 미확보/제외 사유를 갖는다.
+   전체 명부 coverage가 미확인이면 완료를 partial로 표현한다.
+3. 재실행 중복·중단/재개·가격 충돌·결측·기업행위 테스트가 통과하고,
+   canonical 갱신 후에도 같은 dataset의 전 페이지 hash와 RS가 재현된다.
+4. survivor-only 집합과 역사적 집합의 종목 수·상폐 비중·미확보 비중 차이를 보고한다.
+   실제 전략 수익률/상폐 손익의 완전한 재현은 terminal data 확보 범위를 함께 명시한다.
+
+최신 유니버스는 구축 후 같은 이력 수집기로 신규 상장·상폐·시장 이전을 증분 반영한다.
+5거래일 shadow/canary 확대, reconciliation 대시보드 확장, Sam repair queue 확장,
+ETF/ETN 확대, RS 산식 개선은 백테스트 P0 이후로 미룬다.

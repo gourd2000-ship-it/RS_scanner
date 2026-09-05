@@ -1,5 +1,12 @@
 # RS 데이터 품질 검증 파이프라인 PRD
 
+> 2026-09-05 확장 우선순위: [백테스트 데이터 구축 PRD](prd-krx-universe-authority.md)의
+> FR-BT04/05 및 [TODO](../tasks/todo.md) BT07~BT11을 먼저 구현한다.
+> 아래 구현된 observation·validation case·correction/exclusion·RS lineage를 재사용하며,
+> 기간별 기대 거래일 결측, 역사 제도/기업행위, 가격 없는 종목, 불변 dataset을 보강한다.
+> 아래 일일 job 중심 검증 완료는 역사적 coverage/재현성 완료를 뜻하지 않는다.
+> Sam repair/자동 복구 확장은 백테스트의 선행조건이 아니다.
+
 상태: Phase 1~3 핵심 기반 구현 완료 · Kiwoom repair queue는 별도 후속 PRD로 진행
 작성일: 2026-08-11  
 대상 저장소: RS Scanner

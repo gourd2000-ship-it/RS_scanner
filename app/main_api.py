@@ -5,6 +5,7 @@ from fastapi.openapi.utils import get_openapi
 
 from app.api.v1.endpoints.agent import router as agent_router
 from app.api.v1.endpoints.analysis import router as analysis_router
+from app.api.v1.endpoints.backtest import router as backtest_router
 from app.api.v1.endpoints.crawl import router as crawl_router
 from app.api.v1.endpoints.codex import router as codex_router
 from app.api.v1.endpoints.health import router as health_router
@@ -128,6 +129,7 @@ app.add_exception_handler(Exception, generic_exception_handler)
 # 라우터 등록
 app.include_router(health_router, prefix="/api/v1", tags=["health"])
 app.include_router(agent_router, prefix="/api/v1/agent/v1", tags=["agent"])
+app.include_router(backtest_router, prefix="/api/v1/agent/v2", tags=["agent"])
 app.include_router(repair_router, prefix="/internal/v1/repair", tags=["repair"])
 app.include_router(analysis_router, prefix="/internal/v1/crawl-analysis", tags=["crawl-analysis"])
 app.include_router(codex_router, prefix="/internal/v1/codex-change-requests", tags=["crawl-analysis"])

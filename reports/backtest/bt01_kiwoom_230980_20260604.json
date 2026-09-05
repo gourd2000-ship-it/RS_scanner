@@ -1,0 +1,37 @@
+{
+  "adjusted_price_type": "1",
+  "base_date": "20260604",
+  "contract_version": "bt01-kiwoom-probe-v1",
+  "fully_traversed_count": 0,
+  "generated_at": "2026-09-05T16:03:01.789560+00:00",
+  "max_pages": 3,
+  "provider": "kiwoom_rest",
+  "sample_count": 1,
+  "samples": [
+    {
+      "base_date": "20260604",
+      "code": "230980",
+      "date_range": null,
+      "duplicate_dates": [],
+      "error": {
+        "class": "PriceParseError",
+        "invalid_rows": 1
+      },
+      "invalid_rows": 1,
+      "label": "stored_delisted_kosdaq_at_last_recorded_price",
+      "max_pages": 3,
+      "page_count": 1,
+      "response_bytes": 261,
+      "retry_count": 0,
+      "row_count": 0,
+      "target_date": "2023-01-01",
+      "target_reached": false,
+      "terminal_reason": "parse_failed",
+      "unique_row_count": 0
+    }
+  ],
+  "status": "partial",
+  "target_date": "2023-01-01",
+  "target_reached_count": 0,
+  "tr": "ka10081"
+}

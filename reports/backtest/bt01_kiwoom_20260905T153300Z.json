@@ -1,0 +1,121 @@
+{
+  "adjusted_price_type": "1",
+  "base_date": "20260904",
+  "contract_version": "bt01-kiwoom-probe-v1",
+  "fully_traversed_count": 0,
+  "generated_at": "2026-09-05T16:02:02.818927+00:00",
+  "max_pages": 8,
+  "provider": "kiwoom_rest",
+  "sample_count": 5,
+  "samples": [
+    {
+      "base_date": "20260904",
+      "code": "005930",
+      "date_range": {
+        "first": "2012-01-10",
+        "last": "2026-09-04"
+      },
+      "duplicate_dates": [],
+      "error": null,
+      "invalid_rows": 0,
+      "label": "current_corporate_action",
+      "max_pages": 8,
+      "page_count": 6,
+      "response_bytes": 720477,
+      "retry_count": 0,
+      "row_count": 3600,
+      "target_date": "2013-01-01",
+      "target_reached": true,
+      "terminal_reason": "target_reached",
+      "unique_row_count": 3600
+    },
+    {
+      "base_date": "20260904",
+      "code": "000660",
+      "date_range": {
+        "first": "2012-01-10",
+        "last": "2026-09-04"
+      },
+      "duplicate_dates": [],
+      "error": null,
+      "invalid_rows": 0,
+      "label": "current_long_history",
+      "max_pages": 8,
+      "page_count": 6,
+      "response_bytes": 719744,
+      "retry_count": 0,
+      "row_count": 3600,
+      "target_date": "2013-01-01",
+      "target_reached": true,
+      "terminal_reason": "target_reached",
+      "unique_row_count": 3600
+    },
+    {
+      "base_date": "20260904",
+      "code": "035420",
+      "date_range": {
+        "first": "2012-01-10",
+        "last": "2026-09-04"
+      },
+      "duplicate_dates": [],
+      "error": null,
+      "invalid_rows": 0,
+      "label": "current_large_cap",
+      "max_pages": 8,
+      "page_count": 6,
+      "response_bytes": 724152,
+      "retry_count": 0,
+      "row_count": 3600,
+      "target_date": "2013-01-01",
+      "target_reached": true,
+      "terminal_reason": "target_reached",
+      "unique_row_count": 3600
+    },
+    {
+      "base_date": "20260904",
+      "code": "230980",
+      "date_range": null,
+      "duplicate_dates": [],
+      "error": {
+        "class": "PriceParseError",
+        "invalid_rows": 1
+      },
+      "invalid_rows": 1,
+      "label": "stored_delisted_kosdaq",
+      "max_pages": 8,
+      "page_count": 1,
+      "response_bytes": 261,
+      "retry_count": 0,
+      "row_count": 0,
+      "target_date": "2013-01-01",
+      "target_reached": false,
+      "terminal_reason": "parse_failed",
+      "unique_row_count": 0
+    },
+    {
+      "base_date": "20260904",
+      "code": "032980",
+      "date_range": null,
+      "duplicate_dates": [],
+      "error": {
+        "class": "PriceParseError",
+        "invalid_rows": 1
+      },
+      "invalid_rows": 1,
+      "label": "stored_delisted_kosdaq",
+      "max_pages": 8,
+      "page_count": 1,
+      "response_bytes": 261,
+      "retry_count": 0,
+      "row_count": 0,
+      "target_date": "2013-01-01",
+      "target_reached": false,
+      "terminal_reason": "parse_failed",
+      "unique_row_count": 0
+    }
+  ],
+  "status": "partial",
+  "target_date": "2013-01-01",
+  "target_reached_count": 3,
+  "tr": "ka10081"
+}

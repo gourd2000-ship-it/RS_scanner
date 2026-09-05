@@ -2,7 +2,7 @@
 
 개정일: 2026-09-05<br>
 기준: [PRD](../docs/prd-krx-universe-authority.md), [로드맵](../docs/roadmap_krx_universe.md), [계획](plan.md)<br>
-현재 최우선: BT01. BT00 외 항목은 이 개정으로 구현 완료 처리하지 않는다.
+현재 최우선: BT02. BT00·BT01 외 항목은 이 개정으로 구현 완료 처리하지 않는다.
 
 ## 완료 기반
 
@@ -18,15 +18,15 @@
 
 ## BT01: 역사 공급 범위 표본 검증
 
-- [ ] 공급자별 source matrix와 익명화 fixture·표본 실측
+- [x] 공급자별 source matrix와 익명화 fixture·표본 실측
 
 키움 연동 완료 상태에서 상폐·장기 이력의 실제 제공 범위와 KRX/KIND 역사 명부 입수 경로를 확인한다.
 
 **완료 기준**
 
-- [ ] 현재 상장·상폐·시장 이전·기업행위·2013년 이전 사례를 포함한 5~10개 표본에 응답 범위/미지원 사유와 출처를 기록한다.
-- [ ] 연속조회 2페이지 이상, 중복 경계, 고정 base_dt와 수정주가 기준을 검증한다.
-- [ ] 명부 완전성·자료 이용/보관 조건·대체 공급자 필요 여부를 보고한다. 전체 기간 수집 가능성을 추정으로 완료 처리하지 않는다.
+- [x] 현재 상장·상폐·시장 이전·기업행위·2013년 이전 사례를 포함한 5~10개 표본에 응답 범위/미지원 사유와 출처를 기록한다. 6개 표본의 read-only 결과는 [source contract](../docs/backtest_source_contract.md#실측-결과)에 고정했다.
+- [x] 연속조회 2페이지 이상, 중복 경계, 고정 base_dt와 수정주가 기준을 검증한다. 현재 상장 4개 표본이 고정 base_dt로 6페이지를 통과했고, 중복 경계 fixture도 계약 테스트로 검증했다.
+- [x] 명부 완전성·자료 이용/보관 조건·대체 공급자 필요 여부를 보고한다. 결과는 partial이며, 상폐 OHLC·완전 역사 명부에는 BT03의 허용된 대체 import가 필요하다.
 
 **검증:** 기존 tests/unit/test_kiwoom_client.py, test_kiwoom_source.py + 신규 tests/unit/test_historical_source_contract.py; 소량 read-only 표본 리포트 확인.
 

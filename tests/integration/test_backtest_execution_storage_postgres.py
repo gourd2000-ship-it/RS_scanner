@@ -5,6 +5,7 @@ from datetime import date
 from decimal import Decimal
 from hashlib import sha256
 import json
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import create_engine, update
@@ -63,6 +64,23 @@ def test_execution_storage_on_isolated_postgres_rejects_terminal_mutation():
                     session.flush()
                     repository = BacktestRepository(session)
                     strategy = repository.create_strategy(name="PostgreSQL 표본", config={})
+                    for initial_status in ("running", "completed"):
+                        invalid_initial_run = BacktestRun(
+                            run_id=uuid4().hex,
+                            backtest_strategy_version_id=strategy.versions[0].id,
+                            backtest_dataset_id=dataset.id,
+                            backtest_dataset_rs_run_id=rs_run.id,
+                            dataset_id=dataset.dataset_id,
+                            dataset_manifest_hash=dataset.final_manifest_hash,
+                            rs_result_hash=rs_run.result_hash,
+                            range_start=date(2020, 1, 2), range_end=date(2020, 1, 3),
+                            markets=["KOSPI"], status=initial_status,
+                        )
+                        savepoint = session.begin_nested()
+                        session.add(invalid_initial_run)
+                        with pytest.raises(DBAPIError):
+                            session.flush()
+                        savepoint.rollback()
                     run = repository.enqueue_run(
                         strategy_version_id=strategy.versions[0].id, dataset_id=dataset.dataset_id,
                         dataset_manifest_hash=dataset.final_manifest_hash, rs_run_id=rs_run.id,

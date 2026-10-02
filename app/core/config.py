@@ -152,6 +152,11 @@ class Settings(BaseSettings):
     operator_service_tokens: str = Field(default="", alias="OPERATOR_SERVICE_TOKENS")
     operator_allowed_ips: str = Field(default="", alias="OPERATOR_ALLOWED_IPS")
 
+    # Browser-only backtest operator session.  The password is intentionally
+    # supplied only by the deployment secret store and never reused as an API
+    # bearer token.
+    backtest_operator_password: Optional[str] = Field(default=None, alias="BACKTEST_OPERATOR_PASSWORD")
+
     # Sam repair API.  It is disabled until queue migration and canary approval
     # are complete; its scopes still live in the separate service-token entry.
     repair_api_enabled: bool = Field(default=False, alias="REPAIR_API_ENABLED")

@@ -75,8 +75,8 @@ def test_clean_dataset_freezes_selected_observation_and_keeps_missing_day():
         repository = BacktestRepository(session)
         strategy = repository.create_strategy(name="공장 데이터셋", config={})
         snapshots = (
-            BenchmarkSnapshotInput("KOSPI", "KOSPI", "f" * 64, ((date(2020, 1, 2), Decimal("2000")),)),
-            BenchmarkSnapshotInput("KOSDAQ", "KOSDAQ", "0" * 64, ((date(2020, 1, 2), Decimal("650")),)),
+            BenchmarkSnapshotInput("KOSPI", "KOSPI", "f" * 64, ((date(2020, 1, 2), Decimal("2000")), (date(2020, 1, 3), Decimal("2001")))),
+            BenchmarkSnapshotInput("KOSDAQ", "KOSDAQ", "0" * 64, ((date(2020, 1, 2), Decimal("650")), (date(2020, 1, 3), Decimal("651")))),
         )
         run = repository.enqueue_run(
             strategy_version_id=strategy.versions[0].id, dataset_id=first.dataset_id,

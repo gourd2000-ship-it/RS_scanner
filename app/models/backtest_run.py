@@ -21,6 +21,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -73,6 +74,10 @@ class BacktestRun(Base):
             name="ck_backtest_runs_status",
         ),
         Index("ix_backtest_runs_queue", "status", "queued_at", "id"),
+        Index(
+            "uq_backtest_runs_only_one_running", "status", unique=True,
+            postgresql_where=text("status = 'running'"), sqlite_where=text("status = 'running'"),
+        ),
         Index("ix_backtest_runs_strategy_version", "backtest_strategy_version_id"),
         Index("ix_backtest_runs_dataset", "backtest_dataset_id"),
     )
@@ -82,15 +87,16 @@ class BacktestRun(Base):
     backtest_strategy_version_id: Mapped[int] = mapped_column(
         ForeignKey("backtest_strategy_versions.id"), index=True
     )
-    backtest_dataset_id: Mapped[int] = mapped_column(
-        ForeignKey("backtest_datasets.id"), index=True
+    backtest_dataset_id: Mapped[int | None] = mapped_column(
+        ForeignKey("backtest_datasets.id"), index=True, nullable=True
     )
-    backtest_dataset_rs_run_id: Mapped[int] = mapped_column(
-        ForeignKey("backtest_dataset_rs_runs.id"), index=True
+    backtest_dataset_rs_run_id: Mapped[int | None] = mapped_column(
+        ForeignKey("backtest_dataset_rs_runs.id"), index=True, nullable=True
     )
-    dataset_id: Mapped[str] = mapped_column(String(80), index=True)
-    dataset_manifest_hash: Mapped[str] = mapped_column(String(64), index=True)
-    rs_result_hash: Mapped[str] = mapped_column(String(64), index=True)
+    dataset_id: Mapped[str | None] = mapped_column(String(80), index=True, nullable=True)
+    dataset_manifest_hash: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    rs_formula_version: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    rs_result_hash: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     range_start: Mapped[date] = mapped_column(Date)
     range_end: Mapped[date] = mapped_column(Date)
     markets: Mapped[list[str]] = mapped_column(JSON)
@@ -221,7 +227,9 @@ class BacktestOperatorSession(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     session_token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    csrf_token_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     operator_subject_hash: Mapped[str] = mapped_column(String(64), index=True)
+    is_operator: Mapped[bool] = mapped_column(default=False, nullable=False)
     issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -244,3 +252,17 @@ class BacktestOperatorLockout(Base):
     subject_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     locked_until: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+
+
+class BacktestOperatorAuditEvent(Base):
+    """Credential-safe audit trail for the browser-only operator boundary."""
+
+    __tablename__ = "backtest_operator_audit_events"
+    __table_args__ = (Index("ix_backtest_operator_audit_subject_time", "subject_hash", "created_at"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    subject_hash: Mapped[str] = mapped_column(String(64), index=True)
+    event_type: Mapped[str] = mapped_column(String(60))
+    result: Mapped[str] = mapped_column(String(20))
+    request_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)

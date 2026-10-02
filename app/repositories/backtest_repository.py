@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from hashlib import sha256
+from hmac import compare_digest
 import json
 from uuid import uuid4
 
@@ -21,6 +22,7 @@ from app.models.backtest_run import (
     BacktestOperatorLockout,
     BacktestOperatorLoginAttempt,
     BacktestOperatorSession,
+    BacktestOperatorAuditEvent,
     BacktestOrder,
     BacktestRun,
     BacktestStrategy,
@@ -136,6 +138,7 @@ class BacktestRepository:
             backtest_dataset_rs_run_id=rs_run.id,
             dataset_id=dataset.dataset_id,
             dataset_manifest_hash=dataset.final_manifest_hash,
+            rs_formula_version=rs_run.formula_version,
             rs_result_hash=rs_run.result_hash,
             range_start=range_start,
             range_end=range_end,
@@ -157,6 +160,35 @@ class BacktestRepository:
         self.session.flush()
         return run
 
+    def record_data_unavailable_run(
+        self, *, strategy_version_id: int, range_start: date, range_end: date, markets: list[str],
+        reasons: list[dict[str, object]], dataset: BacktestDataset | None = None,
+        rs_run: BacktestDatasetRsRun | None = None, run_id: str | None = None,
+    ) -> BacktestRun:
+        """Persist a failed input attempt without inventing missing lineage."""
+        if range_start > range_end or not set(markets) or not set(markets) <= {"KOSPI", "KOSDAQ"}:
+            raise ValueError("invalid backtest range or markets")
+        version = self.session.get(BacktestStrategyVersion, strategy_version_id)
+        if version is None:
+            raise KeyError(f"strategy version not found: {strategy_version_id}")
+        if rs_run is not None and (dataset is None or rs_run.backtest_dataset_id != dataset.id):
+            raise ValueError("RS run does not belong to data-unavailable dataset")
+        run = BacktestRun(
+            run_id=run_id or uuid4().hex, backtest_strategy_version_id=version.id,
+            backtest_dataset_id=dataset.id if dataset else None,
+            backtest_dataset_rs_run_id=rs_run.id if rs_run else None,
+            dataset_id=dataset.dataset_id if dataset else None,
+            dataset_manifest_hash=dataset.final_manifest_hash if dataset else None,
+            rs_formula_version=rs_run.formula_version if rs_run else None,
+            rs_result_hash=rs_run.result_hash if rs_run else None,
+            range_start=range_start, range_end=range_end, markets=sorted(set(markets)),
+            status="queued",
+        )
+        self.session.add(run)
+        self.session.flush()
+        # The database queue trigger requires all rows to enter as queued.
+        return self._transition(run, "data_unavailable", "data_unavailable", json.dumps(reasons, ensure_ascii=False, separators=(",", ":"), default=str))
+
     def get_run(self, run_id: str) -> BacktestRun | None:
         return self.session.scalar(
             select(BacktestRun)
@@ -171,6 +203,15 @@ class BacktestRepository:
 
     def claim_next_run(self) -> BacktestRun | None:
         """Claim one FIFO item. PostgreSQL locks make concurrent workers skip it."""
+        dialect = self.session.get_bind().dialect.name
+        if dialect == "postgresql":
+            acquired = self.session.scalar(select(func.pg_try_advisory_xact_lock(90821, 1)))
+            if not acquired:
+                return None
+        # The partial unique index is the durable guarantee after the advisory
+        # transaction lock is released on commit.
+        if self.session.scalar(select(BacktestRun.id).where(BacktestRun.status == "running").limit(1)) is not None:
+            return None
         run = self.session.scalar(
             select(BacktestRun)
             .where(BacktestRun.status == "queued")
@@ -220,14 +261,20 @@ class BacktestRepository:
         return row
 
     def create_operator_session(
-        self, *, session_token_hash: str, operator_subject_hash: str, expires_at: datetime
+        self, *, session_token_hash: str, operator_subject_hash: str,
+        csrf_token_hash: str | None = None,
+        expires_at: datetime, is_operator: bool = False,
     ) -> BacktestOperatorSession:
         self._validate_hash(session_token_hash, "session token")
+        csrf_token_hash = csrf_token_hash or session_token_hash
+        self._validate_hash(csrf_token_hash, "CSRF token")
         self._validate_hash(operator_subject_hash, "operator subject")
         row = BacktestOperatorSession(
             session_token_hash=session_token_hash,
+            csrf_token_hash=csrf_token_hash,
             operator_subject_hash=operator_subject_hash,
             expires_at=expires_at,
+            is_operator=is_operator,
         )
         self.session.add(row)
         self.session.flush()
@@ -244,6 +291,18 @@ class BacktestRepository:
                 BacktestOperatorSession.expires_at > now,
             )
         )
+
+    def get_active_operator_session_with_csrf(
+        self, *, session_token_hash: str, csrf_token_hash: str, now: datetime,
+        require_operator: bool = True,
+    ) -> BacktestOperatorSession | None:
+        self._validate_hash(csrf_token_hash, "CSRF token")
+        row = self.get_active_operator_session(session_token_hash=session_token_hash, now=now)
+        if row is None or not compare_digest(row.csrf_token_hash, csrf_token_hash):
+            return None
+        if require_operator and not row.is_operator:
+            return None
+        return row
 
     def revoke_operator_session(self, *, session_token_hash: str, now: datetime) -> None:
         row = self.get_active_operator_session(session_token_hash=session_token_hash, now=now)
@@ -295,6 +354,19 @@ class BacktestRepository:
             select(BacktestOperatorLockout).where(BacktestOperatorLockout.subject_hash == subject_hash)
         )
         return row is not None and row.locked_until > now
+
+    def record_operator_audit(
+        self, *, subject_hash: str, event_type: str, result: str, request_id: str | None = None,
+        now: datetime | None = None,
+    ) -> BacktestOperatorAuditEvent:
+        self._validate_hash(subject_hash, "operator subject")
+        row = BacktestOperatorAuditEvent(
+            subject_hash=subject_hash, event_type=event_type, result=result,
+            request_id=(request_id or None), created_at=now or datetime.now(timezone.utc),
+        )
+        self.session.add(row)
+        self.session.flush()
+        return row
 
     def _required_run(self, run_id: str) -> BacktestRun:
         run = self.get_run(run_id)

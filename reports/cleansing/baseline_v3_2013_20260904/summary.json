@@ -1,0 +1,12 @@
+{
+  "expected": 5203993,
+  "observed": 5080612,
+  "valid": 5080347,
+  "missing": 123381,
+  "invalid": 0,
+  "review_required": 265,
+  "non_tradable": 0,
+  "source_verified": 5080347,
+  "excluded_delisted": 1466,
+  "unknown_instruments": 594
+}

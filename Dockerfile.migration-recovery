@@ -1,0 +1,21 @@
+# Incident recovery: preserve the stopped API container's application/dependencies.
+# Base was exported/imported from rs_scanner_api on 2026-10-01; no runtime
+# environment variables (credentials) are copied into this image.
+# Production DB is already at o8b9c0d1e2f3. These scripts restore its ancestry.
+ARG RECOVERY_BASE=rs_scanner-api:recovery-base-20261001
+FROM ${RECOVERY_BASE}
+WORKDIR /app
+USER root
+COPY --chown=1000:1000 alembic/versions/h2b3c4d5e6f7_historical_instrument_identity.py \
+    alembic/versions/j3c4d5e6f7a8_add_listing_events.py \
+    alembic/versions/k4d5e6f7a8b9_historical_backfill_runs.py \
+    alembic/versions/l5e6f7a8b9c0_backtest_datasets.py \
+    alembic/versions/m6f7a8b9c0d1_backtest_dataset_rs.py \
+    alembic/versions/n7a8b9c0d1e2_backfill_global_request_budget.py \
+    alembic/versions/o8b9c0d1e2f3_backtest_dataset_replay_indexes.py \
+    /app/alembic/versions/
+USER appuser
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import httpx; httpx.get('http://localhost:8000/api/v1/health').raise_for_status()"
+CMD ["uvicorn", "app.main_api:app", "--host", "0.0.0.0", "--port", "8000"]

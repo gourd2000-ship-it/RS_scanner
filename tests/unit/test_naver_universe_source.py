@@ -1,3 +1,5 @@
+import json
+
 from app.crawler.sources.naver import NaverPriceSource
 from app.schemas.market_data import SymbolPayload
 
@@ -15,70 +17,90 @@ class PageClient:
         return value
 
 
-def test_naver_universe_reports_market_page_progress(monkeypatch):
-    def fake_parse(raw, market):
-        if raw == "":
-            return []
-        return [SymbolPayload(code=raw, name=f"Name {raw}", market=market)]
+def _individual_page(index, items, *, total=2, has_next=False):
+    return json.dumps(
+        {"index": str(index), "size": "2", "totalCount": str(total), "hasNext": has_next, "items": items}
+    )
 
-    monkeypatch.setattr("app.crawler.sources.naver.parse_symbols", fake_parse)
+
+def _stock(code, market):
+    return {"itemCode": code, "itemName": f"Name {code}", "marketType": market}
+
+
+def _fund(kind):
+    key = "etfItemList" if kind == "etf" else "etnItemList"
+    code = "0005D0" if kind == "etf" else "530107"
+    return json.dumps({"resultCode": "success", "result": {key: [{"itemcode": code, "itemname": kind}]}})
+
+
+def test_naver_universe_pages_all_markets_and_validates_total_count(monkeypatch):
+    monkeypatch.setattr(NaverPriceSource, "_SYMBOL_PAGE_SIZE", 2)
+    base = NaverPriceSource._INDIVIDUAL_STOCKS_URL
     client = PageClient(
         {
-            "https://finance.naver.com/sise/sise_market_sum.naver?sosok=0&page=1": "KOSPI-1",
-            "https://finance.naver.com/sise/sise_market_sum.naver?sosok=0&page=2": "",
-            "https://finance.naver.com/sise/sise_market_sum.naver?sosok=1&page=1": "KOSDAQ-1",
-            "https://finance.naver.com/sise/sise_market_sum.naver?sosok=1&page=2": "",
+            f"{base}?listingType=listedAtDesc&exchangeType=KRX&index=0&size=2": _individual_page(
+                0,
+                [_stock("000001", "KOSPI"), _stock("100001", "KOSDAQ")],
+                total=3,
+                has_next=True,
+            ),
+            f"{base}?listingType=listedAtDesc&exchangeType=KRX&index=1&size=2": _individual_page(
+                1, [_stock("000002", "KOSPI")], total=3
+            ),
+            NaverPriceSource._ETF_API_URL: _fund("etf"),
+            NaverPriceSource._ETN_API_URL: _fund("etn"),
         }
     )
 
     result = NaverPriceSource(client=client, max_symbol_pages=3).fetch_symbol_universe()
 
     assert result.complete is True
-    assert result.pages_total == 4
-    assert result.pages_succeeded == 4
-    assert [symbol.code for symbol in result.symbols] == ["KOSPI-1", "KOSDAQ-1"]
+    assert result.pages_total == result.pages_succeeded == 4
+    assert {symbol.code for symbol in result.symbols} == {
+        "000001", "000002", "100001", "0005D0", "530107"
+    }
+    assert len(result.market_results["KOSPI"].symbols) == 4
+    assert len(result.market_results["KOSDAQ"].symbols) == 1
+    assert {symbol.symbol_type for symbol in result.symbols} == {"stock", "etf", "etn"}
 
 
-def test_naver_universe_uses_configured_page_hard_cap(monkeypatch):
-    def fake_parse(raw, market):
-        if raw == "":
-            return []
-        return [SymbolPayload(code=raw, name=f"Name {raw}", market=market)]
-
-    class Settings:
-        naver_max_symbol_pages = 3
-
-    monkeypatch.setattr("app.crawler.sources.naver.get_settings", lambda: Settings())
-    monkeypatch.setattr("app.crawler.sources.naver.parse_symbols", fake_parse)
+def test_naver_universe_hard_page_cap_is_incomplete(monkeypatch):
+    monkeypatch.setattr(NaverPriceSource, "_SYMBOL_PAGE_SIZE", 2)
+    base = NaverPriceSource._INDIVIDUAL_STOCKS_URL
     client = PageClient(
         {
-            "https://finance.naver.com/sise/sise_market_sum.naver?sosok=0&page=1": "KOSPI-1",
-            "https://finance.naver.com/sise/sise_market_sum.naver?sosok=0&page=2": "",
-            "https://finance.naver.com/sise/sise_market_sum.naver?sosok=1&page=1": "KOSDAQ-1",
-            "https://finance.naver.com/sise/sise_market_sum.naver?sosok=1&page=2": "",
+            f"{base}?listingType=listedAtDesc&exchangeType=KRX&index=0&size=2": _individual_page(
+                0,
+                [_stock("000001", "KOSPI"), _stock("100001", "KOSDAQ")],
+                total=3,
+                has_next=True,
+            ),
+            NaverPriceSource._ETF_API_URL: _fund("etf"),
+            NaverPriceSource._ETN_API_URL: _fund("etn"),
         }
     )
 
-    result = NaverPriceSource(client=client).fetch_symbol_universe()
+    result = NaverPriceSource(client=client, max_symbol_pages=1).fetch_symbol_universe()
 
-    assert result.complete is True
-    assert result.pages_total == 4
-    assert result.pages_succeeded == 4
+    assert result.complete is False
+    assert result.error_message == "symbol_max_pages_reached:1"
+    assert len(result.symbols) == 4
 
 
-def test_naver_universe_preserves_partial_rows_when_a_market_page_fails(monkeypatch):
-    def fake_parse(raw, market):
-        if raw == "":
-            return []
-        return [SymbolPayload(code=raw, name=f"Name {raw}", market=market)]
-
-    monkeypatch.setattr("app.crawler.sources.naver.parse_symbols", fake_parse)
+def test_naver_universe_keeps_partial_rows_when_page_request_fails(monkeypatch):
+    monkeypatch.setattr(NaverPriceSource, "_SYMBOL_PAGE_SIZE", 2)
+    base = NaverPriceSource._INDIVIDUAL_STOCKS_URL
     client = PageClient(
         {
-            "https://finance.naver.com/sise/sise_market_sum.naver?sosok=0&page=1": "KOSPI-1",
-            "https://finance.naver.com/sise/sise_market_sum.naver?sosok=0&page=2": RuntimeError("timeout"),
-            "https://finance.naver.com/sise/sise_market_sum.naver?sosok=1&page=1": "KOSDAQ-1",
-            "https://finance.naver.com/sise/sise_market_sum.naver?sosok=1&page=2": "",
+            f"{base}?listingType=listedAtDesc&exchangeType=KRX&index=0&size=2": _individual_page(
+                0,
+                [_stock("000001", "KOSPI"), _stock("100001", "KOSDAQ")],
+                total=3,
+                has_next=True,
+            ),
+            f"{base}?listingType=listedAtDesc&exchangeType=KRX&index=1&size=2": RuntimeError("timeout"),
+            NaverPriceSource._ETF_API_URL: _fund("etf"),
+            NaverPriceSource._ETN_API_URL: _fund("etn"),
         }
     )
 
@@ -87,8 +109,56 @@ def test_naver_universe_preserves_partial_rows_when_a_market_page_fails(monkeypa
     assert result.complete is False
     assert result.pages_total == 4
     assert result.pages_succeeded == 3
-    assert result.error_message == "KOSPI:symbol_page_RuntimeError"
-    assert [symbol.code for symbol in result.symbols] == ["KOSPI-1", "KOSDAQ-1"]
+    assert result.error_message == "symbol_page_1_RuntimeError"
+    assert {symbol.code for symbol in result.symbols} == {
+        "000001", "100001", "0005D0", "530107"
+    }
+
+
+def test_naver_universe_rejects_empty_first_page(monkeypatch):
+    monkeypatch.setattr(NaverPriceSource, "_SYMBOL_PAGE_SIZE", 2)
+    base = NaverPriceSource._INDIVIDUAL_STOCKS_URL
+    client = PageClient(
+        {
+            f"{base}?listingType=listedAtDesc&exchangeType=KRX&index=0&size=2": _individual_page(
+                0, [], total=0
+            ),
+            NaverPriceSource._ETF_API_URL: _fund("etf"),
+            NaverPriceSource._ETN_API_URL: _fund("etn"),
+        }
+    )
+
+    result = NaverPriceSource(client=client, max_symbol_pages=1).fetch_symbol_universe()
+
+    assert result.complete is False
+    assert result.error_message == "symbol_unexpected_empty_page"
+    assert all(not market.complete for market in result.market_results.values())
+
+
+def test_naver_universe_does_not_accept_overlapping_pages_as_complete(monkeypatch):
+    monkeypatch.setattr(NaverPriceSource, "_SYMBOL_PAGE_SIZE", 2)
+    base = NaverPriceSource._INDIVIDUAL_STOCKS_URL
+    client = PageClient(
+        {
+            f"{base}?listingType=listedAtDesc&exchangeType=KRX&index=0&size=2": _individual_page(
+                0,
+                [_stock("000001", "KOSPI"), _stock("100001", "KOSDAQ")],
+                total=3,
+                has_next=True,
+            ),
+            f"{base}?listingType=listedAtDesc&exchangeType=KRX&index=1&size=2": _individual_page(
+                1, [_stock("100001", "KOSDAQ")], total=3
+            ),
+            NaverPriceSource._ETF_API_URL: _fund("etf"),
+            NaverPriceSource._ETN_API_URL: _fund("etn"),
+        }
+    )
+
+    result = NaverPriceSource(client=client, max_symbol_pages=3).fetch_symbol_universe()
+
+    assert result.complete is False
+    assert result.error_message == "symbol_total_count_mismatch:2!=3"
+    assert result.market_results["KOSDAQ"].duplicate_count == 1
 
 
 def test_naver_price_request_keeps_alphanumeric_code():

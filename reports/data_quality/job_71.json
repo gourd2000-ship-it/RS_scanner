@@ -1,0 +1,6106 @@
+{
+  "run_id": 18,
+  "crawl_job_id": 71,
+  "trade_date": "2026-08-21",
+  "run_kind": "daily",
+  "validator_version": "1.0.0",
+  "mode": "report_only",
+  "validation_status": "blocked",
+  "expected_symbols": 4298,
+  "fresh_symbols": 4123,
+  "stale_symbols": 145,
+  "rs_candidate_symbols": 3890,
+  "coverage_rate": 0.959283,
+  "rs_fresh_input_coverage_rate": 0.962982,
+  "counts": {
+    "pass": 4140,
+    "warning": 18,
+    "error": 205,
+    "critical": 128
+  },
+  "metrics": {
+    "target_events": 4298,
+    "target_status_counts": {
+      "fetched": 4123,
+      "failed": 175
+    },
+    "unique_target_symbols": 4298,
+    "unique_error_symbols": 158,
+    "fresh_symbols": 4123,
+    "stale_symbols": 145,
+    "stale_lag_days": {
+      "min": 1,
+      "max": 11,
+      "avg": 9.606896551724137
+    },
+    "rs_fresh_candidates": 3746,
+    "case_count": 351,
+    "reason_counts": {
+      "MISSING_ROW": 30,
+      "RS_INPUT_STALE": 145,
+      "INVALID_PRICE": 157,
+      "INVALID_OHLC": 18,
+      "COVERAGE_BELOW_POLICY": 1
+    },
+    "rule_counts": {
+      "persisted_price_presence": 30,
+      "rs_input_freshness": 145,
+      "ingest_failure": 175,
+      "coverage": 1
+    }
+  },
+  "cases": [
+    {
+      "id": 14254,
+      "subject_type": "rs_input",
+      "target_key": "0000J0",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14255,
+      "subject_type": "rs_input",
+      "target_key": "000300",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14256,
+      "subject_type": "rs_input",
+      "target_key": "000545",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14257,
+      "subject_type": "rs_input",
+      "target_key": "000880",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14258,
+      "subject_type": "rs_input",
+      "target_key": "00088K",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14259,
+      "subject_type": "rs_input",
+      "target_key": "001000",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "WARNING",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "latest_observed_date": "2026-08-20",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 1,
+        "price_row_count": 856
+      }
+    },
+    {
+      "id": 14260,
+      "subject_type": "rs_input",
+      "target_key": "001290",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "WARNING",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "latest_observed_date": "2026-08-20",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 1,
+        "price_row_count": 854
+      }
+    },
+    {
+      "id": 14261,
+      "subject_type": "rs_input",
+      "target_key": "001420",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-12",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 9,
+        "price_row_count": 849
+      }
+    },
+    {
+      "id": 14262,
+      "subject_type": "rs_input",
+      "target_key": "001470",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14263,
+      "subject_type": "rs_input",
+      "target_key": "001570",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14264,
+      "subject_type": "rs_input",
+      "target_key": "001840",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 849
+      }
+    },
+    {
+      "id": 14265,
+      "subject_type": "rs_input",
+      "target_key": "002410",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14266,
+      "subject_type": "rs_input",
+      "target_key": "002780",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-13",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 8,
+        "price_row_count": 849
+      }
+    },
+    {
+      "id": 14267,
+      "subject_type": "rs_input",
+      "target_key": "002785",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14268,
+      "subject_type": "rs_input",
+      "target_key": "002787",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14269,
+      "subject_type": "rs_input",
+      "target_key": "002820",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-12",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 9,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14270,
+      "subject_type": "rs_input",
+      "target_key": "002995",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14271,
+      "subject_type": "rs_input",
+      "target_key": "004270",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-12",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 9,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14272,
+      "subject_type": "rs_input",
+      "target_key": "004415",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14273,
+      "subject_type": "rs_input",
+      "target_key": "005030",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14274,
+      "subject_type": "rs_input",
+      "target_key": "005110",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14275,
+      "subject_type": "rs_input",
+      "target_key": "005320",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-12",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 9,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14276,
+      "subject_type": "rs_input",
+      "target_key": "006050",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 849
+      }
+    },
+    {
+      "id": 14277,
+      "subject_type": "rs_input",
+      "target_key": "006200",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-12",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 9,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14278,
+      "subject_type": "rs_input",
+      "target_key": "006380",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14279,
+      "subject_type": "rs_input",
+      "target_key": "006490",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14280,
+      "subject_type": "rs_input",
+      "target_key": "006740",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14281,
+      "subject_type": "rs_input",
+      "target_key": "007110",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-12",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 9,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14282,
+      "subject_type": "rs_input",
+      "target_key": "008040",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14283,
+      "subject_type": "rs_input",
+      "target_key": "008600",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14284,
+      "subject_type": "rs_input",
+      "target_key": "009310",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14285,
+      "subject_type": "rs_input",
+      "target_key": "009415",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14286,
+      "subject_type": "rs_input",
+      "target_key": "009440",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14287,
+      "subject_type": "rs_input",
+      "target_key": "0099X0",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14288,
+      "subject_type": "rs_input",
+      "target_key": "011000",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14289,
+      "subject_type": "rs_input",
+      "target_key": "011155",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14290,
+      "subject_type": "rs_input",
+      "target_key": "011370",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-11",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 10,
+        "price_row_count": 850
+      }
+    },
+    {
+      "id": 14291,
+      "subject_type": "rs_input",
+      "target_key": "011810",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14292,
+      "subject_type": "rs_input",
+      "target_key": "012170",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14293,
+      "subject_type": "rs_input",
+      "target_key": "012280",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14294,
+      "subject_type": "rs_input",
+      "target_key": "014160",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-12",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 9,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14295,
+      "subject_type": "rs_input",
+      "target_key": "015020",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14296,
+      "subject_type": "rs_input",
+      "target_key": "016790",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 849
+      }
+    },
+    {
+      "id": 14297,
+      "subject_type": "rs_input",
+      "target_key": "017040",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14298,
+      "subject_type": "rs_input",
+      "target_key": "018470",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "WARNING",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "latest_observed_date": "2026-08-20",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 1,
+        "price_row_count": 853
+      }
+    },
+    {
+      "id": 14299,
+      "subject_type": "rs_input",
+      "target_key": "019490",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14300,
+      "subject_type": "rs_input",
+      "target_key": "019680",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-13",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 8,
+        "price_row_count": 849
+      }
+    },
+    {
+      "id": 14301,
+      "subject_type": "rs_input",
+      "target_key": "019685",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14302,
+      "subject_type": "rs_input",
+      "target_key": "020760",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14303,
+      "subject_type": "rs_input",
+      "target_key": "023440",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 849
+      }
+    },
+    {
+      "id": 14304,
+      "subject_type": "rs_input",
+      "target_key": "023760",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 849
+      }
+    },
+    {
+      "id": 14305,
+      "subject_type": "rs_input",
+      "target_key": "024890",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-12",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 9,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14306,
+      "subject_type": "rs_input",
+      "target_key": "030350",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 849
+      }
+    },
+    {
+      "id": 14307,
+      "subject_type": "rs_input",
+      "target_key": "031860",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 849
+      }
+    },
+    {
+      "id": 14308,
+      "subject_type": "rs_input",
+      "target_key": "032860",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 849
+      }
+    },
+    {
+      "id": 14309,
+      "subject_type": "rs_input",
+      "target_key": "033170",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14310,
+      "subject_type": "rs_input",
+      "target_key": "034940",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14311,
+      "subject_type": "rs_input",
+      "target_key": "036690",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14312,
+      "subject_type": "rs_input",
+      "target_key": "037400",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-13",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 8,
+        "price_row_count": 851
+      }
+    },
+    {
+      "id": 14313,
+      "subject_type": "rs_input",
+      "target_key": "041590",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14314,
+      "subject_type": "rs_input",
+      "target_key": "043100",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14315,
+      "subject_type": "rs_input",
+      "target_key": "043200",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14316,
+      "subject_type": "rs_input",
+      "target_key": "043220",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14317,
+      "subject_type": "rs_input",
+      "target_key": "044180",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14318,
+      "subject_type": "rs_input",
+      "target_key": "044480",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-13",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 8,
+        "price_row_count": 851
+      }
+    },
+    {
+      "id": 14319,
+      "subject_type": "rs_input",
+      "target_key": "046070",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14320,
+      "subject_type": "rs_input",
+      "target_key": "049180",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14321,
+      "subject_type": "rs_input",
+      "target_key": "052770",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14322,
+      "subject_type": "rs_input",
+      "target_key": "054180",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14323,
+      "subject_type": "rs_input",
+      "target_key": "060570",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14324,
+      "subject_type": "rs_input",
+      "target_key": "064090",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14325,
+      "subject_type": "rs_input",
+      "target_key": "065420",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14326,
+      "subject_type": "rs_input",
+      "target_key": "065570",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14327,
+      "subject_type": "rs_input",
+      "target_key": "066360",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14328,
+      "subject_type": "rs_input",
+      "target_key": "066410",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14329,
+      "subject_type": "rs_input",
+      "target_key": "066790",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14330,
+      "subject_type": "rs_input",
+      "target_key": "067390",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14331,
+      "subject_type": "rs_input",
+      "target_key": "068240",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14332,
+      "subject_type": "rs_input",
+      "target_key": "068940",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14333,
+      "subject_type": "rs_input",
+      "target_key": "069460",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14334,
+      "subject_type": "rs_input",
+      "target_key": "073190",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "WARNING",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "latest_observed_date": "2026-08-19",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 2,
+        "price_row_count": 854
+      }
+    },
+    {
+      "id": 14335,
+      "subject_type": "rs_input",
+      "target_key": "073640",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14336,
+      "subject_type": "rs_input",
+      "target_key": "074610",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14337,
+      "subject_type": "rs_input",
+      "target_key": "079970",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14338,
+      "subject_type": "rs_input",
+      "target_key": "080720",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14339,
+      "subject_type": "rs_input",
+      "target_key": "082640",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 846
+      }
+    },
+    {
+      "id": 14340,
+      "subject_type": "rs_input",
+      "target_key": "082660",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14341,
+      "subject_type": "rs_input",
+      "target_key": "082850",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-13",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 8,
+        "price_row_count": 851
+      }
+    },
+    {
+      "id": 14342,
+      "subject_type": "rs_input",
+      "target_key": "083640",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "WARNING",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "latest_observed_date": "2026-08-20",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 1,
+        "price_row_count": 855
+      }
+    },
+    {
+      "id": 14343,
+      "subject_type": "rs_input",
+      "target_key": "083660",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14344,
+      "subject_type": "rs_input",
+      "target_key": "084680",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "WARNING",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "latest_observed_date": "2026-08-19",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 2,
+        "price_row_count": 851
+      }
+    },
+    {
+      "id": 14345,
+      "subject_type": "rs_input",
+      "target_key": "087260",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 848
+      }
+    },
+    {
+      "id": 14346,
+      "subject_type": "rs_input",
+      "target_key": "090410",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-11",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 10,
+        "price_row_count": 849
+      }
+    },
+    {
+      "id": 14347,
+      "subject_type": "rs_input",
+      "target_key": "091810",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 845
+      }
+    },
+    {
+      "id": 14348,
+      "subject_type": "rs_input",
+      "target_key": "093240",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-12",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 9,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14349,
+      "subject_type": "rs_input",
+      "target_key": "096610",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14350,
+      "subject_type": "rs_input",
+      "target_key": "099220",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "WARNING",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "latest_observed_date": "2026-08-20",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 1,
+        "price_row_count": 854
+      }
+    },
+    {
+      "id": 14351,
+      "subject_type": "rs_input",
+      "target_key": "099520",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14352,
+      "subject_type": "rs_input",
+      "target_key": "106080",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14353,
+      "subject_type": "rs_input",
+      "target_key": "119650",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 845
+      }
+    },
+    {
+      "id": 14354,
+      "subject_type": "rs_input",
+      "target_key": "121800",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14355,
+      "subject_type": "rs_input",
+      "target_key": "140570",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14356,
+      "subject_type": "rs_input",
+      "target_key": "142760",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14357,
+      "subject_type": "rs_input",
+      "target_key": "143210",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 845
+      }
+    },
+    {
+      "id": 14358,
+      "subject_type": "rs_input",
+      "target_key": "145210",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14359,
+      "subject_type": "rs_input",
+      "target_key": "175250",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14360,
+      "subject_type": "rs_input",
+      "target_key": "182400",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14361,
+      "subject_type": "rs_input",
+      "target_key": "183490",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14362,
+      "subject_type": "rs_input",
+      "target_key": "196450",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "WARNING",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "latest_observed_date": "2026-08-20",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 1,
+        "price_row_count": 854
+      }
+    },
+    {
+      "id": 14363,
+      "subject_type": "rs_input",
+      "target_key": "196490",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14364,
+      "subject_type": "rs_input",
+      "target_key": "203400",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-14",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 7,
+        "price_row_count": 851
+      }
+    },
+    {
+      "id": 14365,
+      "subject_type": "rs_input",
+      "target_key": "206560",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14366,
+      "subject_type": "rs_input",
+      "target_key": "207760",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14367,
+      "subject_type": "rs_input",
+      "target_key": "214610",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14368,
+      "subject_type": "rs_input",
+      "target_key": "214680",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "WARNING",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "latest_observed_date": "2026-08-19",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 2,
+        "price_row_count": 853
+      }
+    },
+    {
+      "id": 14369,
+      "subject_type": "rs_input",
+      "target_key": "215620",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14370,
+      "subject_type": "rs_input",
+      "target_key": "217480",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14371,
+      "subject_type": "rs_input",
+      "target_key": "226380",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14372,
+      "subject_type": "rs_input",
+      "target_key": "227550",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14373,
+      "subject_type": "rs_input",
+      "target_key": "234310",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14374,
+      "subject_type": "rs_input",
+      "target_key": "234920",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14375,
+      "subject_type": "rs_input",
+      "target_key": "241820",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14376,
+      "subject_type": "rs_input",
+      "target_key": "244460",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14377,
+      "subject_type": "rs_input",
+      "target_key": "245620",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14378,
+      "subject_type": "rs_input",
+      "target_key": "246250",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14379,
+      "subject_type": "rs_input",
+      "target_key": "246720",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14380,
+      "subject_type": "rs_input",
+      "target_key": "252500",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14381,
+      "subject_type": "rs_input",
+      "target_key": "258830",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14382,
+      "subject_type": "rs_input",
+      "target_key": "263050",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14383,
+      "subject_type": "rs_input",
+      "target_key": "265690",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 512
+      }
+    },
+    {
+      "id": 14384,
+      "subject_type": "rs_input",
+      "target_key": "266550",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14385,
+      "subject_type": "rs_input",
+      "target_key": "269620",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14386,
+      "subject_type": "rs_input",
+      "target_key": "273060",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "WARNING",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "latest_observed_date": "2026-08-19",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 2,
+        "price_row_count": 853
+      }
+    },
+    {
+      "id": 14387,
+      "subject_type": "rs_input",
+      "target_key": "276040",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14388,
+      "subject_type": "rs_input",
+      "target_key": "277650",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14389,
+      "subject_type": "rs_input",
+      "target_key": "284620",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14390,
+      "subject_type": "rs_input",
+      "target_key": "285800",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "WARNING",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "latest_observed_date": "2026-08-20",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 1,
+        "price_row_count": 784
+      }
+    },
+    {
+      "id": 14391,
+      "subject_type": "rs_input",
+      "target_key": "286750",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14392,
+      "subject_type": "rs_input",
+      "target_key": "288330",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14393,
+      "subject_type": "rs_input",
+      "target_key": "294090",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14394,
+      "subject_type": "rs_input",
+      "target_key": "297570",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "WARNING",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "latest_observed_date": "2026-08-20",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 1,
+        "price_row_count": 854
+      }
+    },
+    {
+      "id": 14395,
+      "subject_type": "rs_input",
+      "target_key": "300610",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14396,
+      "subject_type": "rs_input",
+      "target_key": "301400",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14397,
+      "subject_type": "rs_input",
+      "target_key": "304840",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14398,
+      "subject_type": "rs_input",
+      "target_key": "309710",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 245
+      }
+    },
+    {
+      "id": 14399,
+      "subject_type": "rs_input",
+      "target_key": "313760",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14400,
+      "subject_type": "rs_input",
+      "target_key": "326230",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14401,
+      "subject_type": "rs_input",
+      "target_key": "332290",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "WARNING",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "latest_observed_date": "2026-08-20",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 1,
+        "price_row_count": 854
+      }
+    },
+    {
+      "id": 14402,
+      "subject_type": "rs_input",
+      "target_key": "335870",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14403,
+      "subject_type": "rs_input",
+      "target_key": "340930",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14404,
+      "subject_type": "rs_input",
+      "target_key": "348950",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 845
+      }
+    },
+    {
+      "id": 14405,
+      "subject_type": "rs_input",
+      "target_key": "352770",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14406,
+      "subject_type": "rs_input",
+      "target_key": "363260",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "WARNING",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "latest_observed_date": "2026-08-20",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 1,
+        "price_row_count": 854
+      }
+    },
+    {
+      "id": 14407,
+      "subject_type": "rs_input",
+      "target_key": "365590",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "WARNING",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "latest_observed_date": "2026-08-19",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 2,
+        "price_row_count": 853
+      }
+    },
+    {
+      "id": 14408,
+      "subject_type": "rs_input",
+      "target_key": "37550L",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14409,
+      "subject_type": "rs_input",
+      "target_key": "376930",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "WARNING",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "latest_observed_date": "2026-08-19",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 2,
+        "price_row_count": 853
+      }
+    },
+    {
+      "id": 14410,
+      "subject_type": "rs_input",
+      "target_key": "377460",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14411,
+      "subject_type": "rs_input",
+      "target_key": "380540",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14412,
+      "subject_type": "rs_input",
+      "target_key": "381570",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14413,
+      "subject_type": "rs_input",
+      "target_key": "38380K",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14414,
+      "subject_type": "rs_input",
+      "target_key": "393970",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 350
+      }
+    },
+    {
+      "id": 14415,
+      "subject_type": "rs_input",
+      "target_key": "395750",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14416,
+      "subject_type": "rs_input",
+      "target_key": "403490",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 701
+      }
+    },
+    {
+      "id": 14417,
+      "subject_type": "rs_input",
+      "target_key": "412540",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 553
+      }
+    },
+    {
+      "id": 14418,
+      "subject_type": "rs_input",
+      "target_key": "418250",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 719
+      }
+    },
+    {
+      "id": 14419,
+      "subject_type": "rs_input",
+      "target_key": "429980",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14420,
+      "subject_type": "rs_input",
+      "target_key": "45226K",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14421,
+      "subject_type": "rs_input",
+      "target_key": "461580",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14422,
+      "subject_type": "rs_input",
+      "target_key": "468760",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 594
+      }
+    },
+    {
+      "id": 14423,
+      "subject_type": "rs_input",
+      "target_key": "469480",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 612
+      }
+    },
+    {
+      "id": 14424,
+      "subject_type": "rs_input",
+      "target_key": "471050",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "WARNING",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "latest_observed_date": "2026-08-19",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 2,
+        "price_row_count": 624
+      }
+    },
+    {
+      "id": 14425,
+      "subject_type": "rs_input",
+      "target_key": "482680",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 462
+      }
+    },
+    {
+      "id": 14426,
+      "subject_type": "rs_input",
+      "target_key": "489010",
+      "trade_date": "2026-08-21",
+      "rule_id": "persisted_price_presence",
+      "severity": "ERROR",
+      "reason_code": "MISSING_ROW",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": null
+      }
+    },
+    {
+      "id": 14427,
+      "subject_type": "rs_input",
+      "target_key": "498390",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 340
+      }
+    },
+    {
+      "id": 14428,
+      "subject_type": "rs_input",
+      "target_key": "900270",
+      "trade_date": "2026-08-21",
+      "rule_id": "rs_input_freshness",
+      "severity": "CRITICAL",
+      "reason_code": "RS_INPUT_STALE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "latest_observed_date": "2026-08-10",
+        "target_date": "2026-08-21",
+        "stale_lag_days": 11,
+        "price_row_count": 847
+      }
+    },
+    {
+      "id": 14429,
+      "subject_type": "crawl_target",
+      "target_key": "001000",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14430,
+      "subject_type": "crawl_target",
+      "target_key": "001840",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14431,
+      "subject_type": "crawl_target",
+      "target_key": "006050",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14432,
+      "subject_type": "crawl_target",
+      "target_key": "0099X0",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14433,
+      "subject_type": "crawl_target",
+      "target_key": "011370",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14434,
+      "subject_type": "crawl_target",
+      "target_key": "016790",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14435,
+      "subject_type": "crawl_target",
+      "target_key": "023440",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14436,
+      "subject_type": "crawl_target",
+      "target_key": "023760",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14437,
+      "subject_type": "crawl_target",
+      "target_key": "030350",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14438,
+      "subject_type": "crawl_target",
+      "target_key": "031860",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14439,
+      "subject_type": "crawl_target",
+      "target_key": "032860",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14440,
+      "subject_type": "crawl_target",
+      "target_key": "033170",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14441,
+      "subject_type": "crawl_target",
+      "target_key": "034940",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14442,
+      "subject_type": "crawl_target",
+      "target_key": "036690",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14443,
+      "subject_type": "crawl_target",
+      "target_key": "037400",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14444,
+      "subject_type": "crawl_target",
+      "target_key": "041590",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14445,
+      "subject_type": "crawl_target",
+      "target_key": "043100",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14446,
+      "subject_type": "crawl_target",
+      "target_key": "043200",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14447,
+      "subject_type": "crawl_target",
+      "target_key": "043220",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14448,
+      "subject_type": "crawl_target",
+      "target_key": "044180",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14449,
+      "subject_type": "crawl_target",
+      "target_key": "044480",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14450,
+      "subject_type": "crawl_target",
+      "target_key": "046070",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14451,
+      "subject_type": "crawl_target",
+      "target_key": "049180",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14452,
+      "subject_type": "crawl_target",
+      "target_key": "052770",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14453,
+      "subject_type": "crawl_target",
+      "target_key": "054180",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14454,
+      "subject_type": "crawl_target",
+      "target_key": "060570",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14455,
+      "subject_type": "crawl_target",
+      "target_key": "064090",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14456,
+      "subject_type": "crawl_target",
+      "target_key": "065420",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14457,
+      "subject_type": "crawl_target",
+      "target_key": "065570",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14458,
+      "subject_type": "crawl_target",
+      "target_key": "066360",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14459,
+      "subject_type": "crawl_target",
+      "target_key": "066410",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14460,
+      "subject_type": "crawl_target",
+      "target_key": "066790",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14461,
+      "subject_type": "crawl_target",
+      "target_key": "067390",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14462,
+      "subject_type": "crawl_target",
+      "target_key": "068240",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14463,
+      "subject_type": "crawl_target",
+      "target_key": "068940",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14464,
+      "subject_type": "crawl_target",
+      "target_key": "073190",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14465,
+      "subject_type": "crawl_target",
+      "target_key": "073640",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14466,
+      "subject_type": "crawl_target",
+      "target_key": "079970",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14467,
+      "subject_type": "crawl_target",
+      "target_key": "080720",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14468,
+      "subject_type": "crawl_target",
+      "target_key": "082660",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14469,
+      "subject_type": "crawl_target",
+      "target_key": "082850",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14470,
+      "subject_type": "crawl_target",
+      "target_key": "083640",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14471,
+      "subject_type": "crawl_target",
+      "target_key": "083660",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14472,
+      "subject_type": "crawl_target",
+      "target_key": "087260",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14473,
+      "subject_type": "crawl_target",
+      "target_key": "090410",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14474,
+      "subject_type": "crawl_target",
+      "target_key": "096610",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14475,
+      "subject_type": "crawl_target",
+      "target_key": "099220",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14476,
+      "subject_type": "crawl_target",
+      "target_key": "099520",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14477,
+      "subject_type": "crawl_target",
+      "target_key": "106080",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14478,
+      "subject_type": "crawl_target",
+      "target_key": "121800",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14479,
+      "subject_type": "crawl_target",
+      "target_key": "142760",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14480,
+      "subject_type": "crawl_target",
+      "target_key": "175250",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14481,
+      "subject_type": "crawl_target",
+      "target_key": "182400",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14482,
+      "subject_type": "crawl_target",
+      "target_key": "183490",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14483,
+      "subject_type": "crawl_target",
+      "target_key": "196450",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14484,
+      "subject_type": "crawl_target",
+      "target_key": "196490",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14485,
+      "subject_type": "crawl_target",
+      "target_key": "203400",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14486,
+      "subject_type": "crawl_target",
+      "target_key": "206560",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14487,
+      "subject_type": "crawl_target",
+      "target_key": "207760",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14488,
+      "subject_type": "crawl_target",
+      "target_key": "214610",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14489,
+      "subject_type": "crawl_target",
+      "target_key": "214680",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14490,
+      "subject_type": "crawl_target",
+      "target_key": "217480",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14491,
+      "subject_type": "crawl_target",
+      "target_key": "234920",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14492,
+      "subject_type": "crawl_target",
+      "target_key": "241820",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14493,
+      "subject_type": "crawl_target",
+      "target_key": "244460",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14494,
+      "subject_type": "crawl_target",
+      "target_key": "245620",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14495,
+      "subject_type": "crawl_target",
+      "target_key": "246250",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14496,
+      "subject_type": "crawl_target",
+      "target_key": "246720",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14497,
+      "subject_type": "crawl_target",
+      "target_key": "252500",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14498,
+      "subject_type": "crawl_target",
+      "target_key": "258830",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14499,
+      "subject_type": "crawl_target",
+      "target_key": "263050",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14500,
+      "subject_type": "crawl_target",
+      "target_key": "269620",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14501,
+      "subject_type": "crawl_target",
+      "target_key": "273060",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14502,
+      "subject_type": "crawl_target",
+      "target_key": "276040",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14503,
+      "subject_type": "crawl_target",
+      "target_key": "284620",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14504,
+      "subject_type": "crawl_target",
+      "target_key": "285800",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14505,
+      "subject_type": "crawl_target",
+      "target_key": "286750",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14506,
+      "subject_type": "crawl_target",
+      "target_key": "288330",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14507,
+      "subject_type": "crawl_target",
+      "target_key": "294090",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14508,
+      "subject_type": "crawl_target",
+      "target_key": "297570",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14509,
+      "subject_type": "crawl_target",
+      "target_key": "304840",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14510,
+      "subject_type": "crawl_target",
+      "target_key": "309710",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14511,
+      "subject_type": "crawl_target",
+      "target_key": "313760",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14512,
+      "subject_type": "crawl_target",
+      "target_key": "332290",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14513,
+      "subject_type": "crawl_target",
+      "target_key": "335870",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14514,
+      "subject_type": "crawl_target",
+      "target_key": "340930",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14515,
+      "subject_type": "crawl_target",
+      "target_key": "352770",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14516,
+      "subject_type": "crawl_target",
+      "target_key": "363260",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14517,
+      "subject_type": "crawl_target",
+      "target_key": "365590",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14518,
+      "subject_type": "crawl_target",
+      "target_key": "376930",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14519,
+      "subject_type": "crawl_target",
+      "target_key": "377460",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14520,
+      "subject_type": "crawl_target",
+      "target_key": "380540",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14521,
+      "subject_type": "crawl_target",
+      "target_key": "393970",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14522,
+      "subject_type": "crawl_target",
+      "target_key": "403490",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14523,
+      "subject_type": "crawl_target",
+      "target_key": "412540",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14524,
+      "subject_type": "crawl_target",
+      "target_key": "418250",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14525,
+      "subject_type": "crawl_target",
+      "target_key": "468760",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14526,
+      "subject_type": "crawl_target",
+      "target_key": "469480",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14527,
+      "subject_type": "crawl_target",
+      "target_key": "471050",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14528,
+      "subject_type": "crawl_target",
+      "target_key": "482680",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14529,
+      "subject_type": "crawl_target",
+      "target_key": "498390",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14530,
+      "subject_type": "crawl_target",
+      "target_key": "900270",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14531,
+      "subject_type": "crawl_target",
+      "target_key": "0000J0",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14532,
+      "subject_type": "crawl_target",
+      "target_key": "000300",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14533,
+      "subject_type": "crawl_target",
+      "target_key": "000545",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14534,
+      "subject_type": "crawl_target",
+      "target_key": "000880",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14535,
+      "subject_type": "crawl_target",
+      "target_key": "00088K",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14536,
+      "subject_type": "crawl_target",
+      "target_key": "001290",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14537,
+      "subject_type": "crawl_target",
+      "target_key": "001420",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14538,
+      "subject_type": "crawl_target",
+      "target_key": "001470",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14539,
+      "subject_type": "crawl_target",
+      "target_key": "001570",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14540,
+      "subject_type": "crawl_target",
+      "target_key": "002410",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14541,
+      "subject_type": "crawl_target",
+      "target_key": "002780",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14542,
+      "subject_type": "crawl_target",
+      "target_key": "002785",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14543,
+      "subject_type": "crawl_target",
+      "target_key": "002787",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14544,
+      "subject_type": "crawl_target",
+      "target_key": "002820",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14545,
+      "subject_type": "crawl_target",
+      "target_key": "002995",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14546,
+      "subject_type": "crawl_target",
+      "target_key": "004270",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14547,
+      "subject_type": "crawl_target",
+      "target_key": "004415",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14548,
+      "subject_type": "crawl_target",
+      "target_key": "005030",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14549,
+      "subject_type": "crawl_target",
+      "target_key": "005110",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14550,
+      "subject_type": "crawl_target",
+      "target_key": "005320",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14551,
+      "subject_type": "crawl_target",
+      "target_key": "006200",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14552,
+      "subject_type": "crawl_target",
+      "target_key": "006380",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14553,
+      "subject_type": "crawl_target",
+      "target_key": "006490",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14554,
+      "subject_type": "crawl_target",
+      "target_key": "006740",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14555,
+      "subject_type": "crawl_target",
+      "target_key": "007110",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14556,
+      "subject_type": "crawl_target",
+      "target_key": "008040",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14557,
+      "subject_type": "crawl_target",
+      "target_key": "008600",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14558,
+      "subject_type": "crawl_target",
+      "target_key": "009310",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14559,
+      "subject_type": "crawl_target",
+      "target_key": "009415",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14560,
+      "subject_type": "crawl_target",
+      "target_key": "009440",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14561,
+      "subject_type": "crawl_target",
+      "target_key": "011000",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14562,
+      "subject_type": "crawl_target",
+      "target_key": "011155",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14563,
+      "subject_type": "crawl_target",
+      "target_key": "011810",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14564,
+      "subject_type": "crawl_target",
+      "target_key": "012170",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14565,
+      "subject_type": "crawl_target",
+      "target_key": "012280",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14566,
+      "subject_type": "crawl_target",
+      "target_key": "014160",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14567,
+      "subject_type": "crawl_target",
+      "target_key": "015020",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14568,
+      "subject_type": "crawl_target",
+      "target_key": "017040",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14569,
+      "subject_type": "crawl_target",
+      "target_key": "018470",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14570,
+      "subject_type": "crawl_target",
+      "target_key": "019490",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14571,
+      "subject_type": "crawl_target",
+      "target_key": "019680",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14572,
+      "subject_type": "crawl_target",
+      "target_key": "019685",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14573,
+      "subject_type": "crawl_target",
+      "target_key": "020760",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14574,
+      "subject_type": "crawl_target",
+      "target_key": "024890",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14575,
+      "subject_type": "crawl_target",
+      "target_key": "069460",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14576,
+      "subject_type": "crawl_target",
+      "target_key": "074610",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14577,
+      "subject_type": "crawl_target",
+      "target_key": "082640",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14578,
+      "subject_type": "crawl_target",
+      "target_key": "084680",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14579,
+      "subject_type": "crawl_target",
+      "target_key": "091810",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14580,
+      "subject_type": "crawl_target",
+      "target_key": "093240",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14581,
+      "subject_type": "crawl_target",
+      "target_key": "119650",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14582,
+      "subject_type": "crawl_target",
+      "target_key": "140570",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14583,
+      "subject_type": "crawl_target",
+      "target_key": "143210",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14584,
+      "subject_type": "crawl_target",
+      "target_key": "145210",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14585,
+      "subject_type": "crawl_target",
+      "target_key": "215620",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14586,
+      "subject_type": "crawl_target",
+      "target_key": "226380",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14587,
+      "subject_type": "crawl_target",
+      "target_key": "227550",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14588,
+      "subject_type": "crawl_target",
+      "target_key": "234310",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14589,
+      "subject_type": "crawl_target",
+      "target_key": "265690",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14590,
+      "subject_type": "crawl_target",
+      "target_key": "266550",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14591,
+      "subject_type": "crawl_target",
+      "target_key": "277650",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14592,
+      "subject_type": "crawl_target",
+      "target_key": "300610",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14593,
+      "subject_type": "crawl_target",
+      "target_key": "301400",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14594,
+      "subject_type": "crawl_target",
+      "target_key": "326230",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14595,
+      "subject_type": "crawl_target",
+      "target_key": "348950",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14596,
+      "subject_type": "crawl_target",
+      "target_key": "37550L",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14597,
+      "subject_type": "crawl_target",
+      "target_key": "381570",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14598,
+      "subject_type": "crawl_target",
+      "target_key": "38380K",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14599,
+      "subject_type": "crawl_target",
+      "target_key": "395750",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14600,
+      "subject_type": "crawl_target",
+      "target_key": "429980",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14601,
+      "subject_type": "crawl_target",
+      "target_key": "45226K",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_PRICE",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC fields must be positive",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14602,
+      "subject_type": "crawl_target",
+      "target_key": "461580",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14603,
+      "subject_type": "crawl_target",
+      "target_key": "489010",
+      "trade_date": "2026-08-21",
+      "rule_id": "ingest_failure",
+      "severity": "ERROR",
+      "reason_code": "INVALID_OHLC",
+      "case_status": "open",
+      "decision": "BLOCK",
+      "evidence": {
+        "target_type": "daily_price",
+        "error_class": "ValidationError",
+        "error_message": "OHLC values are inconsistent",
+        "http_status": null,
+        "retry_count": 0
+      }
+    },
+    {
+      "id": 14604,
+      "subject_type": "market",
+      "target_key": null,
+      "trade_date": "2026-08-21",
+      "rule_id": "coverage",
+      "severity": "WARNING",
+      "reason_code": "COVERAGE_BELOW_POLICY",
+      "case_status": "open",
+      "decision": "REVIEW",
+      "evidence": {
+        "fresh_symbols": 4123,
+        "expected_symbols": 4298,
+        "coverage_rate": "0.959283",
+        "warning_threshold": "0.97"
+      }
+    }
+  ]
+}

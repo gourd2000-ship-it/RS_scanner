@@ -11,8 +11,8 @@ from app.core.base import Base
 class Instrument(Base):
     __tablename__ = "instruments"
     __table_args__ = (
-        UniqueConstraint("krx_short_code", name="uq_instruments_krx_short_code"),
         UniqueConstraint("isin", name="uq_instruments_isin"),
+        Index("ix_instruments_krx_short_code", "krx_short_code"),
         Index("ix_instruments_market_type_status", "market", "security_type", "listing_status"),
     )
 

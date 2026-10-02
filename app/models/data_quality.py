@@ -104,6 +104,7 @@ class PriceObservation(Base):
     __table_args__ = (
         Index("ix_price_observations_symbol_date", "symbol_id", "trade_date"),
         Index("ix_price_observations_job", "crawl_job_id"),
+        Index("ix_price_observations_backfill_run", "historical_backfill_run_id"),
         Index("ix_price_observations_hash", "payload_hash"),
     )
 
@@ -111,6 +112,9 @@ class PriceObservation(Base):
     symbol_id: Mapped[int] = mapped_column(ForeignKey("symbols.id"), index=True)
     crawl_job_id: Mapped[int | None] = mapped_column(
         ForeignKey("crawl_jobs.id"), nullable=True, index=True
+    )
+    historical_backfill_run_id: Mapped[int | None] = mapped_column(
+        ForeignKey("historical_backfill_runs.id"), nullable=True, index=True
     )
     trade_date: Mapped[date] = mapped_column(Date, index=True)
     open: Mapped[Decimal] = mapped_column(Numeric(18, 4))
@@ -121,6 +125,7 @@ class PriceObservation(Base):
     change_rate: Mapped[Decimal] = mapped_column(Numeric(10, 4))
     provider: Mapped[str] = mapped_column(String(100), default="naver")
     parser_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    adjustment_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
     payload_hash: Mapped[str] = mapped_column(String(64), index=True)
     observed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     observation_metadata: Mapped[dict] = mapped_column("metadata", JSON, default=dict)

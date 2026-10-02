@@ -5,10 +5,13 @@ from datetime import date, timedelta
 from app.core.config import get_settings
 from app.core.exceptions import PriceFetchError, PriceParseError
 from app.crawler.client import NaverHttpClient
-from app.crawler.parsers.benchmarks import parse_benchmark_prices
+from app.crawler.parsers.benchmarks import parse_naver_index_prices
 from app.crawler.parsers.fchart import ParsedPriceRows, parse_fchart_prices
 from app.crawler.parsers.prices import parse_daily_prices
-from app.crawler.parsers.symbols import parse_symbols
+from app.crawler.parsers.symbols import (
+    parse_naver_fund_symbols,
+    parse_naver_individual_stock_page,
+)
 from app.crawler.sources.base import (
     PriceSource,
     SymbolUniverseFetchResult,
@@ -21,6 +24,7 @@ logger = logging.getLogger(__name__)
 class NaverPriceSource(PriceSource):
     provider_name = "naver"
     _SYMBOL_CODE_PATTERN = re.compile(r"[0-9A-Za-z]{6}")
+    _SYMBOL_PAGE_SIZE = 100
 
     def __init__(
         self,
@@ -38,6 +42,8 @@ class NaverPriceSource(PriceSource):
         self.max_concurrency = getattr(self.client, "max_concurrency", 1)
 
     _ETF_API_URL = "https://finance.naver.com/api/sise/etfItemList.naver"
+    _ETN_API_URL = "https://finance.naver.com/api/sise/etnItemList.naver"
+    _INDIVIDUAL_STOCKS_URL = "https://stock.naver.com/api/stockSecurity/individual-stocks/v2/domestic"
 
     def fetch_symbols(self):
         return self.fetch_symbol_universe().symbols
@@ -48,23 +54,115 @@ class NaverPriceSource(PriceSource):
         return bool(cls._SYMBOL_CODE_PATTERN.fullmatch(code))
 
     def fetch_symbol_universe(self) -> SymbolUniverseFetchResult:
-        """시장별 페이지 결과와 중간 실패 여부를 함께 반환한다."""
-        market_results = [
-            self._fetch_market_symbols_with_stats("KOSPI", sosok=0),
-            self._fetch_market_symbols_with_stats("KOSDAQ", sosok=1),
-        ]
-        errors = [result.error_message for result in market_results if result.error_message]
+        """Read the current Naver stock-list API and verify its total-count contract."""
+        rows_by_market: dict[str, list] = {"KOSPI": [], "KOSDAQ": []}
+        seen_codes: set[str] = set()
+        duplicates_by_market = {"KOSPI": 0, "KOSDAQ": 0}
+        pages_total = 0
+        pages_succeeded = 0
+        expected_total: int | None = None
+        error_message: str | None = None
+        termination_reason = "max_pages_reached"
+        reached_end = False
+
+        for page in range(self.max_symbol_pages):
+            pages_total += 1
+            url = (
+                f"{self._INDIVIDUAL_STOCKS_URL}?listingType=listedAtDesc&exchangeType=KRX"
+                f"&index={page}&size={self._SYMBOL_PAGE_SIZE}"
+            )
+            try:
+                payload = self.client.get(url)
+                parsed, total_count, has_next = parse_naver_individual_stock_page(
+                    payload,
+                    expected_index=page,
+                )
+            except Exception as exc:  # noqa: BLE001
+                error_message = f"symbol_page_{page}_{type(exc).__name__}"
+                termination_reason = "request_error"
+                break
+            pages_succeeded += 1
+            if expected_total is None:
+                expected_total = total_count
+            elif total_count != expected_total:
+                error_message = "symbol_total_count_changed"
+                termination_reason = "total_count_changed"
+                break
+
+            if not parsed:
+                error_message = "symbol_unexpected_empty_page"
+                termination_reason = "empty_page"
+                break
+
+            page_codes: set[str] = set()
+            for symbol in parsed:
+                if symbol.code in page_codes or symbol.code in seen_codes:
+                    duplicates_by_market[symbol.market] += 1
+                    continue
+                page_codes.add(symbol.code)
+                seen_codes.add(symbol.code)
+                rows_by_market[symbol.market].append(symbol)
+
+            if has_next is False:
+                reached_end = True
+                termination_reason = "end_of_list"
+                break
+        else:
+            error_message = f"symbol_max_pages_reached:{self.max_symbol_pages}"
+
+        actual_stock_total = sum(map(len, rows_by_market.values()))
+        if expected_total is not None and actual_stock_total != expected_total and error_message is None:
+            error_message = f"symbol_total_count_mismatch:{actual_stock_total}!={expected_total}"
+            termination_reason = "total_count_mismatch"
+
+        for symbol_type, url, list_key in (
+            ("etf", self._ETF_API_URL, "etfItemList"),
+            ("etn", self._ETN_API_URL, "etnItemList"),
+        ):
+            pages_total += 1
+            try:
+                fund_symbols = parse_naver_fund_symbols(
+                    self.client.get(url),
+                    list_key=list_key,
+                    symbol_type=symbol_type,
+                )
+                pages_succeeded += 1
+            except Exception as exc:  # noqa: BLE001
+                fund_symbols = []
+                feed_error = f"{symbol_type}_list_{type(exc).__name__}"
+                error_message = ";".join(filter(None, (error_message, feed_error)))
+                termination_reason = "fund_list_error"
+            for symbol in fund_symbols:
+                if symbol.code in seen_codes:
+                    duplicates_by_market["KOSPI"] += 1
+                    continue
+                seen_codes.add(symbol.code)
+                rows_by_market["KOSPI"].append(symbol)
+
+        if any(duplicates_by_market.values()) and error_message is None:
+            error_message = "symbol_page_overlap"
+            termination_reason = "page_overlap"
+        complete = reached_end and expected_total == actual_stock_total and error_message is None
+        market_results = {
+            market: UniverseMarketFetchResult(
+                market=market,
+                symbols=rows_by_market[market],
+                pages_total=pages_total,
+                pages_succeeded=pages_succeeded,
+                complete=complete,
+                duplicate_count=duplicates_by_market[market],
+                termination_reason=termination_reason,
+                error_message=error_message,
+            )
+            for market in ("KOSPI", "KOSDAQ")
+        }
         return SymbolUniverseFetchResult(
-            symbols=[
-                symbol
-                for result in market_results
-                for symbol in result.symbols
-            ],
-            pages_total=sum(result.pages_total for result in market_results),
-            pages_succeeded=sum(result.pages_succeeded for result in market_results),
-            complete=all(result.complete for result in market_results),
-            error_message=";".join(errors) if errors else None,
-            market_results={result.market: result for result in market_results},
+            symbols=rows_by_market["KOSPI"] + rows_by_market["KOSDAQ"],
+            pages_total=pages_total,
+            pages_succeeded=pages_succeeded,
+            complete=complete,
+            error_message=error_message,
+            market_results=market_results,
         )
 
     def fetch_etf_codes(self) -> set[str]:
@@ -139,6 +237,7 @@ class NaverPriceSource(PriceSource):
     # Naver Finance URL 코드와 내부 benchmark_code 매핑
     _NAVER_INDEX_CODES = {"KOSPI": "KOSPI", "KOSDAQ": "KOSDAQ"}
     _INTERNAL_BENCHMARK_CODES = {"KOSPI": "KOSPI_INDEX", "KOSDAQ": "KOSDAQ_INDEX"}
+    _INDEX_HISTORY_URL = "https://m.stock.naver.com/api/json/sise/dailySiseIndexListJson.nhn"
 
     def fetch_benchmark_prices(self, market: str, since_date: date | None = None):
         naver_code = self._NAVER_INDEX_CODES[market]
@@ -146,10 +245,25 @@ class NaverPriceSource(PriceSource):
         rows: list = []
         seen_dates: set[date] = set()
         for page in range(1, self.max_price_pages + 1):
-            html = self.client.get(f"https://finance.naver.com/sise/sise_index_day.naver?code={naver_code}&page={page}")
-            parsed = parse_benchmark_prices(html, market=market, benchmark_code=internal_code)
+            url = f"{self._INDEX_HISTORY_URL}?code={naver_code}&pageSize=100&page={page}"
+            payload = self.client.get(url)
+            parsed = parse_naver_index_prices(
+                payload,
+                market=market,
+                benchmark_code=internal_code,
+                expected_naver_code=naver_code,
+            )
             if not parsed:
+                if page == 1:
+                    raise PriceParseError("Naver index history returned an empty first page")
                 break
+
+            page_dates = [row.trade_date for row in parsed]
+            if any(left <= right for left, right in zip(page_dates, page_dates[1:])):
+                raise PriceParseError("Naver index page is not strictly newest-first")
+            new_dates = set(page_dates) - seen_dates
+            if not new_dates:
+                raise PriceParseError("Naver index history repeated a page without progress")
 
             should_stop = False
             for row in parsed:
@@ -162,84 +276,10 @@ class NaverPriceSource(PriceSource):
                 rows.append(row)
 
             if should_stop:
-                break
+                return sorted(rows, key=lambda row: row.trade_date)
+        else:
+            raise PriceParseError(
+                f"Naver index history exceeded the configured page limit ({self.max_price_pages})"
+            )
 
         return sorted(rows, key=lambda row: row.trade_date)
-
-    def _fetch_market_symbols(self, market: str, *, sosok: int):
-        return self._fetch_market_symbols_with_stats(market, sosok=sosok).symbols
-
-    def _fetch_market_symbols_with_stats(
-        self,
-        market: str,
-        *,
-        sosok: int,
-    ) -> UniverseMarketFetchResult:
-        seen_codes: set[str] = set()
-        rows: list = []
-        pages_total = 0
-        pages_succeeded = 0
-        duplicate_count = 0
-        for page in range(1, self.max_symbol_pages + 1):
-            pages_total += 1
-            try:
-                html = self.client.get(
-                    f"https://finance.naver.com/sise/sise_market_sum.naver"
-                    f"?sosok={sosok}&page={page}"
-                )
-                parsed = parse_symbols(html, market=market)
-            except Exception as exc:  # noqa: BLE001
-                return UniverseMarketFetchResult(
-                    market=market,
-                    symbols=rows,
-                    pages_total=pages_total,
-                    pages_succeeded=pages_succeeded,
-                    complete=False,
-                    duplicate_count=duplicate_count,
-                    termination_reason="request_error",
-                    error_message=f"{market}:symbol_page_{type(exc).__name__}",
-                )
-            pages_succeeded += 1
-            if not parsed:
-                return UniverseMarketFetchResult(
-                    market=market,
-                    symbols=rows,
-                    pages_total=pages_total,
-                    pages_succeeded=pages_succeeded,
-                    complete=True,
-                    duplicate_count=duplicate_count,
-                    termination_reason="empty_page",
-                )
-
-            new_items = [row for row in parsed if row.code not in seen_codes]
-            duplicate_count += len(parsed) - len(new_items)
-            if not new_items:
-                return UniverseMarketFetchResult(
-                    market=market,
-                    symbols=rows,
-                    pages_total=pages_total,
-                    pages_succeeded=pages_succeeded,
-                    complete=True,
-                    duplicate_count=duplicate_count,
-                    termination_reason="repeated_page",
-                )
-
-            for row in new_items:
-                seen_codes.add(row.code)
-            rows.extend(new_items)
-
-        logger.warning(
-            "Naver %s universe reached configured page hard cap (%d)",
-            market,
-            self.max_symbol_pages,
-        )
-        return UniverseMarketFetchResult(
-            market=market,
-            symbols=rows,
-            pages_total=pages_total,
-            pages_succeeded=pages_succeeded,
-            complete=False,
-            duplicate_count=duplicate_count,
-            termination_reason="max_pages_reached",
-            error_message=f"{market}:max_symbol_pages_reached",
-        )

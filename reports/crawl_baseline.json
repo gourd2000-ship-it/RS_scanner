@@ -1,0 +1,84 @@
+{
+  "generated_at": "2026-08-11T10:39:46.645230",
+  "latest_trade_date": "2026-08-11",
+  "batches": [
+    {
+      "job_id": 56,
+      "status": "completed_with_errors",
+      "started_at": "2026-08-11T10:28:19.647809",
+      "finished_at": "2026-08-11T10:39:16.423649",
+      "duration_seconds": 656.77584,
+      "eligible": 2837,
+      "fetched": 0,
+      "no_new_data": 2519,
+      "partial": 0,
+      "failed": 318,
+      "skipped": 0,
+      "coverage_rate": 0.8879097638350371,
+      "request_count": 2837,
+      "retry_count": 0,
+      "failure_count": 423,
+      "repeated_failure_codes": []
+    },
+    {
+      "job_id": 55,
+      "status": "failed",
+      "started_at": "2026-08-11T10:03:28.413720",
+      "finished_at": "2026-08-11T10:27:15.812355",
+      "duration_seconds": 1427.398635,
+      "eligible": 2837,
+      "fetched": 2519,
+      "no_new_data": 0,
+      "partial": 0,
+      "failed": 318,
+      "skipped": 0,
+      "coverage_rate": 0.8879097638350371,
+      "request_count": 2837,
+      "retry_count": 0,
+      "failure_count": 318,
+      "repeated_failure_codes": []
+    },
+    {
+      "job_id": 54,
+      "status": "failed",
+      "started_at": "2026-08-11T09:00:02.615981",
+      "finished_at": "2026-08-11T09:02:31.859030",
+      "duration_seconds": 149.243049,
+      "eligible": 0,
+      "fetched": 0,
+      "no_new_data": 0,
+      "partial": 0,
+      "failed": 0,
+      "skipped": 0,
+      "coverage_rate": 0.0,
+      "request_count": null,
+      "retry_count": null,
+      "failure_count": 0,
+      "repeated_failure_codes": []
+    }
+  ],
+  "universe_counts": {
+    "KOSDAQ": {
+      "stock": 1801,
+      "etf": 0,
+      "etn": 0,
+      "active": 1801,
+      "inactive": 0
+    },
+    "KOSPI": {
+      "stock": 1036,
+      "etf": 698,
+      "etn": 243,
+      "active": 1977,
+      "inactive": 0
+    }
+  },
+  "repeated_failure_codes": [],
+  "legacy_claim": {
+    "target_count": 2400,
+    "duration_hours": 2.0,
+    "verified": false,
+    "source": null,
+    "reason": "no operational log supplied"
+  }
+}

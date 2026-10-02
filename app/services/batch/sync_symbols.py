@@ -116,6 +116,7 @@ def _validate_universe_completeness(
                 None,
                 "empty_page",
                 "repeated_page",
+                "end_of_list",
             }:
                 errors.append(f"{market}:invalid_termination:{page_result.termination_reason}")
 

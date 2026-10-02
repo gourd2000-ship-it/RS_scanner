@@ -83,14 +83,21 @@ def _upsert_instruments(
     members: list[KrxUniverseMembership],
 ) -> dict[str, Instrument]:
     codes = [member.code for member in members]
-    by_code = {
-        instrument.krx_short_code: instrument
-        for instrument in session.scalars(
-            select(Instrument).where(Instrument.krx_short_code.in_(codes))
-        )
-    }
+    existing_by_code: dict[str, list[Instrument]] = {}
+    for instrument in session.scalars(
+        select(Instrument).where(Instrument.krx_short_code.in_(codes))
+    ):
+        existing_by_code.setdefault(instrument.krx_short_code, []).append(instrument)
+    by_code: dict[str, Instrument] = {}
     for member in members:
-        instrument = by_code.get(member.code)
+        candidates = [
+            instrument
+            for instrument in existing_by_code.get(member.code, [])
+            if instrument.delisted_at is None and instrument.listing_status != "delisted"
+        ]
+        if len(candidates) > 1:
+            raise ValueError(f"ambiguous active historical identity for KRX code {member.code}")
+        instrument = candidates[0] if candidates else None
         if instrument is None:
             instrument = Instrument(
                 krx_short_code=member.code,
@@ -103,6 +110,7 @@ def _upsert_instruments(
             )
             session.add(instrument)
             by_code[member.code] = instrument
+            existing_by_code.setdefault(member.code, []).append(instrument)
             continue
         instrument.isin = member.isin or instrument.isin
         instrument.name = member.name
@@ -110,6 +118,7 @@ def _upsert_instruments(
         instrument.security_type = member.security_type
         instrument.listed_at = member.listed_at or instrument.listed_at
         instrument.listing_status = _canonical_listing_status(member.listing_status)
+        by_code[member.code] = instrument
     session.flush()
     return by_code
 

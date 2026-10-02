@@ -109,3 +109,28 @@ BT01은 다음 증거를 함께 남길 때 완료다.
 BT01 결과는 **partial**이다. BT02는 가격과 독립된 역사 identity를 먼저 만들고, BT03은
 상폐·시장 이전 이벤트의 허용된 import source를 계약해야 한다. 그 전에는 전체 backfill 시간·용량
 또는 생존편향 제거 완료를 주장하지 않는다.
+
+## BT03 파일 import 계약
+
+BT03은 KIND 화면을 자동으로 긁지 않는다. 승인된 KRX/KIND export 또는 별도로 허용된
+역사 공급자 파일을 받은 뒤 아래 importer로 **명시적 canonical instrument ID**에만 연결한다.
+따라서 이름·현재 명부 누락·가격의 첫/마지막 날짜로 종목을 매칭하거나 상폐일을 추론하지 않는다.
+
+~~~bash
+.venv/bin/python scripts/import_listing_history.py \
+  --input /secure/path/approved_listing_events.json \
+  --source kind_export \
+  --source-contract-version kind-delisting-export-v1 \
+  --source-url https://kind.krx.co.kr/investwarn/delcompany.do \
+  --dry-run
+~~~
+
+입력은 JSON 배열(또는 `{"events": [...]}`)이며 각 행은 최소한 `instrument_id`,
+`source_record_key`, `event_type`, `effective_from`, `evidence_state`를 가진다. `instrument_id`는
+BT02에서 분리한 security identity이므로 코드 재사용을 자동 병합하지 않는다. `published_at`은
+모르는 경우 생략하고, importer가 `observed_at`을 기록한다. 원본 파일 SHA-256, 행의 정규화
+content hash, parser/source-contract 버전과 원문 payload를 함께 보존한다. 동일 행을 재입력하면
+중복하지 않고, 같은 source record key의 변경 행은 이전 revision을 `supersedes_id`로 가리킨다.
+
+이 import 경로의 구현 완료는 특정 공급자의 전체 상폐 OHLC 또는 명부 coverage가 확보되었다는
+뜻이 아니다. 파일의 이용·보관·재배포 권한과 전체 coverage는 대량 적재 전 별도로 확인한다.

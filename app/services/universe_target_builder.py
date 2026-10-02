@@ -67,14 +67,11 @@ def build_price_targets(
             .order_by(KrxUniverseMembership.code)
         )
     )
-    instruments = {
-        row.krx_short_code: row
-        for row in session.scalars(
-            select(Instrument).where(
-                Instrument.krx_short_code.in_([member.code for member in members])
-            )
-        )
-    }
+    instruments = _instruments_active_on(
+        session,
+        codes=[member.code for member in members],
+        as_of_date=as_of_date,
+    )
     instrument_ids = [row.id for row in instruments.values()]
     mappings = _current_mappings(
         session, provider=provider, instrument_ids=instrument_ids, as_of_date=as_of_date
@@ -119,7 +116,7 @@ def _current_mappings(
                 ProviderSymbol.provider == provider,
                 ProviderSymbol.mapping_status == "matched",
                 (ProviderSymbol.valid_from.is_(None)) | (ProviderSymbol.valid_from <= as_of_date),
-                (ProviderSymbol.valid_to.is_(None)) | (ProviderSymbol.valid_to >= as_of_date),
+                (ProviderSymbol.valid_to.is_(None)) | (ProviderSymbol.valid_to > as_of_date),
             )
         )
     )
@@ -144,7 +141,7 @@ def _current_exclusions(
                 UniverseExclusion.instrument_id.in_(instrument_ids),
                 UniverseExclusion.scope == "price",
                 (UniverseExclusion.valid_from.is_(None)) | (UniverseExclusion.valid_from <= as_of_date),
-                (UniverseExclusion.valid_to.is_(None)) | (UniverseExclusion.valid_to >= as_of_date),
+                (UniverseExclusion.valid_to.is_(None)) | (UniverseExclusion.valid_to > as_of_date),
             )
         )
     )
@@ -153,6 +150,28 @@ def _current_exclusions(
     for row in rows:
         selected.setdefault(row.instrument_id, row)
     return selected
+
+
+def _instruments_active_on(
+    session: Session,
+    *,
+    codes: list[str],
+    as_of_date: date,
+) -> dict[str, Instrument]:
+    """Resolve one dated identity per code; never choose a reused code by row order."""
+    if not codes:
+        return {}
+    by_code: dict[str, list[Instrument]] = {}
+    for row in session.scalars(
+        select(Instrument).where(
+            Instrument.krx_short_code.in_(codes),
+            Instrument.listing_status != "delisted",
+            (Instrument.listed_at.is_(None)) | (Instrument.listed_at <= as_of_date),
+            (Instrument.delisted_at.is_(None)) | (Instrument.delisted_at > as_of_date),
+        )
+    ):
+        by_code.setdefault(row.krx_short_code, []).append(row)
+    return {code: rows[0] for code, rows in by_code.items() if len(rows) == 1}
 
 
 def _price_eligibility(member, instrument, mapping, exclusion) -> tuple[str, str | None]:

@@ -32,6 +32,9 @@ from app.models.data_quality import (
 from app.models.daily_price import DailyPrice
 from app.models.krx_universe import KrxUniverseMembership, KrxUniverseSnapshot
 from app.models.instrument import Instrument, ProviderSymbol, UniverseExclusion
+from app.models.historical_backfill_run import HistoricalBackfillRun, HistoricalBackfillTargetState
+from app.models.backtest_dataset import BacktestDataset, BacktestDatasetMembership, BacktestDatasetPrice, BacktestDatasetRs, BacktestDatasetRsRun
+from app.models.listing_event import ListingEvent
 from app.models.rs_score import RsScore
 from app.models.symbol_universe_snapshot import SymbolUniverseSnapshot
 from app.models.universe_audit import UniverseAuditDecision, UniverseAuditRun
@@ -69,6 +72,14 @@ __all__ = [
     "Instrument",
     "ProviderSymbol",
     "UniverseExclusion",
+    "HistoricalBackfillRun",
+    "HistoricalBackfillTargetState",
+    "BacktestDataset",
+    "BacktestDatasetMembership",
+    "BacktestDatasetPrice",
+    "BacktestDatasetRs",
+    "BacktestDatasetRsRun",
+    "ListingEvent",
     "RsScore",
     "Symbol",
     "SymbolUniverseSnapshot",

@@ -105,10 +105,10 @@ class NotificationService:
             return True
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to send notification: {e}")
+            logger.error("Failed to send notification (%s)", type(e).__name__)
             return False
         except Exception as e:
-            logger.error(f"Unexpected error sending notification: {e}")
+            logger.error("Unexpected error sending notification (%s)", type(e).__name__)
             return False
 
     async def send_batch_success(
@@ -161,7 +161,7 @@ class NotificationService:
             return True
 
         except Exception as e:
-            logger.error(f"Failed to send success notification: {e}")
+            logger.error("Failed to send success notification (%s)", type(e).__name__)
             return False
 
     def send_batch_failure_sync(
@@ -235,10 +235,10 @@ class NotificationService:
             return True
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to send notification: {e}")
+            logger.error("Failed to send notification (%s)", type(e).__name__)
             return False
         except Exception as e:
-            logger.error(f"Unexpected error sending notification: {e}")
+            logger.error("Unexpected error sending notification (%s)", type(e).__name__)
             return False
 
     def send_batch_success_sync(
@@ -300,7 +300,7 @@ class NotificationService:
                 webhook_result = True
 
             except Exception as e:
-                logger.error(f"Failed to send webhook success notification: {e}")
+                logger.error("Failed to send webhook success notification (%s)", type(e).__name__)
 
         # Telegram 전송
         if self.telegram_enabled:
@@ -357,10 +357,10 @@ class NotificationService:
             return True
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to send telegram failure notification: {e}")
+            logger.error("Failed to send telegram failure notification (%s)", type(e).__name__)
             return False
         except Exception as e:
-            logger.error(f"Unexpected error sending telegram failure notification: {e}")
+            logger.error("Unexpected error sending telegram failure notification (%s)", type(e).__name__)
             return False
 
     def _send_telegram_success_sync(
@@ -402,10 +402,10 @@ class NotificationService:
             return True
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to send telegram success notification: {e}")
+            logger.error("Failed to send telegram success notification (%s)", type(e).__name__)
             return False
         except Exception as e:
-            logger.error(f"Unexpected error sending telegram success notification: {e}")
+            logger.error("Unexpected error sending telegram success notification (%s)", type(e).__name__)
             return False
 
     def send_step_completed_sync(
@@ -459,10 +459,10 @@ class NotificationService:
             return True
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to send telegram step notification: {e}")
+            logger.error("Failed to send telegram step notification (%s)", type(e).__name__)
             return False
         except Exception as e:
-            logger.error(f"Unexpected error sending telegram step notification: {e}")
+            logger.error("Unexpected error sending telegram step notification (%s)", type(e).__name__)
             return False
 
     def send_chunk_completed_sync(
@@ -515,10 +515,10 @@ class NotificationService:
             return True
 
         except httpx.HTTPError as e:
-            logger.error(f"Failed to send telegram chunk notification: {e}")
+            logger.error("Failed to send telegram chunk notification (%s)", type(e).__name__)
             return False
         except Exception as e:
-            logger.error(f"Unexpected error sending telegram chunk notification: {e}")
+            logger.error("Unexpected error sending telegram chunk notification (%s)", type(e).__name__)
             return False
 
 

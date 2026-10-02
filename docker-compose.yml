@@ -27,7 +27,8 @@ services:
     container_name: rs_scanner_api
     environment:
       DATABASE_URL: ${API_DATABASE_URL:-postgresql+psycopg://${POSTGRES_USER:-rs_scanner}:${POSTGRES_PASSWORD:-rs_scanner_dev}@postgres:5432/${POSTGRES_DB:-rs_scanner}}
-      APP_ENV: ${APP_ENV:-production}
+      # Host batch/development settings must not enable create_all in the API.
+      APP_ENV: ${API_APP_ENV:-production}
       NAVER_REQUEST_TIMEOUT: ${NAVER_REQUEST_TIMEOUT:-30}
       KRX_AUTH_KEY: ${KRX_AUTH_KEY:-}
       KRX_API_BASE_URL: ${KRX_API_BASE_URL:-}

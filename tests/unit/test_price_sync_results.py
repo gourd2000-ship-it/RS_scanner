@@ -106,6 +106,67 @@ def test_partial_target_preserves_received_and_persisted_row_counts():
     assert target.response_bytes == 45
 
 
+def test_naver_price_sync_requeries_the_latest_saved_date():
+    context, _job_id = make_context()
+    latest = make_price()
+    context.price_repository.save_symbol_prices("000001", [latest])
+    source = ControlledPriceSource()
+    source.fail = False
+    source.provider_name = "naver"
+    source.requested_since_dates = []
+    original_fetch = source.fetch_daily_prices
+
+    def capture_since_date(code, since_date=None):
+        source.requested_since_dates.append(since_date)
+        return original_fetch(code, since_date=since_date)
+
+    source.fetch_daily_prices = capture_since_date
+
+    result = sync_prices(context, source)
+
+    assert result.fetched_count == 1
+    assert source.requested_since_dates == [date(2026, 8, 9)]
+
+
+def test_price_result_does_not_retain_the_full_persisted_history():
+    context, _job_id = make_context()
+    source = ControlledPriceSource()
+    source.fail = False
+    original_save = context.price_repository.save_symbol_prices
+    old_rows = [
+        make_price().model_copy(update={"trade_date": date(2026, 8, day)})
+        for day in (8, 9)
+    ]
+
+    def save_and_return_full_history(code, rows):
+        saved = original_save(code, rows)
+        return old_rows + saved
+
+    context.price_repository.save_symbol_prices = save_and_return_full_history
+
+    result = sync_prices(context, source)
+
+    assert result.fetched_count == 1
+    assert [row.trade_date for row in result["000001"]] == [date(2026, 8, 10)]
+
+
+def test_no_new_data_result_does_not_retain_existing_history():
+    context, _job_id = make_context()
+    history = [
+        make_price().model_copy(update={"trade_date": date(2026, 5, 1 + day)})
+        for day in range(25)
+    ]
+    context.price_repository.save_symbol_prices("000001", history)
+    source = ControlledPriceSource()
+    source.fail = False
+    source.fetch_daily_prices = lambda *_args, **_kwargs: ParsedPriceRows([])
+
+    result = sync_prices(context, source)
+
+    assert result.no_new_data_count == 1
+    assert result["000001"] == []
+
+
 def test_retry_failed_targets_updates_final_result_and_attempt_count():
     context, job_id = make_context()
     source = ControlledPriceSource()

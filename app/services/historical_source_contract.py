@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import date, datetime
+from time import monotonic
 from typing import Any, Callable, Iterable
 
 from app.core.exceptions import PriceFetchError, PriceParseError
@@ -63,6 +64,7 @@ class HistoricalProbeResult:
     response_bytes: int
     invalid_rows: int
     retry_count: int
+    elapsed_seconds: float
     error: dict[str, object] | None = None
 
     def as_dict(self) -> dict[str, object]:
@@ -86,6 +88,7 @@ class HistoricalProbeResult:
             "response_bytes": self.response_bytes,
             "invalid_rows": self.invalid_rows,
             "retry_count": self.retry_count,
+            "elapsed_seconds": self.elapsed_seconds,
             "error": self.error,
         }
 
@@ -120,6 +123,7 @@ def probe_kiwoom_daily_history(
     *,
     fetch_page: ChartPageFetcher,
     parse_page: ChartPageParser,
+    clock: Callable[[], float] = monotonic,
 ) -> HistoricalProbeResult:
     """Probe pages without persisting prices or retaining provider payloads.
 
@@ -127,6 +131,15 @@ def probe_kiwoom_daily_history(
     This makes the observed adjusted-price contract reproducible and exposes
     overlapping dates at page boundaries instead of silently hiding them.
     """
+
+    started_at = clock()
+
+    def finished(result_request: HistoricalProbeRequest, **values: object) -> HistoricalProbeResult:
+        return _result(
+            result_request,
+            **values,
+            elapsed_seconds=max(0.0, round(clock() - started_at, 6)),
+        )
 
     continuation = False
     next_key: str | None = None
@@ -148,7 +161,7 @@ def probe_kiwoom_daily_history(
                 next_key=next_key,
             )
         except PriceFetchError as exc:
-            return _result(
+            return finished(
                 request,
                 page_count=page_count,
                 row_count=row_count,
@@ -169,7 +182,7 @@ def probe_kiwoom_daily_history(
             parsed_rows = list(parsed_page)
         except PriceParseError as exc:
             invalid_rows += exc.invalid_rows
-            return _result(
+            return finished(
                 request,
                 page_count=page_count,
                 row_count=row_count,
@@ -191,7 +204,7 @@ def probe_kiwoom_daily_history(
                 dates.append(row.trade_date)
 
         if dates and min(dates) <= request.target_date:
-            return _result(
+            return finished(
                 request,
                 page_count=page_count,
                 row_count=row_count,
@@ -203,7 +216,7 @@ def probe_kiwoom_daily_history(
                 terminal_reason="target_reached",
             )
         if not response.continuation or not response.next_key:
-            return _result(
+            return finished(
                 request,
                 page_count=page_count,
                 row_count=row_count,
@@ -217,7 +230,7 @@ def probe_kiwoom_daily_history(
         continuation = True
         next_key = response.next_key
 
-    return _result(
+    return finished(
         request,
         page_count=page_count,
         row_count=row_count,
@@ -241,6 +254,7 @@ def _result(
     invalid_rows: int,
     retry_count: int,
     terminal_reason: str,
+    elapsed_seconds: float,
     error: dict[str, object] | None = None,
 ) -> HistoricalProbeResult:
     unique_dates = sorted(set(dates))
@@ -257,6 +271,7 @@ def _result(
         response_bytes=response_bytes,
         invalid_rows=invalid_rows,
         retry_count=retry_count,
+        elapsed_seconds=elapsed_seconds,
         error=error,
     )
 

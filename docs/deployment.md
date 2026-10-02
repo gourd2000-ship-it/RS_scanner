@@ -285,6 +285,14 @@ spec:
 | `DATABASE_URL` | PostgreSQL 연결 문자열 | - | `postgresql+psycopg://user:pass@localhost:5432/rs_scanner` |
 | `API_DATABASE_URL` | Docker Compose API 컨테이너 전용 PostgreSQL 연결 문자열. 미설정 시 Compose의 `postgres` 서비스 사용 | Compose 내부 기본값 | `postgresql+psycopg://user:pass@postgres:5432/rs_scanner` |
 | `APP_ENV` | 실행 환경 | `development` | `development`, `test`, `production` |
+| `API_APP_ENV` | Docker Compose API의 `APP_ENV` 값. 호스트 배치/개발용 `APP_ENV`와 분리 | `production` | `production` |
+
+Compose API는 `API_APP_ENV`가 없으면 운영 모드로 시작한다. 호스트의
+`APP_ENV=development`는 API에 전달되지 않는다. 운영 모드에서는 시작 시
+`create_all()`을 호출하지 않으며 스키마 이력은 Alembic으로 관리한다.
+
+2026-10-01 API revision 불일치 복구 내용과 복구 이미지 재현 방법은
+[`reports/api_migration_recovery_20261001.md`](../reports/api_migration_recovery_20261001.md)를 참고한다.
 
 ### 선택 환경변수
 

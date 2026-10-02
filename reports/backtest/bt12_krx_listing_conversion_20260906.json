@@ -1,0 +1,5072 @@
+{
+  "event_count": 4691,
+  "excluded": {
+    "security_kind_부동산투자회사": 53,
+    "security_kind_선박투자회사": 110,
+    "security_kind_수익증권": 783,
+    "security_kind_신주인수권증권": 160,
+    "security_kind_신주인수권증서": 870,
+    "security_kind_외국주권": 36,
+    "security_kind_주식예탁증권": 22,
+    "security_kind_투자회사": 337,
+    "stock_kind_missing": 161,
+    "stock_kind_구형우선주": 134,
+    "stock_kind_신형우선주": 152,
+    "stock_kind_종류주권": 15
+  },
+  "input_file_count": 46,
+  "instrument_count": 4276,
+  "source_files": [
+    {
+      "path": "docs/KRX/data_0910_listing_2010_20260906.csv",
+      "sha256": "650eca5e6756f4c3a6a3de0ad5ba9ca7c02edda05926fe1a2a5e299ea6c94201"
+    },
+    {
+      "path": "docs/KRX/data_0932_listing_2008_20260906.csv",
+      "sha256": "3af3aa9ce0698ff6419678044a433b1b3a4c11a3ea1604a360143382e8ad9cf9"
+    },
+    {
+      "path": "docs/KRX/data_0955_listing_2006_20260906.csv",
+      "sha256": "a63626cd3727c545f1e7e0a2c68c5b012383be6e51635bccf25c64b68fdff21e"
+    },
+    {
+      "path": "docs/KRX/data_1018_listing_2004_20260906.csv",
+      "sha256": "8ae7e2eae0a9e95aed5a3d5a4e128bdaf0f2705c2bcd38e51345ba5317a25014"
+    },
+    {
+      "path": "docs/KRX/data_1043_listing_2002_20260906.csv",
+      "sha256": "a77e153e28af78244b219b2c17c9a057810f64c55f189342aeae675a15bc59dc"
+    },
+    {
+      "path": "docs/KRX/data_1107_listing_2000_20260906.csv",
+      "sha256": "d0f19d7d21e26966c318083626ea205045e61357d3875df4a778fcd8cf49d9cb"
+    },
+    {
+      "path": "docs/KRX/data_1130_listing_1998_20260906.csv",
+      "sha256": "9cdf5af27fd05bc4e971b50cdfd63bd608226ae407919f4ddd9817eafac47cb7"
+    },
+    {
+      "path": "docs/KRX/data_1155_listing_1996_20260906.csv",
+      "sha256": "23560e602cb429749002e8b7f1f122c12e73b9e2bd0dca3c69f73a954618a237"
+    },
+    {
+      "path": "docs/KRX/data_1434_delisting_2026_20260906.csv",
+      "sha256": "9a0c15ac565f9e40c4157fea34ec7dabb47807738ca500e4a225335987ab1bc3"
+    },
+    {
+      "path": "docs/KRX/data_1514_delisting_2024_20260906.csv",
+      "sha256": "8b9358ea1212f9b031d86ee631bc149559e9688e87fdc502b855e9c689b20c4a"
+    },
+    {
+      "path": "docs/KRX/data_1535_delisting_2022_20260906.csv",
+      "sha256": "d6c831508791466620d6b590f44cea0fc0a1a4fb869822e5aa5dc03c73c29f30"
+    },
+    {
+      "path": "docs/KRX/data_1557_delisting_2020_20260906.csv",
+      "sha256": "a6ed7229695045901e9fd4efbd18a297a87601f7b06b9ad78b412192db5d96eb"
+    },
+    {
+      "path": "docs/KRX/data_1619_delisting_2018_20260906.csv",
+      "sha256": "3ce6c76f5503f92fd366c67e573f2e0edbd13a12eef8a933dc2cc764b08f00e2"
+    },
+    {
+      "path": "docs/KRX/data_1638_delisting_2016_20260906.csv",
+      "sha256": "53bc7cd5bcb2c30145a39b6af8507da6d19e5b8bcb7e98ce0d2642085df6ff2f"
+    },
+    {
+      "path": "docs/KRX/data_1656_delisting_2014_20260906.csv",
+      "sha256": "27dd58dc6bbced95fc339d40e90dff6ae3285124c9e6f275530f35a49ce64c76"
+    },
+    {
+      "path": "docs/KRX/data_1718_delisting_2012_20260906.csv",
+      "sha256": "e1e0e6d131f344ccd3029744a1787938f87c33573561b016230cdd20bb06c21b"
+    },
+    {
+      "path": "docs/KRX/data_1739_delisting_2010_20260906.csv",
+      "sha256": "29008a2ec23f2b7d650f6b23c2992aa98c9a596e0915e4a2c9655701661e2dee"
+    },
+    {
+      "path": "docs/KRX/data_1758_delisting_2008_20260906.csv",
+      "sha256": "d415c22bcede7ad5d12746c020959b3cf94874f23a2eb3a9500145ecfd62dd91"
+    },
+    {
+      "path": "docs/KRX/data_1814_delisting_2006_20260906.csv",
+      "sha256": "9591932a92cd2e5569c802f70061e141fd68cca81ad0296f3932302c49aef8cd"
+    },
+    {
+      "path": "docs/KRX/data_1833_delisting_2004_20260906.csv",
+      "sha256": "a2ff42523c127e5be54c7ce9846f1c51d002e1c5cf1cb1d438ac5405673240b5"
+    },
+    {
+      "path": "docs/KRX/data_1850_delisting_2002_20260906.csv",
+      "sha256": "b67bb3786d89759d581afa55bc3ad4977f9d05bbecaca4c9c849b1e94bba60be"
+    },
+    {
+      "path": "docs/KRX/data_1910_delisting_2000_20260906.csv",
+      "sha256": "95d999ae50e59ca5eabf38b38747571a1dc3319af1a40ddaae76d0467d868e2f"
+    },
+    {
+      "path": "docs/KRX/data_1930_delisting_1998_20260906.csv",
+      "sha256": "b9355310231bdb1a86d61388c80a5d8996d8ea6fcafaa82dd4bc3e76f944fd7e"
+    },
+    {
+      "path": "docs/KRX/data_2007_delisting_1996_20260906.csv",
+      "sha256": "fd46b6a8cd7ba47f6432732dc7d222964537b4f8754a6e3f3be723fc1dece252"
+    },
+    {
+      "path": "docs/KRX/data_2031_delisting_1994_20260906.csv",
+      "sha256": "9c2bda48c513ea5f6233363ff1fa21af854a16920402e0d05e601e82ae2e9272"
+    },
+    {
+      "path": "docs/KRX/data_4754_listing_2026_20260906.csv",
+      "sha256": "8865d66599a35cb0efb1a41f28e7e9a779946a5d36455d2d0b5a4c39b3b63422"
+    },
+    {
+      "path": "docs/KRX/data_4832_listing_2024_20260906.csv",
+      "sha256": "5d9cad504aab928b31da9570ff504eb0f0c1745add425638e64968f68bd70d9a"
+    },
+    {
+      "path": "docs/KRX/data_4906_listing_2022_20260906.csv",
+      "sha256": "5665bfc00977eeef91bd7963bab4bd905eebb05eb8eb7da97c7a29e06f9d777f"
+    },
+    {
+      "path": "docs/KRX/data_4953_listing_2020_20260906.csv",
+      "sha256": "0157c377c97e218bf4d265a18e110a3e4d9b3bec57310d469caf6026ec773272"
+    },
+    {
+      "path": "docs/KRX/data_5021_listing_2018_20260906.csv",
+      "sha256": "3549f7f939867ad2fbd857b4b6b875585a83519014d948ddbbd69569e7c358dd"
+    },
+    {
+      "path": "docs/KRX/data_5048_listing_2016_20260906.csv",
+      "sha256": "6a5baedba8ace4ec30c4fa9511d5f73b68466554aa1fda6e48daa068fee14652"
+    },
+    {
+      "path": "docs/KRX/data_5112_listing_2014_20260906.csv",
+      "sha256": "46c848af94b0fe8e8538099a8f7afb6300baf463cd3f9d89ff112881db5a89dd"
+    },
+    {
+      "path": "docs/KRX/data_5136_listing_2012_20260906.csv",
+      "sha256": "dfda6ba6b605ac5e458d7bccaf8a1b678439d6a2635dc4f78258835e37221d30"
+    },
+    {
+      "path": "docs/KRX/data_5230_delisting_1992_20260906.csv",
+      "sha256": "f2383e7741534efc9a1505b03d91348dbba599576d858346a9bd1f2c21c2a078"
+    },
+    {
+      "path": "docs/KRX/data_5256_delisting_1990_20260906.csv",
+      "sha256": "5d1e8c6c7c2b0b0b9ba7a5581f4f770338994994f2a7a07408a2248ffebfcd8e"
+    },
+    {
+      "path": "docs/KRX/data_5321_delisting_1988_20260906.csv",
+      "sha256": "9190c411d889a21ff12bd67dcdb3bc4a032ca0ba0a96e02c9013439d989e83d6"
+    },
+    {
+      "path": "docs/KRX/data_5345_delisting_1986_20260906.csv",
+      "sha256": "b44733f2e7eeb318518fdcad4748d4bfaaf92514f775d045efdbb4047ee18a35"
+    },
+    {
+      "path": "docs/KRX/data_5407_delisting_1984_20260906.csv",
+      "sha256": "78eed909ac19873ee3ec8359b8180fc188fae49e37c7813ec558f9b4feeef04f"
+    },
+    {
+      "path": "docs/KRX/data_5428_delisting_1982_20260906.csv",
+      "sha256": "891e8a0e22eefe9fdedeaa1a42a60f17e14f93b6f6ec15247e3ff209a7d10830"
+    },
+    {
+      "path": "docs/KRX/data_5451_delisting_1980_20260906.csv",
+      "sha256": "012cb89b8b25df3d96b0706574ea1b441136fc6d0369f0eb600a57065db71b89"
+    },
+    {
+      "path": "docs/KRX/data_5510_delisting_1978_20260906.csv",
+      "sha256": "8b539d385752bc8d8be6b38103e06fba8744589ffce02fb890b9f05f4238fb69"
+    },
+    {
+      "path": "docs/KRX/data_5542_delisting_1976_20260906.csv",
+      "sha256": "2ce10fe613ceca7b1ab5eb104dc5b7756d9cd5ce5702f00a5fa97c0725e2858d"
+    },
+    {
+      "path": "docs/KRX/data_5603_delisting_1974_20260906.csv",
+      "sha256": "c1ebe0bfeb6c443dd002eac3d6d745e8ca5082b91a561525fa2e02b23491a960"
+    },
+    {
+      "path": "docs/KRX/data_5626_delisting_1972_20260906.csv",
+      "sha256": "9e3c0ccd67e935df6333a54296d8f3ba8358715e6b1bff786d98049506ba2438"
+    },
+    {
+      "path": "docs/KRX/data_5650_delisting_1970_20260906.csv",
+      "sha256": "1dea5a78ef232e862879f43870736292ee8212ca4693b68cf040230a3c58148f"
+    },
+    {
+      "path": "docs/KRX/data_5710_delisting_1968_20260906.csv",
+      "sha256": "f9452e5ab5ee78f6d194e7566be7a6dc6af6c56ed39ed08f94113072b9fdbcc1"
+    }
+  ],
+  "unresolved": [
+    {
+      "code": "108320",
+      "effective_date": "2010-06-08",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_0910_listing_2010_20260906.csv"
+    },
+    {
+      "code": "066690",
+      "effective_date": "2008-10-06",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_0932_listing_2008_20260906.csv"
+    },
+    {
+      "code": "088700",
+      "effective_date": "2008-01-25",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_0932_listing_2008_20260906.csv"
+    },
+    {
+      "code": "100090",
+      "effective_date": "2008-08-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_0932_listing_2008_20260906.csv"
+    },
+    {
+      "code": "022220",
+      "effective_date": "2006-04-11",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_0955_listing_2006_20260906.csv"
+    },
+    {
+      "code": "036220",
+      "effective_date": "2007-06-05",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_0955_listing_2006_20260906.csv"
+    },
+    {
+      "code": "074140",
+      "effective_date": "2006-08-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_0955_listing_2006_20260906.csv"
+    },
+    {
+      "code": "078670",
+      "effective_date": "2007-07-27",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_0955_listing_2006_20260906.csv"
+    },
+    {
+      "code": "085990",
+      "effective_date": "2006-05-23",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_0955_listing_2006_20260906.csv"
+    },
+    {
+      "code": "088020",
+      "effective_date": "2006-12-19",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_0955_listing_2006_20260906.csv"
+    },
+    {
+      "code": "090460",
+      "effective_date": "2007-01-26",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_0955_listing_2006_20260906.csv"
+    },
+    {
+      "code": "039490",
+      "effective_date": "2004-04-23",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1018_listing_2004_20260906.csv"
+    },
+    {
+      "code": "040740",
+      "effective_date": "2004-01-28",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1018_listing_2004_20260906.csv"
+    },
+    {
+      "code": "050640",
+      "effective_date": "2005-08-05",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1018_listing_2004_20260906.csv"
+    },
+    {
+      "code": "051710",
+      "effective_date": "2004-06-18",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1018_listing_2004_20260906.csv"
+    },
+    {
+      "code": "067950",
+      "effective_date": "2004-01-26",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1018_listing_2004_20260906.csv"
+    },
+    {
+      "code": "068270",
+      "effective_date": "2005-07-19",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1018_listing_2004_20260906.csv"
+    },
+    {
+      "code": "071660",
+      "effective_date": "2005-10-18",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1018_listing_2004_20260906.csv"
+    },
+    {
+      "code": "073780",
+      "effective_date": "2004-05-18",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1018_listing_2004_20260906.csv"
+    },
+    {
+      "code": "078520",
+      "effective_date": "2005-02-04",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1018_listing_2004_20260906.csv"
+    },
+    {
+      "code": "078610",
+      "effective_date": "2005-05-09",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1018_listing_2004_20260906.csv"
+    },
+    {
+      "code": "078700",
+      "effective_date": "2004-10-29",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1018_listing_2004_20260906.csv"
+    },
+    {
+      "code": "079870",
+      "effective_date": "2005-07-15",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1018_listing_2004_20260906.csv"
+    },
+    {
+      "code": "010960",
+      "effective_date": "2002-07-16",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "034230",
+      "effective_date": "2002-11-05",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "035420",
+      "effective_date": "2002-10-29",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "038320",
+      "effective_date": "2002-04-23",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "038710",
+      "effective_date": "2002-02-19",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "041630",
+      "effective_date": "2002-01-15",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "044820",
+      "effective_date": "2002-02-07",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "045880",
+      "effective_date": "2002-02-07",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "049690",
+      "effective_date": "2002-01-08",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "050470",
+      "effective_date": "2002-04-23",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "052210",
+      "effective_date": "2002-12-23",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "053890",
+      "effective_date": "2002-05-07",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "054020",
+      "effective_date": "2002-05-07",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "055810",
+      "effective_date": "2003-11-07",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "055970",
+      "effective_date": "2003-08-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "056060",
+      "effective_date": "2002-01-15",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "056500",
+      "effective_date": "2002-06-04",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "057100",
+      "effective_date": "2002-11-15",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "057110",
+      "effective_date": "2002-01-10",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "058480",
+      "effective_date": "2002-01-15",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "060550",
+      "effective_date": "2002-02-28",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "060660",
+      "effective_date": "2002-02-21",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "060750",
+      "effective_date": "2002-04-11",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "064720",
+      "effective_date": "2003-07-04",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "065410",
+      "effective_date": "2002-08-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "065610",
+      "effective_date": "2002-12-06",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "065910",
+      "effective_date": "2003-01-10",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "066200",
+      "effective_date": "2003-06-11",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "066330",
+      "effective_date": "2002-05-17",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "066970",
+      "effective_date": "2003-01-02",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "068420",
+      "effective_date": "2003-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "070080",
+      "effective_date": "2002-12-13",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "072530",
+      "effective_date": "2003-12-05",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1043_listing_2002_20260906.csv"
+    },
+    {
+      "code": "003670",
+      "effective_date": "2001-11-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "007660",
+      "effective_date": "2000-08-22",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "017370",
+      "effective_date": "2001-08-09",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "022100",
+      "effective_date": "2000-11-28",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "024850",
+      "effective_date": "2001-01-18",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "027740",
+      "effective_date": "2000-12-07",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "030190",
+      "effective_date": "2000-05-16",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "032640",
+      "effective_date": "2000-09-21",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "033260",
+      "effective_date": "2001-02-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "034830",
+      "effective_date": "2001-05-22",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "035250",
+      "effective_date": "2001-10-25",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "035510",
+      "effective_date": "2000-11-16",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "035870",
+      "effective_date": "2000-06-27",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "036420",
+      "effective_date": "2000-03-23",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "036530",
+      "effective_date": "2000-03-07",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "036570",
+      "effective_date": "2000-07-11",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "036590",
+      "effective_date": "2001-05-10",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "036600",
+      "effective_date": "2000-01-11",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "036900",
+      "effective_date": "2000-01-11",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "037110",
+      "effective_date": "2000-07-11",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "037280",
+      "effective_date": "2000-02-29",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "038690",
+      "effective_date": "2000-06-29",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "038720",
+      "effective_date": "2001-01-18",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "038810",
+      "effective_date": "2000-05-09",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "038830",
+      "effective_date": "2000-08-31",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "038980",
+      "effective_date": "2000-07-04",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "039060",
+      "effective_date": "2001-06-19",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "039110",
+      "effective_date": "2001-08-28",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "039130",
+      "effective_date": "2000-11-28",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "040130",
+      "effective_date": "2000-05-03",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "041030",
+      "effective_date": "2000-05-30",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "041320",
+      "effective_date": "2000-08-08",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "041650",
+      "effective_date": "2001-11-15",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "042470",
+      "effective_date": "2000-07-19",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "042570",
+      "effective_date": "2000-10-19",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "042820",
+      "effective_date": "2000-07-11",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "043690",
+      "effective_date": "2001-06-28",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "044370",
+      "effective_date": "2000-07-13",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "046240",
+      "effective_date": "2000-11-07",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "046810",
+      "effective_date": "2000-08-18",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "046840",
+      "effective_date": "2001-07-10",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "047060",
+      "effective_date": "2000-09-08",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "047370",
+      "effective_date": "2001-05-29",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "047730",
+      "effective_date": "2001-05-10",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "048760",
+      "effective_date": "2000-10-12",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "049800",
+      "effective_date": "2001-07-26",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "053200",
+      "effective_date": "2001-12-26",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "053250",
+      "effective_date": "2001-07-20",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "053470",
+      "effective_date": "2001-07-31",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "054530",
+      "effective_date": "2001-08-28",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "055000",
+      "effective_date": "2001-12-18",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1107_listing_2000_20260906.csv"
+    },
+    {
+      "code": "019560",
+      "effective_date": "1999-12-03",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1130_listing_1998_20260906.csv"
+    },
+    {
+      "code": "020560",
+      "effective_date": "1999-12-24",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1130_listing_1998_20260906.csv"
+    },
+    {
+      "code": "030610",
+      "effective_date": "1999-11-18",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1130_listing_1998_20260906.csv"
+    },
+    {
+      "code": "033270",
+      "effective_date": "1999-11-11",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1130_listing_1998_20260906.csv"
+    },
+    {
+      "code": "033850",
+      "effective_date": "1998-05-25",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1130_listing_1998_20260906.csv"
+    },
+    {
+      "code": "033920",
+      "effective_date": "1998-07-27",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1130_listing_1998_20260906.csv"
+    },
+    {
+      "code": "034120",
+      "effective_date": "1999-05-14",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1130_listing_1998_20260906.csv"
+    },
+    {
+      "code": "034121",
+      "effective_date": "1999-05-14",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1130_listing_1998_20260906.csv"
+    },
+    {
+      "code": "034750",
+      "effective_date": "1999-06-11",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1130_listing_1998_20260906.csv"
+    },
+    {
+      "code": "035710",
+      "effective_date": "1999-11-11",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1130_listing_1998_20260906.csv"
+    },
+    {
+      "code": "035720",
+      "effective_date": "1999-11-11",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1130_listing_1998_20260906.csv"
+    },
+    {
+      "code": "036020",
+      "effective_date": "1999-12-03",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1130_listing_1998_20260906.csv"
+    },
+    {
+      "code": "037020",
+      "effective_date": "1999-11-16",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1130_listing_1998_20260906.csv"
+    },
+    {
+      "code": "037030",
+      "effective_date": "1999-12-24",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1130_listing_1998_20260906.csv"
+    },
+    {
+      "code": "037220",
+      "effective_date": "1999-11-25",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1130_listing_1998_20260906.csv"
+    },
+    {
+      "code": "037540",
+      "effective_date": "1999-12-21",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1130_listing_1998_20260906.csv"
+    },
+    {
+      "code": "037650",
+      "effective_date": "1999-12-24",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1130_listing_1998_20260906.csv"
+    },
+    {
+      "code": "000600",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "001910",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "001990",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "002671",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "002750",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "003160",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "003220",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "003380",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "003701",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "003860",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "004520",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "005320",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "006740",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "006890",
+      "effective_date": "1992-10-29",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "007020",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "007021",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "007090",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "007120",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "007830",
+      "effective_date": "1993-12-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "008330",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "008430",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "008581",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "008680",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "008780",
+      "effective_date": "1993-01-06",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "009010",
+      "effective_date": "1993-12-29",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "009540",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "009950",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "010040",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "010601",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "011360",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "011500",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "011520",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "011860",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "011930",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "012320",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "012350",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "012630",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "013210",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "013310",
+      "effective_date": "1997-09-30",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "013630",
+      "effective_date": "1994-07-04",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "014440",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "015180",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "015200",
+      "effective_date": "1997-01-17",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "015360",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "016040",
+      "effective_date": "1993-12-07",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "016230",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "016450",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "016580",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "017161",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "017410",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "017800",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "017900",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "018230",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "018740",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "018860",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "019180",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "019460",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "019490",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "020000",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "020070",
+      "effective_date": "1994-12-29",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "020120",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "020620",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "020881",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "021090",
+      "effective_date": "1993-11-05",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "021240",
+      "effective_date": "1996-09-02",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "021660",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "021820",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "022130",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "022220",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "022610",
+      "effective_date": "1996-04-15",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "022870",
+      "effective_date": "1993-04-07",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "023140",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "023150",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "023450",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "023590",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "023800",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "023810",
+      "effective_date": "1994-11-07",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "024070",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "024090",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "024091",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "024110",
+      "effective_date": "1994-12-07",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "024720",
+      "effective_date": "1996-10-24",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "024850",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "024871",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "024890",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "024900",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "025151",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "025530",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "025540",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "025551",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "025560",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "025690",
+      "effective_date": "1997-07-04",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "025890",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "025931",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "026151",
+      "effective_date": "1997-08-06",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "026261",
+      "effective_date": "1996-09-24",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "026262",
+      "effective_date": "1996-09-24",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "026263",
+      "effective_date": "1996-09-24",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "026890",
+      "effective_date": "1996-07-01",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "026940",
+      "effective_date": "1995-10-06",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "026960",
+      "effective_date": "1996-05-22",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "027351",
+      "effective_date": "1996-07-06",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "027354",
+      "effective_date": "1996-07-06",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "027611",
+      "effective_date": "1996-09-24",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "027612",
+      "effective_date": "1996-09-24",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "027613",
+      "effective_date": "1996-09-24",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "027614",
+      "effective_date": "1996-09-24",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "028081",
+      "effective_date": "1997-04-16",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "028091",
+      "effective_date": "1996-11-29",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "028092",
+      "effective_date": "1996-11-29",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "029460",
+      "effective_date": "1996-09-02",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "030390",
+      "effective_date": "1997-02-12",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "030420",
+      "effective_date": "1997-07-04",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "030950",
+      "effective_date": "1996-10-24",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "030970",
+      "effective_date": "1996-10-24",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "031314",
+      "effective_date": "1997-07-25",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "031960",
+      "effective_date": "1996-12-23",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "031971",
+      "effective_date": "1997-01-07",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "031972",
+      "effective_date": "1997-01-07",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "031974",
+      "effective_date": "1997-01-07",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "032290",
+      "effective_date": "1997-03-15",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "032560",
+      "effective_date": "1997-04-22",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "032581",
+      "effective_date": "1997-04-22",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "032582",
+      "effective_date": "1997-04-22",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "032590",
+      "effective_date": "1997-05-02",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "032591",
+      "effective_date": "1997-05-02",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "032621",
+      "effective_date": "1997-05-02",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "032791",
+      "effective_date": "1997-06-26",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "032801",
+      "effective_date": "1997-06-26",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "032802",
+      "effective_date": "1997-06-26",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "033030",
+      "effective_date": "1997-08-18",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "033330",
+      "effective_date": "1997-11-03",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "033334",
+      "effective_date": "1997-11-03",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "033530",
+      "effective_date": "1997-12-26",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1155_listing_1996_20260906.csv"
+    },
+    {
+      "code": "009010",
+      "effective_date": "2013-05-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1718_delisting_2012_20260906.csv"
+    },
+    {
+      "code": "015200",
+      "effective_date": "2012-05-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1718_delisting_2012_20260906.csv"
+    },
+    {
+      "code": "021060",
+      "effective_date": "2012-06-27",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1718_delisting_2012_20260906.csv"
+    },
+    {
+      "code": "038320",
+      "effective_date": "2012-09-08",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1718_delisting_2012_20260906.csv"
+    },
+    {
+      "code": "038720",
+      "effective_date": "2013-05-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1718_delisting_2012_20260906.csv"
+    },
+    {
+      "code": "040740",
+      "effective_date": "2012-05-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1718_delisting_2012_20260906.csv"
+    },
+    {
+      "code": "042820",
+      "effective_date": "2012-11-17",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1718_delisting_2012_20260906.csv"
+    },
+    {
+      "code": "046840",
+      "effective_date": "2013-05-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1718_delisting_2012_20260906.csv"
+    },
+    {
+      "code": "047730",
+      "effective_date": "2012-11-17",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1718_delisting_2012_20260906.csv"
+    },
+    {
+      "code": "050470",
+      "effective_date": "2012-05-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1718_delisting_2012_20260906.csv"
+    },
+    {
+      "code": "051710",
+      "effective_date": "2013-05-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1718_delisting_2012_20260906.csv"
+    },
+    {
+      "code": "065610",
+      "effective_date": "2012-05-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1718_delisting_2012_20260906.csv"
+    },
+    {
+      "code": "066690",
+      "effective_date": "2012-05-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1718_delisting_2012_20260906.csv"
+    },
+    {
+      "code": "068420",
+      "effective_date": "2013-04-06",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1718_delisting_2012_20260906.csv"
+    },
+    {
+      "code": "071660",
+      "effective_date": "2012-09-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1718_delisting_2012_20260906.csv"
+    },
+    {
+      "code": "088700",
+      "effective_date": "2013-05-04",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1718_delisting_2012_20260906.csv"
+    },
+    {
+      "code": "020070",
+      "effective_date": "2010-05-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "030390",
+      "effective_date": "2010-05-08",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "030420",
+      "effective_date": "2011-05-07",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "031960",
+      "effective_date": "2010-02-20",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "032290",
+      "effective_date": "2011-04-23",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "033030",
+      "effective_date": "2010-09-25",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "033260",
+      "effective_date": "2010-04-17",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "033850",
+      "effective_date": "2011-05-07",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "035710",
+      "effective_date": "2010-05-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "037020",
+      "effective_date": "2011-04-23",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "037110",
+      "effective_date": "2010-05-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "037540",
+      "effective_date": "2011-11-26",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "038690",
+      "effective_date": "2010-04-17",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "038710",
+      "effective_date": "2011-05-07",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "041030",
+      "effective_date": "2010-05-05",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "041320",
+      "effective_date": "2010-05-08",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "041630",
+      "effective_date": "2010-05-08",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "045880",
+      "effective_date": "2010-04-10",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "046240",
+      "effective_date": "2011-02-12",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "049690",
+      "effective_date": "2011-04-23",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "050640",
+      "effective_date": "2011-08-20",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "052210",
+      "effective_date": "2010-12-04",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "053470",
+      "effective_date": "2010-05-08",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "054020",
+      "effective_date": "2010-04-03",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "057100",
+      "effective_date": "2010-05-08",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "058480",
+      "effective_date": "2010-05-08",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "060750",
+      "effective_date": "2011-04-16",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "065410",
+      "effective_date": "2010-05-05",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "067950",
+      "effective_date": "2010-02-20",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "070080",
+      "effective_date": "2010-11-06",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "072530",
+      "effective_date": "2011-05-07",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "074140",
+      "effective_date": "2010-05-08",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "078670",
+      "effective_date": "2010-05-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "078700",
+      "effective_date": "2010-02-27",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "085990",
+      "effective_date": "2010-05-08",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "088020",
+      "effective_date": "2011-01-08",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1739_delisting_2010_20260906.csv"
+    },
+    {
+      "code": "016040",
+      "effective_date": "2009-04-11",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "032590",
+      "effective_date": "2008-04-12",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "032591",
+      "effective_date": "2008-04-12",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "033330",
+      "effective_date": "2008-05-03",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "033334",
+      "effective_date": "2008-05-03",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "034750",
+      "effective_date": "2008-07-12",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "038810",
+      "effective_date": "2009-04-11",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "038830",
+      "effective_date": "2009-08-08",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "039060",
+      "effective_date": "2008-12-20",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "042570",
+      "effective_date": "2008-04-12",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "044370",
+      "effective_date": "2008-05-03",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "047370",
+      "effective_date": "2009-04-11",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "053890",
+      "effective_date": "2009-04-11",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "055970",
+      "effective_date": "2008-05-03",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "060550",
+      "effective_date": "2009-04-11",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "060660",
+      "effective_date": "2008-05-03",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "064720",
+      "effective_date": "2008-04-12",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "065910",
+      "effective_date": "2009-04-18",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "066200",
+      "effective_date": "2009-04-11",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "066330",
+      "effective_date": "2008-04-12",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "073780",
+      "effective_date": "2009-04-11",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "078610",
+      "effective_date": "2009-04-11",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "079870",
+      "effective_date": "2009-04-11",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1758_delisting_2008_20260906.csv"
+    },
+    {
+      "code": "039110",
+      "effective_date": "2006-04-15",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1814_delisting_2006_20260906.csv"
+    },
+    {
+      "code": "048760",
+      "effective_date": "2006-07-22",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1814_delisting_2006_20260906.csv"
+    },
+    {
+      "code": "056060",
+      "effective_date": "2006-04-08",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1814_delisting_2006_20260906.csv"
+    },
+    {
+      "code": "007830",
+      "effective_date": "2004-12-31",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "019560",
+      "effective_date": "2005-12-24",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "022610",
+      "effective_date": "2004-02-07",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "025690",
+      "effective_date": "2005-03-12",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "030950",
+      "effective_date": "2005-04-30",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "035870",
+      "effective_date": "2004-06-12",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "036020",
+      "effective_date": "2005-04-02",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "036590",
+      "effective_date": "2005-04-16",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "036600",
+      "effective_date": "2005-04-02",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "036900",
+      "effective_date": "2005-04-23",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "037220",
+      "effective_date": "2005-04-09",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "037650",
+      "effective_date": "2005-04-05",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "038980",
+      "effective_date": "2005-09-10",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "040130",
+      "effective_date": "2004-04-03",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "043690",
+      "effective_date": "2004-10-16",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "046810",
+      "effective_date": "2005-04-30",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "047060",
+      "effective_date": "2004-08-14",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "053200",
+      "effective_date": "2004-04-03",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "053250",
+      "effective_date": "2005-04-02",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "054530",
+      "effective_date": "2004-04-03",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "055000",
+      "effective_date": "2004-04-03",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "055810",
+      "effective_date": "2005-08-13",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "056500",
+      "effective_date": "2005-04-05",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "057110",
+      "effective_date": "2005-10-22",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1833_delisting_2004_20260906.csv"
+    },
+    {
+      "code": "008780",
+      "effective_date": "2003-11-08",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1850_delisting_2002_20260906.csv"
+    },
+    {
+      "code": "013630",
+      "effective_date": "2002-04-20",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1850_delisting_2002_20260906.csv"
+    },
+    {
+      "code": "021090",
+      "effective_date": "2003-12-20",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1850_delisting_2002_20260906.csv"
+    },
+    {
+      "code": "030970",
+      "effective_date": "2002-12-21",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1850_delisting_2002_20260906.csv"
+    },
+    {
+      "code": "037280",
+      "effective_date": "2003-03-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1850_delisting_2002_20260906.csv"
+    },
+    {
+      "code": "042470",
+      "effective_date": "2002-11-16",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1850_delisting_2002_20260906.csv"
+    },
+    {
+      "code": "007090",
+      "effective_date": "2000-05-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1910_delisting_2000_20260906.csv"
+    },
+    {
+      "code": "022870",
+      "effective_date": "2001-07-07",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1910_delisting_2000_20260906.csv"
+    },
+    {
+      "code": "001990",
+      "effective_date": "1999-10-30",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1930_delisting_1998_20260906.csv"
+    },
+    {
+      "code": "003860",
+      "effective_date": "1999-10-30",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1930_delisting_1998_20260906.csv"
+    },
+    {
+      "code": "007020",
+      "effective_date": "1999-05-15",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1930_delisting_1998_20260906.csv"
+    },
+    {
+      "code": "012350",
+      "effective_date": "1999-10-30",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1930_delisting_1998_20260906.csv"
+    },
+    {
+      "code": "023140",
+      "effective_date": "1999-10-30",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_1930_delisting_1998_20260906.csv"
+    },
+    {
+      "code": "000600",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "001910",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "002671",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "002750",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "003701",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "004520",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "007021",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "008330",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "008430",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "008581",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "008680",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "009950",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "010601",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "011360",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "011520",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "011860",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "013210",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "015180",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "016230",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "017161",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "017410",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "018230",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "018740",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "018860",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "019460",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "020620",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "020881",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "021660",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "022130",
+      "effective_date": "1997-01-01",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "024871",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "025151",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "025931",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "026261",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "026262",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "026263",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "027351",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "027354",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "027611",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "027612",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "027613",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "027614",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "028091",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "028092",
+      "effective_date": "1996-12-29",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "031971",
+      "effective_date": "1997-06-28",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "031972",
+      "effective_date": "1997-06-28",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "031974",
+      "effective_date": "1997-06-28",
+      "event_type": "delisted",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_2007_delisting_1996_20260906.csv"
+    },
+    {
+      "code": "0070X0",
+      "effective_date": "2026-04-27",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4754_listing_2026_20260906.csv"
+    },
+    {
+      "code": "0203K0",
+      "effective_date": "2026-07-21",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4754_listing_2026_20260906.csv"
+    },
+    {
+      "code": "238540",
+      "effective_date": "2026-07-28",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4754_listing_2026_20260906.csv"
+    },
+    {
+      "code": "386380",
+      "effective_date": "2026-09-04",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4754_listing_2026_20260906.csv"
+    },
+    {
+      "code": "036220",
+      "effective_date": "2024-03-13",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4832_listing_2024_20260906.csv"
+    },
+    {
+      "code": "059180",
+      "effective_date": "2025-12-22",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4832_listing_2024_20260906.csv"
+    },
+    {
+      "code": "101970",
+      "effective_date": "2025-03-28",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4832_listing_2024_20260906.csv"
+    },
+    {
+      "code": "266350",
+      "effective_date": "2024-06-28",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4832_listing_2024_20260906.csv"
+    },
+    {
+      "code": "267080",
+      "effective_date": "2024-01-17",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4832_listing_2024_20260906.csv"
+    },
+    {
+      "code": "332190",
+      "effective_date": "2025-01-14",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4832_listing_2024_20260906.csv"
+    },
+    {
+      "code": "403810",
+      "effective_date": "2025-11-18",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4832_listing_2024_20260906.csv"
+    },
+    {
+      "code": "476710",
+      "effective_date": "2024-10-30",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4832_listing_2024_20260906.csv"
+    },
+    {
+      "code": "495810",
+      "effective_date": "2024-12-23",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4832_listing_2024_20260906.csv"
+    },
+    {
+      "code": "496320",
+      "effective_date": "2025-09-08",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4832_listing_2024_20260906.csv"
+    },
+    {
+      "code": "012210",
+      "effective_date": "2023-05-16",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "052960",
+      "effective_date": "2023-01-26",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "102950",
+      "effective_date": "2022-11-30",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "169670",
+      "effective_date": "2022-01-21",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "176590",
+      "effective_date": "2022-06-15",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "289170",
+      "effective_date": "2023-10-13",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "296160",
+      "effective_date": "2023-11-15",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "296520",
+      "effective_date": "2023-06-20",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "311960",
+      "effective_date": "2022-11-29",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "341170",
+      "effective_date": "2022-07-27",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "346010",
+      "effective_date": "2022-12-28",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "351020",
+      "effective_date": "2023-10-26",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "354390",
+      "effective_date": "2022-07-20",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "388610",
+      "effective_date": "2022-12-23",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "390110",
+      "effective_date": "2022-12-21",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "413300",
+      "effective_date": "2022-09-27",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "434190",
+      "effective_date": "2022-10-24",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "446440",
+      "effective_date": "2023-07-31",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "447690",
+      "effective_date": "2022-12-28",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "448780",
+      "effective_date": "2022-12-21",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "448900",
+      "effective_date": "2023-08-30",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "456190",
+      "effective_date": "2023-05-18",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "456570",
+      "effective_date": "2023-07-19",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4906_listing_2022_20260906.csv"
+    },
+    {
+      "code": "122830",
+      "effective_date": "2020-10-23",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4953_listing_2020_20260906.csv"
+    },
+    {
+      "code": "253610",
+      "effective_date": "2020-12-24",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4953_listing_2020_20260906.csv"
+    },
+    {
+      "code": "254160",
+      "effective_date": "2021-12-13",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4953_listing_2020_20260906.csv"
+    },
+    {
+      "code": "266470",
+      "effective_date": "2020-07-22",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4953_listing_2020_20260906.csv"
+    },
+    {
+      "code": "318660",
+      "effective_date": "2021-06-24",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4953_listing_2020_20260906.csv"
+    },
+    {
+      "code": "322970",
+      "effective_date": "2020-06-24",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4953_listing_2020_20260906.csv"
+    },
+    {
+      "code": "344860",
+      "effective_date": "2020-04-27",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4953_listing_2020_20260906.csv"
+    },
+    {
+      "code": "379390",
+      "effective_date": "2021-06-04",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4953_listing_2020_20260906.csv"
+    },
+    {
+      "code": "393210",
+      "effective_date": "2021-10-14",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4953_listing_2020_20260906.csv"
+    },
+    {
+      "code": "402420",
+      "effective_date": "2021-11-30",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4953_listing_2020_20260906.csv"
+    },
+    {
+      "code": "403360",
+      "effective_date": "2021-12-14",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_4953_listing_2020_20260906.csv"
+    },
+    {
+      "code": "037030",
+      "effective_date": "2018-06-07",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "065370",
+      "effective_date": "2018-04-02",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "093510",
+      "effective_date": "2019-09-30",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "140610",
+      "effective_date": "2018-09-10",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "179530",
+      "effective_date": "2019-12-24",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "207490",
+      "effective_date": "2018-11-28",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "217910",
+      "effective_date": "2018-04-27",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "250030",
+      "effective_date": "2019-11-29",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "258050",
+      "effective_date": "2018-07-13",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "276240",
+      "effective_date": "2018-07-05",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "279060",
+      "effective_date": "2019-04-12",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "299480",
+      "effective_date": "2018-06-29",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "302550",
+      "effective_date": "2018-08-14",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "302920",
+      "effective_date": "2018-08-13",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "303360",
+      "effective_date": "2018-12-19",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "311060",
+      "effective_date": "2018-12-28",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "314130",
+      "effective_date": "2018-12-26",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "317860",
+      "effective_date": "2019-12-06",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "323350",
+      "effective_date": "2019-05-21",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "331660",
+      "effective_date": "2019-10-28",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "336040",
+      "effective_date": "2019-12-02",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "337840",
+      "effective_date": "2019-11-28",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5021_listing_2018_20260906.csv"
+    },
+    {
+      "code": "003380",
+      "effective_date": "2017-06-30",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "058970",
+      "effective_date": "2016-04-28",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "066830",
+      "effective_date": "2016-07-18",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "067370",
+      "effective_date": "2016-01-22",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "112190",
+      "effective_date": "2016-05-31",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "148780",
+      "effective_date": "2016-11-16",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "162120",
+      "effective_date": "2017-07-25",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "173130",
+      "effective_date": "2016-12-20",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "180060",
+      "effective_date": "2017-10-27",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "191600",
+      "effective_date": "2016-08-05",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "199290",
+      "effective_date": "2016-12-08",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "208850",
+      "effective_date": "2016-06-22",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "212310",
+      "effective_date": "2016-07-26",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "219420",
+      "effective_date": "2016-07-29",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "226400",
+      "effective_date": "2016-05-04",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "227420",
+      "effective_date": "2016-12-28",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "228760",
+      "effective_date": "2016-07-19",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "232830",
+      "effective_date": "2016-11-29",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "233250",
+      "effective_date": "2017-06-26",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "236030",
+      "effective_date": "2017-12-14",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "236340",
+      "effective_date": "2016-01-26",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "238500",
+      "effective_date": "2016-04-20",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "239890",
+      "effective_date": "2016-08-16",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "243870",
+      "effective_date": "2016-10-31",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "244880",
+      "effective_date": "2016-06-01",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "245450",
+      "effective_date": "2016-06-24",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "246250",
+      "effective_date": "2016-06-29",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "251280",
+      "effective_date": "2016-10-25",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "253840",
+      "effective_date": "2016-11-11",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "256940",
+      "effective_date": "2016-12-21",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "260870",
+      "effective_date": "2017-08-30",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "260970",
+      "effective_date": "2016-12-29",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "266170",
+      "effective_date": "2017-06-09",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "270210",
+      "effective_date": "2017-06-15",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "270660",
+      "effective_date": "2017-07-24",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "277880",
+      "effective_date": "2017-10-30",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "278990",
+      "effective_date": "2017-10-31",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "279600",
+      "effective_date": "2017-11-10",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5048_listing_2016_20260906.csv"
+    },
+    {
+      "code": "013310",
+      "effective_date": "2015-12-22",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "044990",
+      "effective_date": "2015-12-10",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "063760",
+      "effective_date": "2015-04-28",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "076340",
+      "effective_date": "2015-05-18",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "084440",
+      "effective_date": "2014-01-21",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "086220",
+      "effective_date": "2015-07-09",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "092590",
+      "effective_date": "2015-10-30",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "092870",
+      "effective_date": "2014-12-24",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "103660",
+      "effective_date": "2015-06-22",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "121060",
+      "effective_date": "2014-10-24",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "122640",
+      "effective_date": "2014-12-29",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "123010",
+      "effective_date": "2014-10-31",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "136660",
+      "effective_date": "2014-07-01",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "142760",
+      "effective_date": "2014-11-26",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "149010",
+      "effective_date": "2014-11-14",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "154030",
+      "effective_date": "2014-07-08",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "176750",
+      "effective_date": "2014-12-29",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "178920",
+      "effective_date": "2014-12-08",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "180400",
+      "effective_date": "2014-12-15",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "192080",
+      "effective_date": "2015-11-04",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "197140",
+      "effective_date": "2014-05-30",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "198940",
+      "effective_date": "2014-08-12",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "199150",
+      "effective_date": "2014-06-25",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "199800",
+      "effective_date": "2014-06-25",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "200350",
+      "effective_date": "2014-12-24",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "200580",
+      "effective_date": "2015-10-20",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "202960",
+      "effective_date": "2014-08-11",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "203400",
+      "effective_date": "2014-07-21",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "203450",
+      "effective_date": "2014-07-23",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "206950",
+      "effective_date": "2015-12-30",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "208890",
+      "effective_date": "2014-12-18",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "210120",
+      "effective_date": "2014-12-16",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "211050",
+      "effective_date": "2015-11-16",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "214610",
+      "effective_date": "2015-06-22",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "215570",
+      "effective_date": "2015-12-28",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "216400",
+      "effective_date": "2015-06-29",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "217320",
+      "effective_date": "2015-04-29",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "217880",
+      "effective_date": "2015-05-28",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "217950",
+      "effective_date": "2015-11-05",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "219750",
+      "effective_date": "2015-06-17",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "220100",
+      "effective_date": "2015-08-13",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "220180",
+      "effective_date": "2015-06-29",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "221800",
+      "effective_date": "2015-06-29",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "222670",
+      "effective_date": "2015-07-28",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "223220",
+      "effective_date": "2015-07-09",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "224760",
+      "effective_date": "2015-07-31",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "224810",
+      "effective_date": "2015-10-21",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "225220",
+      "effective_date": "2015-08-03",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "229000",
+      "effective_date": "2015-10-27",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "229500",
+      "effective_date": "2015-10-28",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "232530",
+      "effective_date": "2015-12-30",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "232680",
+      "effective_date": "2015-12-15",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "233990",
+      "effective_date": "2015-12-29",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "234070",
+      "effective_date": "2015-12-21",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "234100",
+      "effective_date": "2015-12-29",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5112_listing_2014_20260906.csv"
+    },
+    {
+      "code": "041920",
+      "effective_date": "2013-07-01",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "059120",
+      "effective_date": "2013-07-01",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "064850",
+      "effective_date": "2013-07-01",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "084650",
+      "effective_date": "2013-07-01",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "094360",
+      "effective_date": "2013-10-29",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "097520",
+      "effective_date": "2012-07-25",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "101360",
+      "effective_date": "2013-07-01",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "101970",
+      "effective_date": "2012-07-26",
+      "event_type": "listed",
+      "market": "KOSDAQ",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "107640",
+      "effective_date": "2013-12-10",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "114920",
+      "effective_date": "2013-07-01",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "116100",
+      "effective_date": "2013-07-01",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "124500",
+      "effective_date": "2013-07-01",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "126340",
+      "effective_date": "2013-07-01",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "140660",
+      "effective_date": "2013-12-26",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "148250",
+      "effective_date": "2013-12-24",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "149980",
+      "effective_date": "2013-07-01",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "156100",
+      "effective_date": "2013-07-01",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "177350",
+      "effective_date": "2013-07-01",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "178600",
+      "effective_date": "2013-12-20",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "179720",
+      "effective_date": "2013-07-01",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "183490",
+      "effective_date": "2013-09-25",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "185190",
+      "effective_date": "2013-10-29",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "185490",
+      "effective_date": "2013-11-28",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "186230",
+      "effective_date": "2013-12-20",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "189330",
+      "effective_date": "2013-12-24",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    },
+    {
+      "code": "189350",
+      "effective_date": "2013-12-24",
+      "event_type": "listed",
+      "market": "KONEX",
+      "reason": "no_exact_instrument",
+      "source_file": "docs/KRX/data_5136_listing_2012_20260906.csv"
+    }
+  ],
+  "unresolved_count": 608
+}

@@ -3,7 +3,7 @@
 import logging
 import re
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
 from time import perf_counter
@@ -605,11 +605,17 @@ def _process_chunk_in_context(
                 invalid_rows = int(getattr(prices, "invalid_rows", 0))
                 response_bytes = response_meta.get(symbol.code)
 
-                if prices:
-                    validate_prices(prices)
+                latest_target_date = chunk_context.target_date
+                prices_to_save = (
+                    [row for row in prices if row.trade_date <= latest_target_date]
+                    if isinstance(latest_target_date, date)
+                    else prices
+                )
+                if prices_to_save:
+                    validate_prices(prices_to_save)
                     conflict_dates = _provider_conflict_dates(
                         chunk_context.price_repository.get_symbol_prices(symbol.code),
-                        prices,
+                        prices_to_save,
                     ) if getattr(source, "reject_provider_conflicts", False) else []
                     if conflict_dates:
                         sample = ", ".join(item.isoformat() for item in conflict_dates[:5])
@@ -620,23 +626,27 @@ def _process_chunk_in_context(
                         with chunk_context.session.begin_nested():
                             saved_prices = chunk_context.price_repository.save_symbol_prices(
                                 symbol.code,
-                                prices,
+                                prices_to_save,
                                 crawl_job_id=job_id,
                                 provider=source_provider,
                             )
                     else:
                         saved_prices = chunk_context.price_repository.save_symbol_prices(
                             symbol.code,
-                            prices,
+                            prices_to_save,
                         )
 
                     latest_after = _latest_trade_date(saved_prices)
                     target = PriceTargetResult(
                         code=symbol.code,
                         status="partial" if invalid_rows else "fetched",
-                        prices=saved_prices,
+                        # ``save_symbol_prices`` returns the complete persisted
+                        # history. Retaining it in every target multiplies the
+                        # whole universe history in memory for the life of the
+                        # batch; the sync result only needs this fetch's rows.
+                        prices=prices_to_save,
                         rows_received=len(prices) + invalid_rows,
-                        rows_persisted=len(prices),
+                        rows_persisted=len(prices_to_save),
                         latest_date_before=latest_trade_date,
                         latest_date_after=latest_after,
                         trade_date=latest_after,
@@ -655,7 +665,9 @@ def _process_chunk_in_context(
                     target = PriceTargetResult(
                         code=symbol.code,
                         status="no_new_data",
-                        prices=existing_prices,
+                        # Keep the target in the result map without retaining
+                        # its potentially large persisted history.
+                        prices=[],
                         latest_date_before=latest_trade_date,
                         latest_date_after=latest_after,
                         trade_date=latest_after,
@@ -762,6 +774,8 @@ def _fetch_chunk_prices(
                 if getattr(source, "fetch_full_history_on_fallback", False)
                 else latest_dates.get(code)
             )
+            if source_since_date is not None and provider_id(source) == "naver":
+                source_since_date -= timedelta(days=1)
             rows = source.fetch_daily_prices(code, since_date=source_since_date)
             elapsed = perf_counter() - started
             record_provider_request(

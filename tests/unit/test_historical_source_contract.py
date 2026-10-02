@@ -110,6 +110,22 @@ def test_probe_marks_page_limit_without_claiming_history_is_complete():
     assert result.terminal_reason == "page_limit_reached"
 
 
+def test_probe_records_monotonic_elapsed_time_without_retaining_provider_payloads():
+    ticks = iter((10.0, 12.75))
+
+    result = probe_kiwoom_daily_history(
+        HistoricalProbeRequest(
+            code="005930", label="timed", base_date="20260904",
+            target_date=date(2026, 9, 4), max_pages=1,
+        ),
+        fetch_page=lambda _code, **_kwargs: _response(continuation=False, next_key=None),
+        parse_page=lambda _payload: [_row("2026-09-04")],
+        clock=lambda: next(ticks),
+    )
+
+    assert result.elapsed_seconds == 2.75
+
+
 def test_probe_counts_every_received_row_and_preserves_parser_invalid_count():
     class ParsedRows(list):
         invalid_rows = 2

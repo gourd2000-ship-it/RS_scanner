@@ -48,6 +48,12 @@ htmlcov/
 
 # Logs
 *.log
+logs/
+nohup.out
+
+# Local database recovery files and ad-hoc visual samples
+backups/
+layout_sample.png
 
 # OS
 .DS_Store

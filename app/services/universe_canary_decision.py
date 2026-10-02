@@ -92,6 +92,7 @@ def record_canary_decision(
                 UniverseCanaryDecision.market == normalized_market,
                 UniverseCanaryDecision.authority == "krx",
                 UniverseCanaryDecision.operator_decision == "continue",
+                UniverseCanaryDecision.trade_date < observed_snapshot.as_of_date,
             )
         ) or 0
         if prior_continue_count < 2:

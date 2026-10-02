@@ -1,0 +1,19 @@
+{
+  "available_rs_rows": 4545817,
+  "dataset_id": "backtest-d5d93cda58bd5719e832cb5c",
+  "items": 5768408,
+  "manifest_hash": "0f81b118e0a5f26fb26213cbea6c815b0d802ef6e3d74739303918f4761a8ebb",
+  "page_size": 5000,
+  "pages": 1154,
+  "partial_items": 1222591,
+  "price_rows": 5080612,
+  "range": {
+    "end": "2026-09-04",
+    "start": "2013-01-01"
+  },
+  "reason_counts": {
+    "insufficient_history": 534795,
+    "price_missing": 687796
+  },
+  "replay_hash": "57e9fadca990ff48ea947dd1b3ed64e6b460017e4f9ac91c02313dbfee2ccdc1"
+}

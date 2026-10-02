@@ -2,7 +2,7 @@
 
 import json
 import logging
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 from typing import Any, Callable
@@ -58,8 +58,10 @@ class BatchOrchestrator:
         self.fallback_source: PriceSource | None = None
         self.job_id: int | None = None
         self.universe_snapshot_status: str | None = None
+        self.universe_snapshot_id: int | None = None
         self.krx_universe_snapshot_status: str | None = None
         self.started_at: datetime = datetime.utcnow()
+        self.target_date: date | None = None
 
     def run_daily_job(self) -> dict[str, Any]:
         """일일 배치 작업 실행 (단계별 트랜잭션)"""
@@ -67,6 +69,7 @@ class BatchOrchestrator:
 
         settings = get_settings()
         target_date = batch_target_date(settings)
+        self.target_date = target_date
         market_status = krx_market_day_status(
             target_date,
             configured_closed_dates=settings.market_closed_dates,
@@ -439,6 +442,10 @@ class BatchOrchestrator:
         elif isinstance(result, dict):
             items_processed = sum(len(v) if isinstance(v, list) else 1 for v in result.values())
 
+        if step_name == "symbols" and self.universe_snapshot_status in {"partial", "failed"}:
+            items_failed = max(items_failed, 1)
+            checkpoint_status = "completed_with_errors"
+
         # 소요 시간 계산 (체크포인트에서 started_at 조회)
         duration_seconds = 0.0
         with session_scope() as session:
@@ -448,17 +455,21 @@ class BatchOrchestrator:
                 if checkpoint and checkpoint.started_at:
                     duration_seconds = (datetime.utcnow() - checkpoint.started_at).total_seconds()
 
+                metadata = {}
+                if selection_metadata is not None:
+                    metadata["universe_selection"] = selection_metadata
+                if step_name == "symbols" and self.universe_snapshot_status is not None:
+                    metadata["universe_snapshot_status"] = self.universe_snapshot_status
+                    if self.universe_snapshot_id is not None:
+                        metadata["universe_snapshot_id"] = self.universe_snapshot_id
+
                 context.checkpoint_repository.complete_step(
                     job_id=self.job_id,
                     step_name=step_name,
                     status=checkpoint_status,
                     items_processed=items_processed,
                     items_failed=items_failed,
-                    step_metadata=(
-                        json.dumps({"universe_selection": selection_metadata}, sort_keys=True)
-                        if selection_metadata is not None
-                        else None
-                    ),
+                    step_metadata=json.dumps(metadata, sort_keys=True) if metadata else None,
                 )
 
         # 단계 완료 알림 전송
@@ -504,11 +515,8 @@ class BatchOrchestrator:
         with session_scope() as session:
             context = build_db_batch_context(session)
             context.job_id = self.job_id
-            if step_name in {"prices", "krx_shadow"}:
-                try:
-                    context.target_date = batch_target_date(get_settings())
-                except Exception:
-                    context.target_date = datetime.utcnow().date()
+            if step_name in {"prices", "benchmarks", "krx_shadow"}:
+                context.target_date = self.target_date or batch_target_date(get_settings())
             # Corporate-action refetches remain on the primary source.  Sam's
             # Kiwoom use is evidence-only and never a batch fallback.
             context.price_source = self.source
@@ -523,6 +531,7 @@ class BatchOrchestrator:
             result = step_func(context)
             if step_name == "symbols":
                 self.universe_snapshot_status = context.universe_snapshot_status
+                self.universe_snapshot_id = context.universe_snapshot_id
             if step_name == "krx_shadow":
                 self.krx_universe_snapshot_status = context.krx_universe_snapshot_status
             return result

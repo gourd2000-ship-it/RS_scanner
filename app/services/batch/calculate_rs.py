@@ -15,12 +15,27 @@ from app.crawler.sources.base import provider_id
 from app.models.symbol import Symbol
 from app.repositories.data_quality_repository import DataQualityRepository
 from app.services.batch.context import BatchContext
-from app.services.rs.calculator import SymbolSeries, calculate_combined_rs
-from app.services.rs.corporate_action_filter import detect_corporate_action
+from app.services.rs.calculator import (
+    MIN_REQUIRED_PRICES,
+    SymbolSeries,
+    calculate_combined_rs,
+)
+from app.services.rs.corporate_action_filter import (
+    RS_LOOKBACK_DAYS,
+    detect_corporate_action,
+)
 from app.services.validation.clean_layer import hash_price_rows
 from app.services.validation.market_data import validate_prices
 
 logger = logging.getLogger(__name__)
+
+RS_INPUT_WINDOW = max(MIN_REQUIRED_PRICES, RS_LOOKBACK_DAYS + 1)
+
+
+def _rs_input_window(prices, target_date: date) -> list:
+    """Keep only rows needed for 12-month RS and its adjacent-day checks."""
+    eligible = [row for row in prices if row.trade_date <= target_date]
+    return eligible[-RS_INPUT_WINDOW:]
 
 
 def _latest_date(prices) -> date | None:
@@ -285,14 +300,18 @@ def calculate_rs(context: BatchContext, target_date: date | None = None) -> dict
     ca_codes: list[str] = []
 
     for symbol in context.symbol_repository.list_stocks_only():
-        prices = input_repository.get_symbol_prices(symbol.code)
-        input_prices_by_code[symbol.code] = prices
-        if detect_corporate_action(prices, threshold=ca_threshold):
+        full_prices = input_repository.get_symbol_prices(symbol.code)
+        eligible_prices = [
+            row for row in full_prices if row.trade_date <= effective_target_date
+        ]
+        rs_prices = _rs_input_window(eligible_prices, effective_target_date)
+        input_prices_by_code[symbol.code] = rs_prices
+        if detect_corporate_action(eligible_prices, threshold=ca_threshold):
             skipped_ca += 1
             ca_codes.append(symbol.code)
             continue
         series_by_market[symbol.market].append(
-            SymbolSeries(code=symbol.code, market=symbol.market, prices=prices)
+            SymbolSeries(code=symbol.code, market=symbol.market, prices=rs_prices)
         )
 
     if skipped_ca:
@@ -303,13 +322,17 @@ def calculate_rs(context: BatchContext, target_date: date | None = None) -> dict
         if refetched:
             logger.info("%d/%d종목 수정주가 재수집 완료, RS 재계산에 포함", refetched, len(ca_codes))
             for code in ca_codes:
-                prices = input_repository.get_symbol_prices(code)
-                input_prices_by_code[code] = prices
-                if not detect_corporate_action(prices, threshold=ca_threshold):
+                full_prices = input_repository.get_symbol_prices(code)
+                eligible_prices = [
+                    row for row in full_prices if row.trade_date <= effective_target_date
+                ]
+                rs_prices = _rs_input_window(eligible_prices, effective_target_date)
+                input_prices_by_code[code] = rs_prices
+                if not detect_corporate_action(eligible_prices, threshold=ca_threshold):
                     symbol = context.symbol_repository.get_by_code(code)
                     if symbol:
                         series_by_market[symbol.market].append(
-                            SymbolSeries(code=code, market=symbol.market, prices=prices)
+                            SymbolSeries(code=code, market=symbol.market, prices=rs_prices)
                         )
                 else:
                     error = RuntimeError("corporate action remains after adjusted-price refetch")
@@ -318,8 +341,8 @@ def calculate_rs(context: BatchContext, target_date: date | None = None) -> dict
                         code=code,
                         source=getattr(context, "price_source", None),
                         status="failed",
-                        latest_date_before=_latest_date(prices),
-                        latest_date_after=_latest_date(prices),
+                        latest_date_before=_latest_date(eligible_prices),
+                        latest_date_after=_latest_date(eligible_prices),
                         error=error,
                     )
                     _record_refetch_failure(

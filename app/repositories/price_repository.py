@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from hashlib import sha256
 import json
@@ -12,6 +13,17 @@ from app.models.daily_price import DailyPrice
 from app.models.data_quality import BenchmarkObservation, PriceObservation
 from app.models.symbol import Symbol
 from app.schemas.market_data import BenchmarkPricePayload, DailyPricePayload
+
+
+@dataclass
+class HistoricalPriceSaveResult:
+    """Outcome counts for a policy-constrained canonical historical write."""
+
+    inserted: int = 0
+    updated: int = 0
+    unchanged: int = 0
+    conflict: int = 0
+    confirmed_dates: list[date] = field(default_factory=list)
 
 
 class PriceRepository:
@@ -154,6 +166,82 @@ class PriceRepository:
 
         self.session.flush()
         return {code: self.get_symbol_prices(code) for code in grouped}
+
+    def save_historical_prices(
+        self,
+        *,
+        symbol_id: int,
+        prices: Iterable[DailyPricePayload],
+        provider: str,
+        adjustment_type: str,
+        historical_backfill_run_id: int,
+        source_payload_hash: str,
+        parser_version: str | None = None,
+        allow_existing_provider_update: bool = False,
+    ) -> HistoricalPriceSaveResult:
+        """Append observations while refusing an unapproved canonical overwrite.
+
+        Every provider row is recorded.  Existing rows only change under an
+        explicit same-provider policy; otherwise differing values remain a
+        conflict candidate in the observation ledger.
+        """
+        incoming = sorted(prices, key=lambda row: row.trade_date)
+        existing = {
+            row.trade_date: row
+            for row in self.session.scalars(
+                select(DailyPrice).where(
+                    DailyPrice.symbol_id == symbol_id,
+                    DailyPrice.trade_date.in_([row.trade_date for row in incoming]),
+                )
+            ).all()
+        } if incoming else {}
+        result = HistoricalPriceSaveResult()
+        observed_at = datetime.utcnow()
+        for payload in incoming:
+            row = existing.get(payload.trade_date)
+            disposition: str
+            if row is None:
+                self.session.add(DailyPrice(
+                    symbol_id=symbol_id, trade_date=payload.trade_date, open=payload.open,
+                    high=payload.high, low=payload.low, close=payload.close,
+                    volume=payload.volume, change_rate=payload.change_rate, source=provider,
+                ))
+                result.inserted += 1
+                result.confirmed_dates.append(payload.trade_date)
+                disposition = "inserted"
+            elif _same_price(row, payload):
+                result.unchanged += 1
+                result.confirmed_dates.append(payload.trade_date)
+                disposition = "unchanged"
+            elif allow_existing_provider_update and row.source == provider:
+                row.open = payload.open
+                row.high = payload.high
+                row.low = payload.low
+                row.close = payload.close
+                row.volume = payload.volume
+                row.change_rate = payload.change_rate
+                result.updated += 1
+                result.confirmed_dates.append(payload.trade_date)
+                disposition = "updated_by_provider_policy"
+            else:
+                result.conflict += 1
+                disposition = "conflict_candidate"
+            self.session.add(PriceObservation(
+                symbol_id=symbol_id,
+                historical_backfill_run_id=historical_backfill_run_id,
+                trade_date=payload.trade_date,
+                open=payload.open, high=payload.high, low=payload.low, close=payload.close,
+                volume=payload.volume, change_rate=payload.change_rate, provider=provider,
+                parser_version=parser_version, adjustment_type=adjustment_type,
+                payload_hash=source_payload_hash, observed_at=observed_at,
+                observation_metadata={
+                    "canonical_disposition": disposition,
+                    "source_payload_hash": source_payload_hash,
+                    "adjustment_type": adjustment_type,
+                },
+            ))
+        self.session.flush()
+        return result
 
     def save_benchmark_prices(
         self,
@@ -343,3 +431,11 @@ class PriceRepository:
                     observed_at=observed_at,
                 )
             )
+
+
+def _same_price(row: DailyPrice, payload: DailyPricePayload) -> bool:
+    return (
+        row.open == payload.open and row.high == payload.high and row.low == payload.low
+        and row.close == payload.close and row.volume == payload.volume
+        and row.change_rate == payload.change_rate
+    )

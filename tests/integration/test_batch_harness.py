@@ -14,6 +14,12 @@ from app.services.batch.run_daily_job import run_daily_job
 from tests.harness.fake_source import FakePriceSource
 
 
+def build_test_batch_context():
+    context = build_memory_batch_context()
+    context.target_date = date(2025, 9, 17)
+    return context
+
+
 def make_prices(start_close: int, step: int, days: int = 260):
     start = date(2025, 1, 1)
     return [
@@ -66,7 +72,7 @@ def test_daily_batch_harness_runs_end_to_end():
         },
     )
 
-    result = run_daily_job(build_memory_batch_context(), source)
+    result = run_daily_job(build_test_batch_context(), source)
 
     assert result["symbols"] == 2
     assert result["rs_results"]["KOSPI"] == 1
@@ -84,13 +90,13 @@ def test_incremental_sync_only_fetches_new_rows():
         prices_by_code={"000001": all_symbol_prices},
         benchmark_prices_by_market={"KOSPI": all_benchmark_prices, "KOSDAQ": make_benchmark("KOSDAQ")},
     )
-    context = build_memory_batch_context()
+    context = build_test_batch_context()
 
     first = run_daily_job(context, source)
     second = run_daily_job(context, source)
 
     assert first["prices"]["000001"] == len(all_symbol_prices)
-    assert second["prices"]["000001"] == len(all_symbol_prices)
+    assert second["prices"]["000001"] == 0
     assert second["benchmarks"]["KOSPI"] == len(all_benchmark_prices)
 
 
@@ -123,7 +129,7 @@ def test_batch_crawls_etf_and_etn_but_publishes_rs_for_stocks_only():
         },
     )
 
-    result = run_daily_job(build_memory_batch_context(), source)
+    result = run_daily_job(build_test_batch_context(), source)
 
     assert result["symbols"] == 3
     assert set(result["prices"]) == {"000001", "0005D0", "0013R0"}
@@ -140,7 +146,7 @@ def test_partial_krx_shadow_snapshot_does_not_block_naver_prices():
                 error_message="KOSDAQ:KrxUniverseFetchError",
             )
 
-    context = build_memory_batch_context()
+    context = build_test_batch_context()
     engine = create_engine("sqlite://")
     Base.metadata.create_all(engine)
     context.krx_universe_repository = KrxUniverseRepository(sessionmaker(bind=engine)())

@@ -81,6 +81,55 @@ def test_legacy_runner_skips_before_creating_a_crawl_job(monkeypatch):
     assert context.crawl_job_repository.get_latest() is None
 
 
+def test_legacy_runner_preserves_an_explicit_trade_date_for_deterministic_replay(monkeypatch):
+    settings = SimpleNamespace(
+        batch_timezone="Asia/Seoul",
+        market_closed_dates="",
+        kiwoom_fallback_enabled=False,
+        validation_enabled=False,
+    )
+    context = build_memory_batch_context()
+    context.target_date = date(2025, 9, 17)
+    monkeypatch.setattr("app.services.batch.run_daily_job.get_settings", lambda: settings)
+    monkeypatch.setattr(
+        "app.services.batch.run_daily_job.batch_target_date", lambda _: date(2026, 8, 23)
+    )
+    monkeypatch.setattr("app.services.batch.run_daily_job.sync_symbols", lambda *_: [])
+    monkeypatch.setattr("app.services.batch.run_daily_job.sync_benchmarks", lambda *_: {})
+    monkeypatch.setattr("app.services.batch.run_daily_job.sync_prices", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr("app.services.batch.run_daily_job.calculate_rs", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(
+        "app.services.batch.run_daily_job.notification_service.send_batch_success_sync",
+        lambda **_kwargs: None,
+    )
+
+    result = run_daily_job(context, source=None)
+
+    assert result["symbols"] == 0
+    assert context.target_date == date(2025, 9, 17)
+
+
+def test_orchestrator_uses_its_frozen_trade_date_for_price_steps(monkeypatch):
+    from app.services.batch.orchestrator import BatchOrchestrator
+
+    @contextmanager
+    def fake_session_scope():
+        yield object()
+
+    context = SimpleNamespace(job_id=None, target_date=None, price_source=None)
+    orchestrator = BatchOrchestrator(source=object())
+    orchestrator.target_date = date(2025, 9, 17)
+    monkeypatch.setattr("app.services.batch.orchestrator.session_scope", fake_session_scope)
+    monkeypatch.setattr("app.services.batch.orchestrator.build_db_batch_context", lambda _: context)
+    monkeypatch.setattr(
+        "app.services.batch.orchestrator.batch_target_date", lambda _: date(2025, 9, 18)
+    )
+
+    result = orchestrator._execute_step("prices", lambda batch_context: batch_context.target_date)
+
+    assert result == date(2025, 9, 17)
+
+
 def test_main_skips_before_initializing_the_database(monkeypatch):
     from app import main_batch
 

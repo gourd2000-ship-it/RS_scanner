@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import date, datetime
 
 from app.core.config import get_settings
 from app.core.market_calendar import batch_target_date, krx_market_day_status
@@ -35,7 +35,8 @@ def run_daily_job(
     logger.info("starting daily batch")
     started_at = datetime.utcnow()
     settings = get_settings()
-    context.target_date = batch_target_date(settings)
+    if not isinstance(context.target_date, date):
+        context.target_date = batch_target_date(settings)
     market_status = krx_market_day_status(
         context.target_date,
         configured_closed_dates=settings.market_closed_dates,

@@ -1,0 +1,54 @@
+{
+  "alerts": [],
+  "counts": {
+    "ambiguous": 0,
+    "exact": 2766,
+    "invalid_legacy": 0,
+    "krx_total": 2767,
+    "legacy_candidate": 0,
+    "naver_total": 4304,
+    "out_of_scope_naver": 1536,
+    "unmatched_krx": 1,
+    "unmatched_naver": 2
+  },
+  "generated_at": "2026-08-31T07:40:33.408301Z",
+  "krx_snapshot_id": 18,
+  "latest_krx_snapshot_id": 18,
+  "latest_krx_status": "completed",
+  "mapping_rate": 0.9996385977593061,
+  "naver_snapshot_id": 33,
+  "samples": {
+    "ambiguous": [],
+    "invalid_legacy": [],
+    "legacy_candidate": [],
+    "out_of_scope_naver": [
+      "0000D0",
+      "0000H0",
+      "0000J0",
+      "0000Y0",
+      "0000Z0",
+      "0001P0",
+      "0002C0",
+      "0004G0",
+      "0005A0",
+      "0005C0",
+      "0005D0",
+      "0005G0",
+      "0007F0",
+      "0007G0",
+      "0007N0",
+      "0008E0",
+      "0008S0",
+      "0008T0",
+      "0013P0",
+      "0013R0"
+    ],
+    "unmatched_krx": [
+      "082640"
+    ],
+    "unmatched_naver": [
+      "0106J0",
+      "0120X0"
+    ]
+  }
+}

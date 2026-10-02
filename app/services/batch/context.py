@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from datetime import date
 
 from sqlalchemy.orm import Session
 
@@ -49,7 +50,7 @@ class BatchContext:
     job_id: int | None = None
     validation_run_id: int | None = None
     validation_status: str | None = None
-    target_date: object | None = None
+    target_date: date | None = None
     rs_run_id: int | None = None
 
 

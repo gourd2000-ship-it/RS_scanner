@@ -192,3 +192,87 @@ def test_record_canary_decision_allows_expand_after_two_prior_krx_continues():
 
     assert decision.operator_decision == "expand"
     assert decision.trade_date == date(2026, 8, 20)
+
+
+def test_record_canary_decision_rejects_expand_when_continues_are_from_future_days():
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    session = Session(engine)
+    job = CrawlJob(job_type="daily_full", status="completed")
+    session.add(job)
+    session.flush()
+    krx_snapshot = KrxUniverseSnapshot(
+        crawl_job_id=job.id,
+        source="krx_open_api",
+        scope="stock_membership",
+        as_of_date=date(2026, 8, 20),
+        status="completed",
+        members_seen=2763,
+        members_valid=2763,
+    )
+    naver_snapshot = SymbolUniverseSnapshot(
+        job_id=job.id,
+        provider="naver",
+        market="ALL",
+        status="completed",
+    )
+    session.add_all([krx_snapshot, naver_snapshot])
+    session.flush()
+    reconciliation = UniverseReconciliationRun(
+        krx_snapshot_id=krx_snapshot.id,
+        naver_snapshot_id=naver_snapshot.id,
+        status="approved",
+        report={"mapping_rate": 1.0},
+    )
+    session.add_all(
+        [
+            reconciliation,
+            UniverseCanaryDecision(
+                crawl_job_id=job.id,
+                trade_date=date(2026, 8, 21),
+                market="KOSPI",
+                authority="krx",
+                target_count=2476,
+                operator_decision="continue",
+                approved_by="ops-reviewer",
+            ),
+            UniverseCanaryDecision(
+                crawl_job_id=job.id,
+                trade_date=date(2026, 8, 24),
+                market="KOSPI",
+                authority="krx",
+                target_count=2476,
+                operator_decision="continue",
+                approved_by="ops-reviewer",
+            ),
+        ]
+    )
+    session.flush()
+    session.add(
+        BatchCheckpoint(
+            job_id=job.id,
+            step_name="prices",
+            status="completed",
+            step_metadata=json.dumps(
+                {
+                    "universe_selection": {
+                        "approved_reconciliation_run_id": reconciliation.id,
+                        "approved_krx_snapshot_id": krx_snapshot.id,
+                        "authority_by_market": {"KOSPI": "krx"},
+                        "fallback_reason_by_market": {"KOSPI": None},
+                        "target_count_by_market": {"KOSPI": 2476},
+                    }
+                }
+            ),
+        )
+    )
+    session.commit()
+
+    with pytest.raises(ValueError, match="두 거래일"):
+        record_canary_decision(
+            session,
+            crawl_job_id=job.id,
+            market="KOSPI",
+            operator_decision="expand",
+            approved_by="ops-reviewer",
+        )

@@ -3,6 +3,7 @@
 import os
 import subprocess
 import sys
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -123,4 +124,5 @@ def e2e_batch_context(e2e_session: Session):
         crawl_job_repository=CrawlJobRepository(e2e_session),
         crawl_failure_repository=CrawlFailureRepository(e2e_session),
         session=e2e_session,
+        target_date=date(2025, 9, 17),
     )

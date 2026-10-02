@@ -1,0 +1,2976 @@
+{
+  "latest_completed_snapshot_id": 14,
+  "candidate_count": 206,
+  "reason_counts": {
+    "invalid_legacy": 171,
+    "missing_from_latest_snapshot": 206,
+    "prefix_collision": 38,
+    "stale_active": 206
+  },
+  "candidates": [
+    {
+      "code": "0000",
+      "name": "HK 26-12 회사채(AA-이상)액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0001",
+      "name": "덕양에너젠",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0001A0",
+      "prefix_matches": [
+        "0001A0"
+      ]
+    },
+    {
+      "code": "0004",
+      "name": "엔비알모션",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0004V0",
+      "prefix_matches": [
+        "0004V0"
+      ]
+    },
+    {
+      "code": "0005",
+      "name": "KODEX 미국S&P500데일리커버드콜OTM",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0007",
+      "name": "KODEX 27-12 회사채(AA-이상)액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0008",
+      "name": "TIGER 미국배당다우존스타겟데일리커버드콜",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "00088",
+      "name": "한화3우B",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "00088K",
+      "prefix_matches": [
+        "00088K"
+      ]
+    },
+    {
+      "code": "0009",
+      "name": "에임드바이오",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0009K0",
+      "prefix_matches": [
+        "0009K0"
+      ]
+    },
+    {
+      "code": "0010",
+      "name": "제이피아이헬스케어",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0010V0",
+      "prefix_matches": [
+        "0010V0"
+      ]
+    },
+    {
+      "code": "00104",
+      "name": "CJ4우(전환)",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "00104K",
+      "prefix_matches": [
+        "00104K"
+      ]
+    },
+    {
+      "code": "0011",
+      "name": "채비",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0011T0",
+      "prefix_matches": [
+        "0011T0"
+      ]
+    },
+    {
+      "code": "0013",
+      "name": "RISE 테슬라미국채타겟커버드콜혼합(합성)",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0015",
+      "name": "KoAct 미국나스닥성장기업액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0016",
+      "name": "SOL 중단기회사채(A-이상)액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0017",
+      "name": "1Q 종합채권(AA-이상)액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0018",
+      "name": "PLUS 고배당주위클리고정커버드콜",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0019",
+      "name": "TIME 미국나스닥100채권혼합50액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0020",
+      "name": "KoAct 글로벌양자컴퓨팅액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0021",
+      "name": "ACE TDF2050액티브 적격",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0022",
+      "name": "SOL 국제금커버드콜액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0023",
+      "name": "SOL 미국양자컴퓨팅TOP10",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0025",
+      "name": "TIGER TDF2045 적격",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0026",
+      "name": "1Q 미국S&P500",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "00279",
+      "name": "아모레퍼시픽홀딩스3우C",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "00279K",
+      "prefix_matches": [
+        "00279K"
+      ]
+    },
+    {
+      "code": "0028",
+      "name": "KODEX 미국금융테크액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0030",
+      "name": "대신밸류리츠",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0030R0",
+      "prefix_matches": [
+        "0030R0"
+      ]
+    },
+    {
+      "code": "0035",
+      "name": "PLUS 글로벌휴머노이드로봇액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0036",
+      "name": "RISE 미국휴머노이드로봇",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0036D0",
+      "name": "TIME 미국배당다우존스액티브",
+      "market": "KOSPI",
+      "symbol_type": "etf",
+      "last_snapshot_id": 10,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0037",
+      "name": "KB제32호스팩",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0037T0",
+      "prefix_matches": [
+        "0037T0"
+      ]
+    },
+    {
+      "code": "0038",
+      "name": "KODEX 미국휴머노이드로봇",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0039",
+      "name": "매드업",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0039P0",
+      "prefix_matches": [
+        "0039P0"
+      ]
+    },
+    {
+      "code": "0040",
+      "name": "SOL 팔란티어커버드콜OTM채권혼합",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0041",
+      "name": "KODEX 미국S&P500액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0043",
+      "name": "TIGER 머니마켓액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0044",
+      "name": "삼성스팩10호",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0044K0",
+      "prefix_matches": [
+        "0044K0"
+      ]
+    },
+    {
+      "code": "0046",
+      "name": "TIGER 미국초단기(3개월이하)국채",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0047",
+      "name": "TIGER 차이나테크TOP10",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0048",
+      "name": "KODEX 미국머니마켓액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0049",
+      "name": "ACE 미국배당퀄리티+커버드콜액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "00499",
+      "name": "롯데지주우",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "00499K",
+      "prefix_matches": [
+        "00499K"
+      ]
+    },
+    {
+      "code": "0051",
+      "name": "SOL 미국원자력SMR",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0052",
+      "name": "1Q 미국S&P500미국채혼합50액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0053",
+      "name": "TIGER 차이나휴머노이드로봇",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0054",
+      "name": "엔에이치스팩32호",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0054V0",
+      "prefix_matches": [
+        "0054V0"
+      ]
+    },
+    {
+      "code": "0057",
+      "name": "PLUS 미국S&P500미국채혼합50액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0060",
+      "name": "TIGER 토탈월드스탁액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0061",
+      "name": "RISE 단기특수은행채액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0064",
+      "name": "KODEX 금액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0065",
+      "name": "KODEX 차이나테크TOP10",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0066",
+      "name": "SOL 국제금",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0067",
+      "name": "TIGER 차이나글로벌리더스TOP3+",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0068",
+      "name": "비엔케이제3호스팩",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0068Y0",
+      "prefix_matches": [
+        "0068Y0"
+      ]
+    },
+    {
+      "code": "00680",
+      "name": "미래에셋증권2우B",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "00680K",
+      "prefix_matches": [
+        "00680K"
+      ]
+    },
+    {
+      "code": "0069",
+      "name": "1Q 미국나스닥100",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0071",
+      "name": "삼성스팩11호",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0071M0",
+      "prefix_matches": [
+        "0071M0"
+      ]
+    },
+    {
+      "code": "0072",
+      "name": "TIGER KRX금현물",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0074",
+      "name": "KoAct K수출핵심기업TOP30액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "00781",
+      "name": "코리아써키트2우B",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "00781K",
+      "prefix_matches": [
+        "00781K"
+      ]
+    },
+    {
+      "code": "0080",
+      "name": "KODEX 방산TOP10",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0082",
+      "name": "KODEX TDF2060액티브 적격",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0083",
+      "name": "1Q 미국메디컬AI",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0084",
+      "name": "KIWOOM 미국대형주500월간목표헤지액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0085",
+      "name": "ACE 미국10년국채액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0086",
+      "name": "TIGER 리츠부동산인프라TOP10액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0088",
+      "name": "메쥬",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0088M0",
+      "prefix_matches": [
+        "0088M0"
+      ]
+    },
+    {
+      "code": "0089",
+      "name": "KODEX 금융고배당TOP10",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0090",
+      "name": "PLUS K방산소부장",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0091",
+      "name": "TIGER 코리아원자력",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0092",
+      "name": "SOL 27-12 회사채(AA-이상)액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0093",
+      "name": "RISE AI반도체TOP10",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0094",
+      "name": "TIGER 28-04 회사채(A+이상)액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0096",
+      "name": "삼성스팩12호",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0096B0",
+      "prefix_matches": [
+        "0096B0"
+      ]
+    },
+    {
+      "code": "0097",
+      "name": "KIWOOM 한국고배당&미국AI테크",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0098",
+      "name": "KODEX 원자력SMR",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0099",
+      "name": "ACE 우량회사채(AA-이상)액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0100",
+      "name": "KODEX 방산TOP10레버리지",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0101",
+      "name": "RISE AI전력인프라",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0102",
+      "name": "TIGER 미국AI소프트웨어TOP4Plus",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0103",
+      "name": "1Q K소버린AI",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0104",
+      "name": "TIGER 200타겟위클리커버드콜",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0105",
+      "name": "SOL 코리아고배당",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0106",
+      "name": "대신 KOSPI200인덱스 X클래스",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0106J0",
+      "prefix_matches": [
+        "0106J0"
+      ]
+    },
+    {
+      "code": "0107",
+      "name": "KIWOOM 미국고배당&AI테크",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0111",
+      "name": "1Q 미국나스닥100미국채혼합50액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0112",
+      "name": "마이티 200TR",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0113",
+      "name": "TIME 글로벌탑픽액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0115",
+      "name": "KODEX 조선TOP10",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0117",
+      "name": "KODEX 26-12 금융채(AA-이상)액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0118",
+      "name": "ACE 미국AI테크핵심산업액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0119",
+      "name": "KODEX 28-12 회사채(AA-이상)액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0120",
+      "name": "삼양바이오팜",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0120G0",
+      "prefix_matches": [
+        "0120G0"
+      ]
+    },
+    {
+      "code": "0122",
+      "name": "RISE 26-11 회사채(AA-이상)액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0123",
+      "name": "TIGER 미국AI전력SMR",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "012510",
+      "name": "더존비즈온",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0126",
+      "name": "삼성에피스홀딩스",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0126Z0",
+      "prefix_matches": [
+        "0126Z0"
+      ]
+    },
+    {
+      "code": "0127",
+      "name": "ACE 미국대형성장주액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0129",
+      "name": "신한제18호스팩",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0129K0",
+      "prefix_matches": [
+        "0129K0"
+      ]
+    },
+    {
+      "code": "0130",
+      "name": "엔에이치스팩33호",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0130H0",
+      "prefix_matches": [
+        "0130H0"
+      ]
+    },
+    {
+      "code": "0131",
+      "name": "1Q 미국우주항공테크",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0132",
+      "name": "PLUS 테슬라위클리커버드콜채권혼합",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0134",
+      "name": "대신밸런스제20호스팩",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0134X0",
+      "prefix_matches": [
+        "0134X0"
+      ]
+    },
+    {
+      "code": "0135",
+      "name": "IBK 중기종합채권(AA-이상)액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0137",
+      "name": "KIWOOM 미국S&P500모멘텀",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0138",
+      "name": "PLUS 금채권혼합",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0139",
+      "name": "TIGER 12월자동연장금융채(AA-이상)액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0141",
+      "name": "SOL 조선기자재",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0142",
+      "name": "TIGER 미국AI데이터센터TOP4Plus",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0144",
+      "name": "KODEX 미국성장커버드콜액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0148",
+      "name": "TIGER 코리아휴머노이드로봇산업",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0150",
+      "name": "KoAct 수소전력ESS인프라액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0151",
+      "name": "KODEX 미국AI반도체TOP3플러스",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0152",
+      "name": "SOL 배당성향탑픽액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0153",
+      "name": "KODEX 주주환원고배당주",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0154",
+      "name": "WON 초대형IB&금융지주",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0155",
+      "name": "HANARO K휴머노이드테마TOP10",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0156",
+      "name": "에이치엘지노믹스",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0156T0",
+      "prefix_matches": [
+        "0156T0"
+      ]
+    },
+    {
+      "code": "0162",
+      "name": "RISE 삼성전자SK하이닉스채권혼합50",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0163",
+      "name": "KoAct 코스닥액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0164",
+      "name": "RISE 차이나AI반도체TOP4Plus",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0165",
+      "name": "메리츠제2호스팩",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "0165X0",
+      "prefix_matches": [
+        "0165X0"
+      ]
+    },
+    {
+      "code": "0166",
+      "name": "PLUS K제조업핵심기업액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0167",
+      "name": "SOL AI반도체TOP2플러스",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0168",
+      "name": "TIGER 기술이전바이오액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0172",
+      "name": "1Q 은액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0173",
+      "name": "KODEX 미국AI광통신네트워크",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0174",
+      "name": "KoAct 글로벌AI메모리반도체액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0176",
+      "name": "RISE 미국AI전력인프라액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0177",
+      "name": "KODEX 삼성전자SK하이닉스채권혼합50",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0178",
+      "name": "IBK 미국AI TOP10국채혼합50",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0180",
+      "name": "ACE 미국우주테크액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0181",
+      "name": "HANARO 미국AI메모리반도체TOP4+",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0182",
+      "name": "1Q K반도체TOP2+",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0183",
+      "name": "TIGER 미국우주테크",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0184",
+      "name": "PLUS 중기종합채권(A-이상)액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0185",
+      "name": "TIME 글로벌휴머노이드로봇산업액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0186",
+      "name": "1Q 코스닥150채권혼합50액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0189",
+      "name": "TIGER 은액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0190",
+      "name": "RISE 현대차고정피지컬AI",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0191",
+      "name": "HANARO 중기종합채권(A-이상)액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0192",
+      "name": "TIGER 중기종합채권(A-이상)액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0193",
+      "name": "KODEX SK하이닉스단일종목레버리지",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0194",
+      "name": "ACE SK하이닉스단일종목레버리지",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0195",
+      "name": "TIGER SK하이닉스단일종목레버리지",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0197",
+      "name": "SOL SK하이닉스선물단일종목인버스2X",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0198",
+      "name": "KIWOOM 코스닥150커버드콜액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0199",
+      "name": "ACE 고배당주Plus커버드콜액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0203",
+      "name": "WON 삼성전자현대차채권혼합50",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0204",
+      "name": "KODEX 현대차로보틱스밸류체인TOP3플러스",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0206",
+      "name": "1Q 현대차기아채권혼합50",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0207",
+      "name": "SOL 우주항공밸류체인",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0209",
+      "name": "KODEX 전고체배터리ESS TOP2플러스",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0210",
+      "name": "ACE K반도체TOP2+",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0216",
+      "name": "ACE K방산TOP5+",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0218",
+      "name": "RISE 미국우주&로봇TOP2미국채혼합50",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0219",
+      "name": "KODEX 200커버드콜액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0220",
+      "name": "DS 코스닥액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0221",
+      "name": "IBK 초단기채권액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0223",
+      "name": "TIGER 미국테크NYSE100액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0224",
+      "name": "1Q 엔비디아알파벳미국채혼합50",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0225",
+      "name": "KODEX 미국CPU반도체TOP10",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0226",
+      "name": "PLUS SK하이닉스샌디스크채권혼합50",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "0228",
+      "name": "ACE 반도체Plus전략산업",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "02826",
+      "name": "삼성물산우B",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "02826K",
+      "prefix_matches": [
+        "02826K"
+      ]
+    },
+    {
+      "code": "031440",
+      "name": "신세계푸드",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "032980",
+      "name": "바이온",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "03473",
+      "name": "SK우",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "03473K",
+      "prefix_matches": [
+        "03473K"
+      ]
+    },
+    {
+      "code": "03481",
+      "name": "해성산업1우",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "03481K",
+      "prefix_matches": [
+        "03481K"
+      ]
+    },
+    {
+      "code": "043090",
+      "name": "더테크놀로지",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "057050",
+      "name": "현대홈쇼핑",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "060240",
+      "name": "스타코링크",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "101390",
+      "name": "아이엠",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "106520",
+      "name": "노블엠앤비",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "18064",
+      "name": "한진칼우",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "18064K",
+      "prefix_matches": [
+        "18064K"
+      ]
+    },
+    {
+      "code": "203690",
+      "name": "아크솔루션스",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "222160",
+      "name": "NPX",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "227100",
+      "name": "프로브잇",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "230360",
+      "name": "에코마케팅",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "230980",
+      "name": "비유테크놀러지",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "28513",
+      "name": "SK케미칼우",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "28513K",
+      "prefix_matches": [
+        "28513K"
+      ]
+    },
+    {
+      "code": "299900",
+      "name": "위지윅스튜디오",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": 8,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "33626",
+      "name": "두산퓨얼셀1우",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "33626K",
+      "prefix_matches": [
+        "33626K"
+      ]
+    },
+    {
+      "code": "33637",
+      "name": "솔루스첨단소재1우",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "33637K",
+      "prefix_matches": [
+        "33637K"
+      ]
+    },
+    {
+      "code": "35320",
+      "name": "대덕전자1우",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "35320K",
+      "prefix_matches": [
+        "35320K"
+      ]
+    },
+    {
+      "code": "37550",
+      "name": "DL이앤씨2우(전환)",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": 9,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "37550L",
+      "prefix_matches": [
+        "37550L"
+      ]
+    },
+    {
+      "code": "451700",
+      "name": "엔에이치스팩29호",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "45226",
+      "name": "한화갤러리아우",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "invalid_legacy",
+        "prefix_collision",
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": "45226K",
+      "prefix_matches": [
+        "45226K"
+      ]
+    },
+    {
+      "code": "461270",
+      "name": "ACE 26-06 회사채(AA-이상)액티브",
+      "market": "KOSPI",
+      "symbol_type": "etf",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "464440",
+      "name": "한국제13호스팩",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "464680",
+      "name": "KB제27호스팩",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "467930",
+      "name": "IBKS제23호스팩",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "469880",
+      "name": "하나30호스팩",
+      "market": "KOSDAQ",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "483420",
+      "name": "ACE 애플밸류체인액티브",
+      "market": "KOSPI",
+      "symbol_type": "etf",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "495710",
+      "name": "BNK 26-06 특수채(AAA이상)액티브",
+      "market": "KOSPI",
+      "symbol_type": "stock",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "500020",
+      "name": "신한 레버리지 다우존스지수 선물 ETN(H)",
+      "market": "KOSPI",
+      "symbol_type": "etn",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "500082",
+      "name": "신한 블룸버그 2X 천연가스 선물 ETN",
+      "market": "KOSPI",
+      "symbol_type": "etn",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "520068",
+      "name": "미래에셋 2X 홍콩H 선물 ETN",
+      "market": "KOSPI",
+      "symbol_type": "etn",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "530036",
+      "name": "삼성 인버스 2X WTI원유 선물 ETN",
+      "market": "KOSPI",
+      "symbol_type": "etn",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "530083",
+      "name": "삼성 금 선물 ETN(H)",
+      "market": "KOSPI",
+      "symbol_type": "etn",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "550062",
+      "name": "N2 레버리지 금 선물 ETN(H)",
+      "market": "KOSPI",
+      "symbol_type": "etn",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "570059",
+      "name": "한투 레버리지금선물 ETN",
+      "market": "KOSPI",
+      "symbol_type": "etn",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "570093",
+      "name": "한투 레버리지천연가스선물 ETN B",
+      "market": "KOSPI",
+      "symbol_type": "etn",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "580022",
+      "name": "KB 레버리지 금 선물 ETN(H)",
+      "market": "KOSPI",
+      "symbol_type": "etn",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "610008",
+      "name": "메리츠 레버리지 국채30년 ETN",
+      "market": "KOSPI",
+      "symbol_type": "etn",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "610009",
+      "name": "메리츠 인버스 국채30년 ETN",
+      "market": "KOSPI",
+      "symbol_type": "etn",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    },
+    {
+      "code": "610012",
+      "name": "메리츠 레버리지 금 선물 ETN(H)",
+      "market": "KOSPI",
+      "symbol_type": "etn",
+      "last_snapshot_id": null,
+      "reason_codes": [
+        "missing_from_latest_snapshot",
+        "stale_active"
+      ],
+      "replacement_code": null,
+      "prefix_matches": []
+    }
+  ],
+  "generated_at": "2026-08-20T02:49:45.161902Z"
+}

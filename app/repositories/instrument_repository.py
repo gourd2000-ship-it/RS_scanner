@@ -40,8 +40,17 @@ class InstrumentRepository:
         return row
 
     def get_by_krx_short_code(self, code: str) -> Instrument | None:
-        return self.session.scalar(
-            select(Instrument).where(Instrument.krx_short_code == code)
+        matches = self.find_by_krx_short_code(code)
+        return matches[0] if len(matches) == 1 else None
+
+    def find_by_krx_short_code(self, code: str) -> list[Instrument]:
+        """Return every distinct security that has used a KRX short code."""
+        return list(
+            self.session.scalars(
+                select(Instrument)
+                .where(Instrument.krx_short_code == code)
+                .order_by(Instrument.listed_at.nullsfirst(), Instrument.id)
+            )
         )
 
     def add_provider_symbol(
@@ -56,6 +65,15 @@ class InstrumentRepository:
         evidence_snapshot_id: int | None = None,
         evidence: str | None = None,
     ) -> ProviderSymbol:
+        _validate_interval(valid_from, valid_to)
+        _reject_overlapping_provider_mapping(
+            self.session,
+            instrument_id=instrument_id,
+            provider=provider,
+            provider_symbol=provider_symbol,
+            valid_from=valid_from,
+            valid_to=valid_to,
+        )
         row = ProviderSymbol(
             instrument_id=instrument_id,
             provider=provider,
@@ -104,3 +122,45 @@ class InstrumentRepository:
         symbol.legacy_code = symbol.code
         self.session.flush()
         return symbol
+
+
+def _validate_interval(valid_from: date | None, valid_to: date | None) -> None:
+    if valid_from is not None and valid_to is not None and valid_to <= valid_from:
+        raise ValueError("valid_to must be later than valid_from for a [valid_from, valid_to) interval")
+
+
+def _reject_overlapping_provider_mapping(
+    session: Session,
+    *,
+    instrument_id: int,
+    provider: str,
+    provider_symbol: str,
+    valid_from: date | None,
+    valid_to: date | None,
+) -> None:
+    """Do not let one provider code resolve to two securities at one time."""
+    existing = session.scalars(
+        select(ProviderSymbol).where(
+            ProviderSymbol.provider == provider,
+            ProviderSymbol.provider_symbol == provider_symbol,
+            ProviderSymbol.mapping_status == "matched",
+            ProviderSymbol.instrument_id != instrument_id,
+        )
+    )
+    for row in existing:
+        if _intervals_overlap(valid_from, valid_to, row.valid_from, row.valid_to):
+            raise ValueError(
+                f"provider symbol {provider}:{provider_symbol} overlaps instrument {row.instrument_id}"
+            )
+
+
+def _intervals_overlap(
+    left_from: date | None,
+    left_to: date | None,
+    right_from: date | None,
+    right_to: date | None,
+) -> bool:
+    """Compare possibly open-ended intervals normalized as [from, to)."""
+    return (left_to is None or right_from is None or left_to > right_from) and (
+        right_to is None or left_from is None or right_to > left_from
+    )

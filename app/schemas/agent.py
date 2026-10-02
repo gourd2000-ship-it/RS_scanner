@@ -105,13 +105,17 @@ class BacktestUniverseState(BaseModel):
 
 
 class BacktestDatasetItem(BaseModel):
+    instrument_id: int | None = None
     code: str
     name: str
     market: str
     trade_date: date
-    price: DailyPriceItem
+    price: DailyPriceItem | None = None
     rs: RsScoreItem | None = None
     universe: BacktestUniverseState
+    price_reason: str | None = None
+    rs_reason: str | None = None
+    quality: str | None = None
 
 
 class BacktestCoverage(BaseModel):
@@ -119,6 +123,7 @@ class BacktestCoverage(BaseModel):
 
     rs: float = Field(ge=0, le=1)
     universe: float = Field(ge=0, le=1)
+    price: float = Field(default=1, ge=0, le=1)
 
 
 class BacktestWatermark(BaseModel):
@@ -135,3 +140,7 @@ class BacktestDatasetResponse(BaseModel):
     coverage: BacktestCoverage
     next_cursor: str | None = None
     items: list[BacktestDatasetItem]
+    partial: bool = False
+    manifest_hash: str | None = None
+    dataset_coverage: dict[str, int] | None = None
+    excluded_instrument_count: int | None = None

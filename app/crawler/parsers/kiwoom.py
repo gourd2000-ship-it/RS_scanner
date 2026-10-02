@@ -39,6 +39,13 @@ def _trade_date(value: Any) -> date:
     return datetime.strptime(text, "%Y%m%d").date()
 
 
+def _volume(value: Any) -> int:
+    numeric = _decimal(value)
+    if not numeric.is_finite() or numeric != numeric.to_integral_value():
+        raise ValueError("invalid Kiwoom volume")
+    return int(numeric)
+
+
 def _rows_from_payload(payload: Any) -> list[dict[str, Any]]:
     if isinstance(payload, list):
         return [row for row in payload if isinstance(row, dict)]
@@ -87,7 +94,7 @@ def parse_kiwoom_daily_prices(
                     high=_decimal(_value(row, "high_pric", "high")),
                     low=_decimal(_value(row, "low_pric", "low")),
                     close=close,
-                    volume=int(_decimal(_value(row, "trde_qty", "volume"))),
+                    volume=_volume(_value(row, "trde_qty", "volume")),
                     change_rate=_decimal(
                         row.get("flu_rt", row.get("change_rate", row.get("prdy_ctrt", 0)))
                     ),

@@ -16,6 +16,14 @@ export $(grep -v '^#' .env.production | xargs)
 # 로그 디렉토리 생성
 mkdir -p logs
 
+# 겹친 cron/수동 실행이 동일 DB와 가격 API를 동시에 처리하지 않도록 직렬화한다.
+LOCK_FILE="$(pwd)/logs/daily_batch.lock"
+exec 9>"$LOCK_FILE"
+if ! flock -n 9; then
+    echo "===== RS Scanner Daily Batch skipped: another batch is running at $(date) ====="
+    exit 0
+fi
+
 # 배치 실행 (로그 파일에 기록)
 LOG_FILE="logs/batch_$(date +%Y%m%d_%H%M%S).log"
 

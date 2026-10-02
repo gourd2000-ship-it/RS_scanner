@@ -1,0 +1,14 @@
+{
+  "start": "2026-09-01",
+  "end": "2026-09-04",
+  "selection_as_of": "2026-10-01",
+  "observation_cutoff": "2026-10-02T08:40:00+00:00",
+  "markets": [
+    "KOSDAQ",
+    "KOSPI"
+  ],
+  "exclude_delisted": true,
+  "adjustment_policy": "kiwoom:1",
+  "membership_completeness": null,
+  "quality_rule": "ohlcv-audit-v1"
+}

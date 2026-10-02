@@ -65,11 +65,11 @@ def _latest_dataset(session: Session, *, range_start: date, range_end: date, mar
     return None
 
 
-def _expected_krx_days(range_start: date, range_end: date) -> set[date]:
+def _expected_krx_days(range_start: date, range_end: date, *, configured_closed_dates: str) -> set[date]:
     days: set[date] = set()
     current = range_start
     while current <= range_end:
-        if krx_market_day_status(current).is_open:
+        if krx_market_day_status(current, configured_closed_dates=configured_closed_dates).is_open:
             days.add(current)
         current += timedelta(days=1)
     return days
@@ -78,6 +78,7 @@ def _expected_krx_days(range_start: date, range_end: date) -> set[date]:
 def select_backtest_inputs(
     session: Session, *, range_start: date, range_end: date, markets: list[str],
     rebalance_dates: list[date] | None = None, return_lookback_days: int = 0,
+    market_closed_dates: str = "",
 ) -> SelectedBacktestInputs:
     """Validate inputs and return immutable copies suitable for ``enqueue_run``.
 
@@ -103,7 +104,9 @@ def select_backtest_inputs(
         reasons.append(InputUnavailableReason("rs_run_missing", "no completed RS result exists for the selected dataset"))
 
     snapshots: list[BenchmarkSnapshotInput] = []
-    expected_benchmark_dates = _expected_krx_days(range_start, range_end)
+    expected_benchmark_dates = _expected_krx_days(
+        range_start, range_end, configured_closed_dates=market_closed_dates
+    )
     if range_start not in expected_benchmark_dates or range_end not in expected_benchmark_dates:
         reasons.append(InputUnavailableReason("benchmark_boundary_not_trading_day", "start and end must be Korean trading days"))
     for market in ("KOSPI", "KOSDAQ"):
@@ -131,7 +134,7 @@ def select_backtest_inputs(
         BacktestDatasetMembership.trade_date >= range_start,
         BacktestDatasetMembership.trade_date <= range_end,
     )))
-    price_keys = {(item.instrument_id, item.trade_date) for item in session.scalars(select(BacktestDatasetPrice).where(
+    price_keys = {(item.instrument_id, item.market, item.trade_date) for item in session.scalars(select(BacktestDatasetPrice).where(
         BacktestDatasetPrice.backtest_dataset_id == dataset.id,
         BacktestDatasetPrice.market.in_(requested_markets),
         BacktestDatasetPrice.trade_date >= range_start,
@@ -140,7 +143,7 @@ def select_backtest_inputs(
     signal_dates = set(rebalance_dates or [])
     rs_keys = set()
     if rs_run is not None and signal_dates:
-        rs_keys = {(item.instrument_id, item.trade_date) for item in session.scalars(select(BacktestDatasetRs).where(
+        rs_keys = {(item.instrument_id, item.market, item.trade_date) for item in session.scalars(select(BacktestDatasetRs).where(
             BacktestDatasetRs.backtest_dataset_rs_run_id == rs_run.id,
             BacktestDatasetRs.trade_date.in_(signal_dates), BacktestDatasetRs.status == "available",
         ))}
@@ -149,13 +152,14 @@ def select_backtest_inputs(
         # begins only when its membership says it is an expected trade row.
         if member.price_expectation != "expected" or member.trading_status not in {"trading", "normal"}:
             continue
-        key = (member.instrument_id, member.trade_date)
+        key = (member.instrument_id, member.market, member.trade_date)
         if key not in price_keys:
             reasons.append(InputUnavailableReason("ohlcv_missing", "required complete OHLCV row is absent", member.instrument_id, member.trade_date, "ohlcv"))
         if member.trade_date in signal_dates and key not in rs_keys:
             historical_price_count = session.scalar(select(BacktestDatasetPrice.id).where(
                 BacktestDatasetPrice.backtest_dataset_id == dataset.id,
                 BacktestDatasetPrice.instrument_id == member.instrument_id,
+                BacktestDatasetPrice.market == member.market,
                 BacktestDatasetPrice.trade_date <= member.trade_date,
             ).order_by(BacktestDatasetPrice.trade_date).offset(return_lookback_days).limit(1))
             # A listing that has not accumulated the requested N prior closes

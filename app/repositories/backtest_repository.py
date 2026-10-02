@@ -13,6 +13,8 @@ from uuid import uuid4
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
+from app.core.config import get_settings
+from app.core.market_calendar import krx_market_day_status
 from app.models.backtest_dataset import BacktestDataset, BacktestDatasetRsRun
 from app.models.backtest_run import (
     BACKTEST_TERMINAL_STATUSES,
@@ -127,9 +129,13 @@ class BacktestRepository:
         snapshot_by_market = {snapshot.market: snapshot for snapshot in benchmark_snapshots}
         if set(snapshot_by_market) != {"KOSPI", "KOSDAQ"}:
             raise ValueError("both KOSPI and KOSDAQ benchmark snapshots are required")
-        for snapshot in snapshot_by_market.values():
-            if len(snapshot.snapshot_hash) != 64 or not snapshot.prices:
-                raise ValueError("a benchmark snapshot requires a hash and at least one close")
+        expected_benchmark_dates = self._krx_dates(
+            range_start, range_end, configured_closed_dates=get_settings().market_closed_dates
+        )
+        canonical_snapshots = tuple(
+            self._canonical_benchmark_snapshot(snapshot, expected_dates=expected_benchmark_dates)
+            for snapshot in (snapshot_by_market["KOSPI"], snapshot_by_market["KOSDAQ"])
+        )
 
         run = BacktestRun(
             run_id=run_id or uuid4().hex,
@@ -145,7 +151,7 @@ class BacktestRepository:
             markets=sorted(set(markets)),
             status="queued",
         )
-        for snapshot in snapshot_by_market.values():
+        for snapshot in canonical_snapshots:
             frozen = BacktestBenchmarkSnapshot(
                 market=snapshot.market,
                 benchmark_code=snapshot.benchmark_code,
@@ -409,3 +415,32 @@ class BacktestRepository:
             manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str
         )
         return sha256(serialized.encode()).hexdigest()
+
+    @staticmethod
+    def _krx_dates(range_start: date, range_end: date, *, configured_closed_dates: str) -> set[date]:
+        dates: set[date] = set()
+        current = range_start
+        while current <= range_end:
+            if krx_market_day_status(current, configured_closed_dates=configured_closed_dates).is_open:
+                dates.add(current)
+            current += timedelta(days=1)
+        if range_start not in dates or range_end not in dates:
+            raise ValueError("backtest boundaries must be configured Korean trading days")
+        return dates
+
+    @staticmethod
+    def _canonical_benchmark_snapshot(
+        snapshot: BenchmarkSnapshotInput, *, expected_dates: set[date],
+    ) -> BenchmarkSnapshotInput:
+        if snapshot.market not in {"KOSPI", "KOSDAQ"}:
+            raise ValueError("unknown benchmark market")
+        prices_by_date = dict(snapshot.prices)
+        if len(prices_by_date) != len(snapshot.prices) or set(prices_by_date) != expected_dates:
+            raise ValueError("benchmark snapshot coverage must match every Korean trading date")
+        canonical_prices = tuple(sorted((trade_date, Decimal(close)) for trade_date, close in prices_by_date.items()))
+        material = [
+            [snapshot.market, snapshot.benchmark_code, trade_date.isoformat(), format(close, "f")]
+            for trade_date, close in canonical_prices
+        ]
+        canonical_hash = sha256(json.dumps(material, separators=(",", ":")).encode()).hexdigest()
+        return BenchmarkSnapshotInput(snapshot.market, snapshot.benchmark_code, canonical_hash, canonical_prices)

@@ -6,6 +6,7 @@ from datetime import date
 
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.models.backtest_run import BacktestRun
 from app.repositories.backtest_repository import BacktestRepository
 from app.services.backtest.input_selection import BacktestInputUnavailable, select_backtest_inputs
@@ -26,6 +27,7 @@ class BacktestRunPreparationService:
             selected = select_backtest_inputs(
                 self.session, range_start=range_start, range_end=range_end, markets=markets,
                 rebalance_dates=rebalance_dates, return_lookback_days=return_lookback_days,
+                market_closed_dates=get_settings().market_closed_dates,
             )
         except BacktestInputUnavailable as exc:
             reasons = [

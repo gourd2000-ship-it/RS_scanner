@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from hashlib import sha256
 import json
@@ -120,6 +120,51 @@ def test_input_selection_rejects_missing_benchmark_or_required_rs():
     assert any(reason.code == "benchmark_price_missing" for reason in unavailable.value.reasons)
 
 
+def test_input_selection_does_not_accept_another_market_price_or_rs_for_membership():
+    session = _session()
+    dataset, rs_run = _complete_inputs(session)
+    kospi_membership = next(item for item in dataset.memberships if item.market == "KOSPI" and item.trade_date == date(2024, 1, 3))
+    wrong_market_price = session.query(BacktestDatasetPrice).filter_by(
+        backtest_dataset_id=dataset.id, instrument_id=kospi_membership.instrument_id,
+        trade_date=kospi_membership.trade_date,
+    ).one()
+    wrong_market_price.market = "KOSDAQ"
+    session.commit()
+    with pytest.raises(BacktestInputUnavailable) as unavailable:
+        select_backtest_inputs(
+            session, range_start=date(2024, 1, 2), range_end=date(2024, 1, 5), markets=["KOSPI"],
+            rebalance_dates=[date(2024, 1, 3)],
+        )
+    assert any(reason.code == "ohlcv_missing" for reason in unavailable.value.reasons)
+
+    wrong_market_price.market = "KOSPI"
+    wrong_market_rs = session.query(BacktestDatasetRs).filter_by(
+        backtest_dataset_rs_run_id=rs_run.id, instrument_id=kospi_membership.instrument_id,
+        trade_date=kospi_membership.trade_date,
+    ).one()
+    wrong_market_rs.market = "KOSDAQ"
+    session.commit()
+    with pytest.raises(BacktestInputUnavailable) as unavailable:
+        select_backtest_inputs(
+            session, range_start=date(2024, 1, 2), range_end=date(2024, 1, 5), markets=["KOSPI"],
+            rebalance_dates=[date(2024, 1, 3)],
+        )
+    assert any(reason.code == "rs_value_missing" for reason in unavailable.value.reasons)
+
+
+def test_input_selection_honors_configured_exchange_closure_for_benchmark_coverage():
+    session = _session()
+    _complete_inputs(session)
+    for benchmark in session.query(Benchmark).all():
+        session.query(BenchmarkDailyPrice).filter_by(benchmark_id=benchmark.id, trade_date=date(2024, 1, 4)).delete()
+    session.commit()
+    selected = select_backtest_inputs(
+        session, range_start=date(2024, 1, 2), range_end=date(2024, 1, 5), markets=["KOSPI"],
+        rebalance_dates=[date(2024, 1, 3)], market_closed_dates="2024-01-04",
+    )
+    assert len(selected.benchmark_snapshots) == 2
+
+
 def test_data_unavailable_attempt_keeps_an_auditable_run_without_invented_dataset_lineage():
     session = _session()
     repository = BacktestRepository(session)
@@ -198,6 +243,19 @@ def test_operator_auth_uses_hashed_sessions_rotated_csrf_and_lockout():
     assert service2.require_operator(operator_token, operator_csrf) is not None
     service2.logout(operator_token, operator_csrf)
     assert service2.find_operator(operator_token) is None
+
+
+def test_operator_session_expiry_is_always_eight_hours():
+    session = _session()
+    service = BacktestOperatorAuthService(session, password="operator-secret")
+    now = datetime(2026, 1, 2, 9, tzinfo=timezone.utc)
+    preauth_token, csrf = service.issue_pre_auth(request_subject="127.0.0.3", now=now)
+    operator_token, _ = service.login(
+        preauth_token=preauth_token, csrf_token=csrf, password="operator-secret",
+        request_subject="127.0.0.3", now=now,
+    )
+    operator = service.find_operator(operator_token, now=now)
+    assert operator.expires_at == (now + timedelta(hours=8)).replace(tzinfo=None)
 
 
 def test_backtest_auth_router_requires_preauth_csrf_then_rotates_the_cookie_session(monkeypatch):

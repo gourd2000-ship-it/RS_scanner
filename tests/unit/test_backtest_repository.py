@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 import app.models  # noqa: F401
 from app.core.base import Base
+from app.core.market_calendar import krx_market_day_status
 from app.models.backtest_dataset import BacktestDataset, BacktestDatasetRsRun
 from app.models.backtest_run import BacktestRun
 from app.repositories.backtest_repository import BacktestRepository, BenchmarkSnapshotInput
@@ -58,15 +59,23 @@ def _inputs(session: Session) -> tuple[BacktestDataset, BacktestDatasetRsRun]:
     return dataset, rs_run
 
 
-def _snapshots() -> tuple[BenchmarkSnapshotInput, BenchmarkSnapshotInput]:
+def _snapshots(
+    start: date = date(2020, 1, 2), end: date = date(2020, 12, 30),
+) -> tuple[BenchmarkSnapshotInput, BenchmarkSnapshotInput]:
+    days = []
+    current = start
+    while current <= end:
+        if krx_market_day_status(current).is_open:
+            days.append(current)
+        current += timedelta(days=1)
     return (
         BenchmarkSnapshotInput(
             market="KOSPI", benchmark_code="KOSPI", snapshot_hash="e" * 64,
-            prices=((date(2020, 1, 2), Decimal("2000")),),
+            prices=tuple((day, Decimal("2000")) for day in days),
         ),
         BenchmarkSnapshotInput(
             market="KOSDAQ", benchmark_code="KOSDAQ", snapshot_hash="f" * 64,
-            prices=((date(2020, 1, 2), Decimal("650")),),
+            prices=tuple((day, Decimal("650")) for day in days),
         ),
     )
 
@@ -93,10 +102,8 @@ def test_strategy_versions_and_queued_run_pin_all_reproducibility_inputs():
     assert run.status == "queued"
     assert run.dataset_manifest_hash == dataset.final_manifest_hash
     assert run.rs_result_hash == "d" * 64
-    assert {row.market: row.snapshot_hash for row in run.benchmark_snapshots} == {
-        "KOSPI": "e" * 64,
-        "KOSDAQ": "f" * 64,
-    }
+    assert all(len(row.snapshot_hash) == 64 for row in run.benchmark_snapshots)
+    assert all(row.snapshot_hash not in {"e" * 64, "f" * 64} for row in run.benchmark_snapshots)
     assert run.benchmark_snapshots[0].prices[0].close in {Decimal("2000"), Decimal("650")}
 
 
@@ -179,6 +186,25 @@ def test_completed_runs_and_strategy_versions_cannot_be_changed_through_reposito
     with pytest.raises(ValueError, match="terminal"):
         repository.transition_run(run.run_id, "running")
     assert session.get(BacktestRun, run.id).status == "data_unavailable"
+
+
+def test_enqueue_recomputes_benchmark_snapshot_hash_and_rejects_incomplete_calendar_coverage(monkeypatch):
+    session = _session()
+    repository = BacktestRepository(session)
+    dataset, rs_run = _inputs(session)
+    version = repository.create_strategy(name="표본", config={}).versions[0]
+    monkeypatch.setattr("app.repositories.backtest_repository.get_settings", lambda: type("S", (), {"market_closed_dates": ""})())
+    forged = (
+        BenchmarkSnapshotInput("KOSPI", "KOSPI", "0" * 64, ((date(2020, 1, 2), Decimal("2000")),)),
+        BenchmarkSnapshotInput("KOSDAQ", "KOSDAQ", "f" * 64, ((date(2020, 1, 2), Decimal("650")),)),
+    )
+    with pytest.raises(ValueError, match="coverage"):
+        repository.enqueue_run(
+            strategy_version_id=version.id, dataset_id=dataset.dataset_id,
+            dataset_manifest_hash=dataset.final_manifest_hash, rs_run_id=rs_run.id,
+            rs_result_hash=rs_run.result_hash, range_start=date(2020, 1, 2), range_end=date(2020, 1, 3),
+            markets=["KOSPI"], benchmark_snapshots=forged,
+        )
 
 
 def test_operator_session_and_login_lockout_store_only_hashes():

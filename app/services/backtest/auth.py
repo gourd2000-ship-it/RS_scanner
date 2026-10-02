@@ -24,12 +24,11 @@ class BacktestOperatorAuthService:
     """Issues short-lived opaque sessions without persisting any credential plaintext."""
 
     def __init__(
-        self, session: Session, *, password: str | None, session_hours: int = 8,
-        max_failures: int = 5, lock_minutes: int = 15,
+        self, session: Session, *, password: str | None, max_failures: int = 5,
+        lock_minutes: int = 15,
     ) -> None:
         self.repository = BacktestRepository(session)
         self.password = password
-        self.session_hours = session_hours
         self.max_failures = max_failures
         self.lock_minutes = lock_minutes
 
@@ -94,7 +93,7 @@ class BacktestOperatorAuthService:
         operator_token, operator_csrf = self._token(), self._token()
         self.repository.create_operator_session(
             session_token_hash=_hash(operator_token), csrf_token_hash=_hash(operator_csrf),
-            operator_subject_hash=subject_hash, expires_at=now + timedelta(hours=self.session_hours), is_operator=True,
+            operator_subject_hash=subject_hash, expires_at=now + timedelta(hours=8), is_operator=True,
         )
         self.repository.record_operator_audit(subject_hash=subject_hash, event_type="login", result="success", request_id=request_id, now=now)
         return operator_token, operator_csrf

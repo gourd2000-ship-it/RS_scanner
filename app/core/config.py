@@ -156,7 +156,6 @@ class Settings(BaseSettings):
     # supplied only by the deployment secret store and never reused as an API
     # bearer token.
     backtest_operator_password: Optional[str] = Field(default=None, alias="BACKTEST_OPERATOR_PASSWORD")
-    backtest_session_hours: int = Field(default=8, ge=1, le=24, alias="BACKTEST_SESSION_HOURS")
     backtest_login_max_failures: int = Field(default=5, ge=1, le=20, alias="BACKTEST_LOGIN_MAX_FAILURES")
     backtest_login_lock_minutes: int = Field(default=15, ge=1, le=120, alias="BACKTEST_LOGIN_LOCK_MINUTES")
 

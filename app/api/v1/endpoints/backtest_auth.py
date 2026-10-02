@@ -30,7 +30,6 @@ def _service(session: Session) -> BacktestOperatorAuthService:
     settings = get_settings()
     return BacktestOperatorAuthService(
         session, password=settings.backtest_operator_password,
-        session_hours=settings.backtest_session_hours,
         max_failures=settings.backtest_login_max_failures,
         lock_minutes=settings.backtest_login_lock_minutes,
     )
@@ -103,7 +102,7 @@ def login(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="login failed") from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="backtest operator access is unavailable") from exc
-    _set_cookie(response, _OPERATOR_COOKIE, operator_token, max_age=get_settings().backtest_session_hours * 3600)
+    _set_cookie(response, _OPERATOR_COOKIE, operator_token, max_age=8 * 3600)
     response.delete_cookie(_PREAUTH_COOKIE, path="/api/v1/backtests")
     return BacktestLoginResponse(csrf_token=csrf_token)
 

@@ -19,8 +19,8 @@ from app.repositories.backtest_repository import BacktestRepository, BenchmarkSn
 
 def _snapshots() -> tuple[BenchmarkSnapshotInput, BenchmarkSnapshotInput]:
     return (
-        BenchmarkSnapshotInput("KOSPI", "KOSPI", "e" * 64, ((date(2020, 1, 2), Decimal("2000")),)),
-        BenchmarkSnapshotInput("KOSDAQ", "KOSDAQ", "f" * 64, ((date(2020, 1, 2), Decimal("650")),)),
+        BenchmarkSnapshotInput("KOSPI", "KOSPI", "e" * 64, ((date(2020, 1, 2), Decimal("2000")), (date(2020, 1, 3), Decimal("2001")))),
+        BenchmarkSnapshotInput("KOSDAQ", "KOSDAQ", "f" * 64, ((date(2020, 1, 2), Decimal("650")), (date(2020, 1, 3), Decimal("651")))),
     )
 
 
@@ -114,6 +114,14 @@ def test_execution_storage_on_isolated_postgres_rejects_terminal_mutation():
                         rs_result_hash=rs_run.result_hash, range_start=date(2020, 1, 2),
                         range_end=date(2020, 1, 3), markets=["KOSPI"], benchmark_snapshots=_snapshots(),
                     )
+                    savepoint = session.begin_nested()
+                    with pytest.raises(DBAPIError):
+                        session.execute(
+                            update(BacktestRun)
+                            .where(BacktestRun.id == run.id)
+                            .values(rs_formula_version="tampered-formula")
+                        )
+                    savepoint.rollback()
                     assert repository.claim_next_run().id == run.id
                     repository.transition_run(run.run_id, "completed")
 

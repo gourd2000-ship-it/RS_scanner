@@ -3,6 +3,8 @@
 import os
 from datetime import date
 from decimal import Decimal
+from hashlib import sha256
+import json
 
 import pytest
 from sqlalchemy import create_engine, update
@@ -21,6 +23,12 @@ def _snapshots() -> tuple[BenchmarkSnapshotInput, BenchmarkSnapshotInput]:
     )
 
 
+def _final_manifest_hash(manifest: dict) -> str:
+    return sha256(
+        json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str).encode()
+    ).hexdigest()
+
+
 def test_execution_storage_on_isolated_postgres_rejects_terminal_mutation():
     database_url = os.getenv(
         "TEST_DATABASE_URL",
@@ -36,13 +44,14 @@ def test_execution_storage_on_isolated_postgres_rejects_terminal_mutation():
             transaction = connection.begin()
             try:
                 with Session(bind=connection, autoflush=False) as session:
+                    manifest = {"publication_scope": "complete_segments_only"}
                     dataset = BacktestDataset(
-                        dataset_id="postgres-complete-dataset",
-                        manifest_hash="a" * 64, final_manifest_hash="b" * 64,
+                        dataset_id="postgres-complete-dataset", manifest_hash="a" * 64,
+                        final_manifest_hash=_final_manifest_hash(manifest),
                         range_start=date(2020, 1, 2), range_end=date(2020, 1, 3),
                         markets=["KOSPI", "KOSDAQ"], reconstruction_mode="historical_reconstructed",
                         adjustment_policy="fixture:1", policy_version="v1",
-                        manifest={"publication_scope": "complete_segments_only"}, status="active",
+                        manifest=manifest, status="active",
                     )
                     session.add(dataset)
                     session.flush()

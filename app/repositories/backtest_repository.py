@@ -109,16 +109,14 @@ class BacktestRepository:
         dataset = self.session.scalar(select(BacktestDataset).where(BacktestDataset.dataset_id == dataset_id))
         if dataset is None:
             raise KeyError(f"dataset not found: {dataset_id}")
-        if (
-            dataset.status != "active"
-            or not isinstance(dataset.manifest, dict)
-            or dataset.manifest.get("publication_scope") != "complete_segments_only"
-        ):
+        if not dataset.final_manifest_hash or dataset_manifest_hash != dataset.final_manifest_hash:
+            raise ValueError("dataset final manifest hash does not match the frozen dataset")
+        if not isinstance(dataset.manifest, dict) or self._manifest_hash(dataset.manifest) != dataset.final_manifest_hash:
+            raise ValueError("dataset manifest does not match its finalized manifest hash")
+        if dataset.status != "active" or dataset.manifest.get("publication_scope") != "complete_segments_only":
             raise ValueError(
                 "only active datasets published with complete_segments_only can be used for backtests"
             )
-        if not dataset.final_manifest_hash or dataset_manifest_hash != dataset.final_manifest_hash:
-            raise ValueError("dataset final manifest hash does not match the frozen dataset")
         rs_run = self.session.get(BacktestDatasetRsRun, rs_run_id)
         if rs_run is None or rs_run.backtest_dataset_id != dataset.id:
             raise ValueError("RS run does not belong to the selected dataset")
@@ -332,3 +330,10 @@ class BacktestRepository:
     def _validate_hash(value: str, label: str) -> None:
         if len(value) != 64:
             raise ValueError(f"{label} hash must be a SHA-256 digest")
+
+    @staticmethod
+    def _manifest_hash(manifest: dict) -> str:
+        serialized = json.dumps(
+            manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str
+        )
+        return sha256(serialized.encode()).hexdigest()

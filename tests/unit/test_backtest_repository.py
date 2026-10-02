@@ -2,6 +2,8 @@
 
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
+from hashlib import sha256
+import json
 
 import pytest
 from sqlalchemy import create_engine
@@ -20,18 +22,25 @@ def _session() -> Session:
     return Session(engine)
 
 
+def _final_manifest_hash(manifest: dict) -> str:
+    return sha256(
+        json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str).encode()
+    ).hexdigest()
+
+
 def _inputs(session: Session) -> tuple[BacktestDataset, BacktestDatasetRsRun]:
+    manifest = {"publication_scope": "complete_segments_only"}
     dataset = BacktestDataset(
         dataset_id="dataset-complete-1",
         manifest_hash="a" * 64,
-        final_manifest_hash="b" * 64,
+        final_manifest_hash=_final_manifest_hash(manifest),
         range_start=date(2020, 1, 2),
         range_end=date(2020, 12, 30),
         markets=["KOSPI", "KOSDAQ"],
         reconstruction_mode="historical_reconstructed",
         adjustment_policy="fixture:1",
         policy_version="v1",
-        manifest={"publication_scope": "complete_segments_only"},
+        manifest=manifest,
         status="active",
     )
     session.add(dataset)
@@ -82,7 +91,7 @@ def test_strategy_versions_and_queued_run_pin_all_reproducibility_inputs():
     )
 
     assert run.status == "queued"
-    assert run.dataset_manifest_hash == "b" * 64
+    assert run.dataset_manifest_hash == dataset.final_manifest_hash
     assert run.rs_result_hash == "d" * 64
     assert {row.market: row.snapshot_hash for row in run.benchmark_snapshots} == {
         "KOSPI": "e" * 64,
@@ -91,14 +100,27 @@ def test_strategy_versions_and_queued_run_pin_all_reproducibility_inputs():
     assert run.benchmark_snapshots[0].prices[0].close in {Decimal("2000"), Decimal("650")}
 
 
-def test_enqueue_rejects_non_complete_or_mismatched_frozen_dataset_inputs():
+def test_enqueue_rejects_non_complete_or_tampered_frozen_dataset_manifest():
     session = _session()
     repository = BacktestRepository(session)
     dataset, rs_run = _inputs(session)
     version = repository.create_strategy(name="표본", config={}).versions[0]
     dataset.manifest = {"publication_scope": "audit_coverage"}
+    dataset.final_manifest_hash = _final_manifest_hash(dataset.manifest)
 
     with pytest.raises(ValueError, match="complete_segments_only"):
+        repository.enqueue_run(
+            strategy_version_id=version.id,
+            dataset_id=dataset.dataset_id,
+            dataset_manifest_hash=dataset.final_manifest_hash,
+            rs_run_id=rs_run.id,
+            rs_result_hash=rs_run.result_hash,
+            range_start=date(2020, 1, 2), range_end=date(2020, 12, 30), markets=["KOSPI"],
+            benchmark_snapshots=_snapshots(),
+        )
+
+    dataset.manifest = {"publication_scope": "complete_segments_only"}
+    with pytest.raises(ValueError, match="finalized manifest"):
         repository.enqueue_run(
             strategy_version_id=version.id,
             dataset_id=dataset.dataset_id,

@@ -34,6 +34,19 @@ from app.models.krx_universe import KrxUniverseMembership, KrxUniverseSnapshot
 from app.models.instrument import Instrument, ProviderSymbol, UniverseExclusion
 from app.models.historical_backfill_run import HistoricalBackfillRun, HistoricalBackfillTargetState
 from app.models.backtest_dataset import BacktestDataset, BacktestDatasetMembership, BacktestDatasetPrice, BacktestDatasetRs, BacktestDatasetRsRun
+from app.models.backtest_run import (
+    BacktestBenchmarkSnapshot,
+    BacktestBenchmarkSnapshotPrice,
+    BacktestDailyEquity,
+    BacktestOperatorLockout,
+    BacktestOperatorLoginAttempt,
+    BacktestOperatorSession,
+    BacktestOrder,
+    BacktestRun,
+    BacktestStrategy,
+    BacktestStrategyVersion,
+    BacktestTrade,
+)
 from app.models.listing_event import ListingEvent
 from app.models.rs_score import RsScore
 from app.models.symbol_universe_snapshot import SymbolUniverseSnapshot
@@ -79,6 +92,17 @@ __all__ = [
     "BacktestDatasetPrice",
     "BacktestDatasetRs",
     "BacktestDatasetRsRun",
+    "BacktestStrategy",
+    "BacktestStrategyVersion",
+    "BacktestRun",
+    "BacktestBenchmarkSnapshot",
+    "BacktestBenchmarkSnapshotPrice",
+    "BacktestDailyEquity",
+    "BacktestOrder",
+    "BacktestTrade",
+    "BacktestOperatorSession",
+    "BacktestOperatorLoginAttempt",
+    "BacktestOperatorLockout",
     "ListingEvent",
     "RsScore",
     "Symbol",

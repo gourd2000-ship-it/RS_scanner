@@ -13,8 +13,10 @@ from starlette.responses import Response
 import app.models  # noqa: F401
 from app.core.base import Base
 from app.models.data_quality import PriceObservation
+from app.models.backtest_dataset import BacktestDatasetRsRun
 from app.models.instrument import Instrument
 from app.models.symbol import Symbol
+from app.repositories.backtest_repository import BacktestRepository, BenchmarkSnapshotInput
 from app.repositories.listing_history_repository import ListingEventInput, ListingHistoryRepository
 from app.services.clean_backtest_snapshot import create_clean_backtest_dataset
 from app.api.v1.endpoints.backtest import _materialized_dataset_page
@@ -64,6 +66,25 @@ def test_clean_dataset_freezes_selected_observation_and_keeps_missing_day():
         assert first.prices[0].close == Decimal("100")
         assert first.manifest["publication_scope"] == "complete_segments_only"
         assert first.manifest["coverage"]["valid"] == 2
+        rs_run = BacktestDatasetRsRun(
+            backtest_dataset_id=first.id, formula_version="factory-rs-v1", policy_version="v1",
+            input_hash="d" * 64, result_hash="e" * 64, manifest={},
+        )
+        session.add(rs_run)
+        session.flush()
+        repository = BacktestRepository(session)
+        strategy = repository.create_strategy(name="공장 데이터셋", config={})
+        snapshots = (
+            BenchmarkSnapshotInput("KOSPI", "KOSPI", "f" * 64, ((date(2020, 1, 2), Decimal("2000")),)),
+            BenchmarkSnapshotInput("KOSDAQ", "KOSDAQ", "0" * 64, ((date(2020, 1, 2), Decimal("650")),)),
+        )
+        run = repository.enqueue_run(
+            strategy_version_id=strategy.versions[0].id, dataset_id=first.dataset_id,
+            dataset_manifest_hash=first.final_manifest_hash, rs_run_id=rs_run.id,
+            rs_result_hash=rs_run.result_hash, range_start=selection.start, range_end=selection.end,
+            markets=["KOSPI"], benchmark_snapshots=snapshots,
+        )
+        assert run.backtest_dataset_id == first.id
         request = Request({"type": "http", "method": "GET", "path": "/", "headers": []})
         page_one_response = Response()
         page_one = _materialized_dataset_page(

@@ -44,13 +44,14 @@ def repair_client(monkeypatch):
     settings = SimpleNamespace(
         repair_api_enabled=True,
         legacy_repair_api_enabled=True,
+        operator_api_enabled=True,
         repair_max_rows=6000,
         repair_claim_lease_seconds=300,
-        agent_service_tokens=(
+        operator_service_tokens=(
             "repair-token=repair:claim,repair:submit,repair:fail;"
             "submit-only=repair:submit"
         ),
-        agent_allowed_ips="",
+        operator_allowed_ips="",
     )
     monkeypatch.setattr(agent_auth, "get_settings", lambda: settings)
     monkeypatch.setattr(repair_endpoint, "get_settings", lambda: settings)

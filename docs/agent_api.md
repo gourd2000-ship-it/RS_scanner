@@ -1,3 +1,7 @@
+# 과거 기록
+
+이 문서는 이전 Agent API 계약을 기록한다. 현재 자동화 읽기 권한과 사람 운영자 권한은 [보안 정책](security.md), 현재 HTTP 계약은 [외부 계약](contracts.md)을 따른다.
+
 # Hermes Agent API 운영 계약
 
 ## Secret 주입

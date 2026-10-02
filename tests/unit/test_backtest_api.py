@@ -234,7 +234,7 @@ def test_materialized_dataset_returns_missing_price_reason_and_binds_cursor_to_m
     assert expired.status_code == 410
 
 
-def test_ohlcv_dataset_strict_mode_keeps_valid_rows_without_rs_and_stable_identity(backtest_client):
+def test_ohlcv_dataset_without_complete_segment_manifest_is_not_published(backtest_client):
     session = backtest_client.backtest_session
     dataset = BacktestDataset(
         dataset_id="clean-ohlcv", manifest_hash="c" * 64,
@@ -265,12 +265,4 @@ def test_ohlcv_dataset_strict_mode_keeps_valid_rows_without_rs_and_stable_identi
     headers = {"Authorization": "Bearer backtest-token"}
     url = "/api/v1/agent/v2/backtest/dataset"
     all_rows = backtest_client.get(url, params=params, headers=headers)
-    assert all_rows.status_code == 200
-    assert [row["instrument_id"] for row in all_rows.json()["items"]] == [100, 100]
-    assert [row["code"] for row in all_rows.json()["items"]] == ["000100", "000100"]
-    assert [row["quality"] for row in all_rows.json()["items"]] == ["valid", "missing"]
-    assert all_rows.json()["dataset_coverage"] == {"expected": 2, "valid": 1, "missing": 1}
-    strict_rows = backtest_client.get(url, params={**params, "strict": "true"}, headers=headers)
-    assert strict_rows.status_code == 200
-    assert len(strict_rows.json()["items"]) == 1
-    assert strict_rows.json()["items"][0]["rs"] is None
+    assert all_rows.status_code == 409

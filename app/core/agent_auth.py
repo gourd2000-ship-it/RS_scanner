@@ -12,6 +12,16 @@ from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
 
+READ_ONLY_AUTOMATION_SCOPES = frozenset(
+    {
+        "status:read",
+        "rs:read",
+        "stock:read",
+        "backtest:read",
+        "analysis:read",
+    }
+)
+
 
 @dataclass(frozen=True)
 class AgentPrincipal:
@@ -22,7 +32,7 @@ class AgentPrincipal:
 
 
 def parse_service_tokens(spec: str | None) -> tuple[tuple[str, frozenset[str]], ...]:
-    """token=scopes 형식의 rotation 목록을 파싱한다.
+    """읽기 scope만 허용하는 ``token=scopes`` rotation 목록을 파싱한다.
 
     예: token-a=rs:read,stock:read;token-b=status:read
     """
@@ -34,11 +44,28 @@ def parse_service_tokens(spec: str | None) -> tuple[tuple[str, frozenset[str]], 
         token, separator, raw_scopes = entry.partition("=")
         if not separator or not token.strip():
             continue
-        scopes = frozenset(
-            scope.strip()
-            for scope in raw_scopes.split(",")
-            if scope.strip()
+        requested_scopes = frozenset(
+            scope.strip() for scope in raw_scopes.split(",") if scope.strip()
         )
+        scopes = requested_scopes & READ_ONLY_AUTOMATION_SCOPES
+        if requested_scopes != scopes:
+            logger.warning("ignoring non-read scope in AGENT_SERVICE_TOKENS")
+        if scopes:
+            parsed.append((token.strip(), scopes))
+    return tuple(parsed)
+
+
+def parse_operator_tokens(spec: str | None) -> tuple[tuple[str, frozenset[str]], ...]:
+    """사람 운영자용 별도 token 목록을 파싱한다."""
+    parsed: list[tuple[str, frozenset[str]]] = []
+    for entry in (spec or "").split(";"):
+        entry = entry.strip()
+        if not entry:
+            continue
+        token, separator, raw_scopes = entry.partition("=")
+        if not separator or not token.strip():
+            continue
+        scopes = frozenset(scope.strip() for scope in raw_scopes.split(",") if scope.strip())
         if scopes:
             parsed.append((token.strip(), scopes))
     return tuple(parsed)
@@ -65,8 +92,9 @@ class AgentAuthenticator:
         *,
         token_spec: str | None,
         allowed_ips: str | None = None,
+        token_parser=parse_service_tokens,
     ) -> None:
-        self._tokens = parse_service_tokens(token_spec)
+        self._tokens = token_parser(token_spec)
         self._networks = parse_allowed_networks(allowed_ips)
 
     def authenticate(
@@ -151,12 +179,17 @@ def require_repair_scope(required_scope: str):
 
     def dependency(request: Request) -> AgentPrincipal:
         settings = get_settings()
-        if not settings.repair_api_enabled or not settings.legacy_repair_api_enabled:
+        if (
+            not settings.repair_api_enabled
+            or not settings.legacy_repair_api_enabled
+            or not settings.operator_api_enabled
+        ):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
         principal = AgentAuthenticator(
-            token_spec=settings.agent_service_tokens,
-            allowed_ips=settings.agent_allowed_ips,
+            token_spec=settings.operator_service_tokens,
+            allowed_ips=settings.operator_allowed_ips,
+            token_parser=parse_operator_tokens,
         ).authenticate(
             authorization=request.headers.get("authorization"),
             client_ip=_client_ip(request),
@@ -169,15 +202,16 @@ def require_repair_scope(required_scope: str):
 
 
 def require_analysis_scope(required_scope: str):
-    """Authenticate the separately enabled crawl-quality analysis API."""
+    """사람 운영자만 crawl-quality 분석 API를 호출한다."""
 
     def dependency(request: Request) -> AgentPrincipal:
         settings = get_settings()
-        if not settings.analysis_api_enabled:
+        if not settings.analysis_api_enabled or not settings.operator_api_enabled:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
         principal = AgentAuthenticator(
-            token_spec=settings.agent_service_tokens,
-            allowed_ips=settings.agent_allowed_ips,
+            token_spec=settings.operator_service_tokens,
+            allowed_ips=settings.operator_allowed_ips,
+            token_parser=parse_operator_tokens,
         ).authenticate(
             authorization=request.headers.get("authorization"),
             client_ip=_client_ip(request),

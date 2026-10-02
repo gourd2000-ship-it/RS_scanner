@@ -7,6 +7,12 @@ import app.core.agent_auth as agent_auth
 from app.core.rate_limit import RateLimitMiddleware
 
 
+def test_service_tokens_drop_mutating_scopes():
+    assert agent_auth.parse_service_tokens(
+        "read-token=rs:read,backtest:read,repair:claim,analysis:submit"
+    ) == (("read-token", frozenset({"rs:read", "backtest:read"})),)
+
+
 def test_agent_auth_returns_401_for_missing_token_and_403_for_scope(monkeypatch):
     monkeypatch.setattr(
         agent_auth,

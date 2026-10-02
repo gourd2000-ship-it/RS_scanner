@@ -146,6 +146,12 @@ class Settings(BaseSettings):
     agent_freshness_max_age_hours: int = Field(default=36, ge=1, alias="AGENT_FRESHNESS_MAX_AGE_HOURS")
     agent_rate_limit: int = Field(default=60, ge=1, alias="AGENT_RATE_LIMIT")
 
+    # Human operator API. This credential boundary is intentionally separate
+    # from read-only automation tokens.
+    operator_api_enabled: bool = Field(default=False, alias="OPERATOR_API_ENABLED")
+    operator_service_tokens: str = Field(default="", alias="OPERATOR_SERVICE_TOKENS")
+    operator_allowed_ips: str = Field(default="", alias="OPERATOR_ALLOWED_IPS")
+
     # Sam repair API.  It is disabled until queue migration and canary approval
     # are complete; its scopes still live in the separate service-token entry.
     repair_api_enabled: bool = Field(default=False, alias="REPAIR_API_ENABLED")

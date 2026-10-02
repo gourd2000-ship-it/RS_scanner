@@ -46,14 +46,15 @@ def main() -> None:
                 dataset = create_clean_backtest_dataset(
                     session, selection=selection, adjustment_policy=manifest["adjustment_policy"]
                 )
-                actual = dataset.manifest["coverage"]
+                audited = dataset.manifest["audited_coverage"]
                 for status in ("valid", "missing", "invalid", "review_required", "non_tradable"):
-                    if int(actual.get(status, 0)) != int(summary.get(status, 0)):
+                    if int(audited.get(status, 0)) != int(summary.get(status, 0)):
                         raise RuntimeError(f"audit changed before dataset creation: {status}")
                 result = {
                     "dataset_id": dataset.dataset_id,
                     "manifest_hash": dataset.manifest_hash,
-                    "coverage": dataset.manifest["coverage"],
+                    "audited_coverage": audited,
+                    "published_coverage": dataset.manifest["coverage"],
                     "audit_dir": str(args.audit_dir),
                 }
         print(json.dumps(result, ensure_ascii=False, sort_keys=True))

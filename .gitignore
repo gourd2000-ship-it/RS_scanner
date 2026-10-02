@@ -64,3 +64,6 @@ Thumbs.db
 
 # Codex reports
 .codex/
+
+# Local task workspace and migration backups
+.dryforge/

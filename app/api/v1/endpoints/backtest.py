@@ -376,6 +376,11 @@ def _materialized_dataset_page(*, request, response, session, dataset_id, start,
         raise HTTPException(status_code=422, detail="Requested range is outside the dataset")
     manifest_hash = dataset.final_manifest_hash or dataset.manifest_hash
     is_clean_ohlcv = dataset.manifest.get("version") == "ohlcv-cleansed-v1"
+    if is_clean_ohlcv and dataset.manifest.get("publication_scope") != "complete_segments_only":
+        raise HTTPException(
+            status_code=409,
+            detail="Backtest dataset does not satisfy the complete-segment publication policy",
+        )
     last = None
     if cursor is not None:
         payload = _decode_cursor(cursor)

@@ -43,6 +43,13 @@ def test_clean_dataset_freezes_selected_observation_and_keeps_missing_day():
             observed_at=datetime(2020, 1, 3, tzinfo=timezone.utc),
         )
         session.add(observation)
+        second_observation = PriceObservation(
+            symbol_id=symbol.id, trade_date=date(2020, 1, 3), open=Decimal("100"), high=Decimal("101"),
+            low=Decimal("99"), close=Decimal("100"), volume=10, change_rate=Decimal("0"),
+            provider="kiwoom", adjustment_type="1", payload_hash="c" * 64,
+            observed_at=datetime(2020, 1, 4, tzinfo=timezone.utc),
+        )
+        session.add(second_observation)
         session.flush()
         selection = CleansingSelection(
             start=date(2020, 1, 2), end=date(2020, 1, 3), selection_as_of=date(2020, 1, 3),
@@ -50,13 +57,13 @@ def test_clean_dataset_freezes_selected_observation_and_keeps_missing_day():
         )
         first = create_clean_backtest_dataset(session, selection=selection, adjustment_policy="kiwoom:1")
         assert [(row.trade_date, row.quality_status) for row in first.memberships] == [
-            (date(2020, 1, 2), "valid"), (date(2020, 1, 3), "missing")
+            (date(2020, 1, 2), "valid"), (date(2020, 1, 3), "valid")
         ]
-        assert len(first.prices) == 1
+        assert len(first.prices) == 2
         assert first.prices[0].source_observation_id == observation.id
         assert first.prices[0].close == Decimal("100")
-        assert first.manifest["coverage"]["valid"] == 1
-        assert first.manifest["coverage"]["missing"] == 1
+        assert first.manifest["publication_scope"] == "complete_segments_only"
+        assert first.manifest["coverage"]["valid"] == 2
         request = Request({"type": "http", "method": "GET", "path": "/", "headers": []})
         page_one_response = Response()
         page_one = _materialized_dataset_page(

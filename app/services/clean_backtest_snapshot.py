@@ -42,9 +42,26 @@ def create_clean_backtest_dataset(
     for row in listing_rows:
         revisions.setdefault(row.instrument_id, []).append(row.content_hash)
 
+    selected_rows = list(_selected_rows(session, selected, provider, adjustment_type))
+    counts: Counter[str] = Counter(decision.status for _, decision in selected_rows)
+    expected_by_segment: dict[tuple[int, int], list[CleanPriceDecision]] = {}
+    for entry, decision in selected_rows:
+        if entry.price_expectation == "expected":
+            expected_by_segment.setdefault((entry.instrument_id, entry.trade_date.year), []).append(decision)
+    complete_segments = {
+        segment
+        for segment, decisions in expected_by_segment.items()
+        if decisions and all(decision.status == "valid" and decision.values is not None for decision in decisions)
+    }
+    published_rows = [
+        (entry, decision)
+        for entry, decision in selected_rows
+        if entry.price_expectation == "expected"
+        and (entry.instrument_id, entry.trade_date.year) in complete_segments
+    ]
+
     digest = sha256()
-    counts: Counter[str] = Counter()
-    for entry, decision in _selected_rows(session, selected, provider, adjustment_type):
+    for entry, decision in published_rows:
         counts[decision.status] += 1
         material = _row_material(entry, decision, instruments[entry.instrument_id])
         digest.update(json.dumps(material, ensure_ascii=False, sort_keys=True,
@@ -62,8 +79,14 @@ def create_clean_backtest_dataset(
         "unknown_instrument_ids": list(selected.unknown_instrument_ids),
         "adjustment_policy": adjustment_policy,
         "quality_policy": QUALITY_RULE_VERSION,
+        "publication_scope": "complete_segments_only",
+        "complete_segments": [
+            {"instrument_id": instrument_id, "year": year}
+            for instrument_id, year in sorted(complete_segments)
+        ],
         "membership_revisions": {str(key): sorted(value) for key, value in sorted(revisions.items())},
-        "coverage": dict(sorted(counts.items())),
+        "audited_coverage": dict(sorted(counts.items())),
+        "coverage": {"valid": len(published_rows), "complete_segments": len(complete_segments)},
         "input_hash": digest.hexdigest(),
     }
     manifest_hash = _hash(manifest)
@@ -82,7 +105,7 @@ def create_clean_backtest_dataset(
     session.flush()
     memberships: list[dict] = []
     prices: list[dict] = []
-    for entry, decision in _selected_rows(session, selected, provider, adjustment_type):
+    for entry, decision in published_rows:
         instrument = instruments[entry.instrument_id]
         memberships.append({
             "backtest_dataset_id": dataset.id,

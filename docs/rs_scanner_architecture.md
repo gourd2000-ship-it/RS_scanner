@@ -1,3 +1,7 @@
+# 과거 기록
+
+이 문서는 이전 구현 상태를 기록한다. 현재 구성과 운영 계약은 [시스템 구성](architecture.md), [도메인 규칙](business-rules.md), [외부 계약](contracts.md)을 따른다.
+
 # RS Scanner Architecture
 
 ## 1. 목표

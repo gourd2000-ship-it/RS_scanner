@@ -1,3 +1,7 @@
+# 과거 기록
+
+이 문서는 이전 백필 계획을 기록한다. 현재 발행 조건은 [도메인 규칙](business-rules.md)의 complete 구간 정책과 [운영 절차](operations.md)를 따른다.
+
 # BT12/BT13 역사 백테스트 적재 runbook
 
 갱신일: 2026-09-07

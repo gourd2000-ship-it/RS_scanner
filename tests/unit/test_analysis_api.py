@@ -89,11 +89,12 @@ def analysis_client(monkeypatch):
 
     settings = SimpleNamespace(
         analysis_api_enabled=True,
-        agent_service_tokens=(
+        operator_api_enabled=True,
+        operator_service_tokens=(
             "operator-token=analysis:request,analysis:read,analysis:review;"
             "sam-token=analysis:read,analysis:accept,analysis:submit"
         ),
-        agent_allowed_ips="",
+        operator_allowed_ips="",
     )
     monkeypatch.setattr(agent_auth, "get_settings", lambda: settings)
 

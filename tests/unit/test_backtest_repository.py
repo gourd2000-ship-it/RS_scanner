@@ -28,10 +28,10 @@ def _inputs(session: Session) -> tuple[BacktestDataset, BacktestDatasetRsRun]:
         range_start=date(2020, 1, 2),
         range_end=date(2020, 12, 30),
         markets=["KOSPI", "KOSDAQ"],
-        reconstruction_mode="complete_segments_only",
+        reconstruction_mode="historical_reconstructed",
         adjustment_policy="fixture:1",
         policy_version="v1",
-        manifest={},
+        manifest={"publication_scope": "complete_segments_only"},
         status="active",
     )
     session.add(dataset)
@@ -96,7 +96,7 @@ def test_enqueue_rejects_non_complete_or_mismatched_frozen_dataset_inputs():
     repository = BacktestRepository(session)
     dataset, rs_run = _inputs(session)
     version = repository.create_strategy(name="표본", config={}).versions[0]
-    dataset.reconstruction_mode = "audit_coverage"
+    dataset.manifest = {"publication_scope": "audit_coverage"}
 
     with pytest.raises(ValueError, match="complete_segments_only"):
         repository.enqueue_run(

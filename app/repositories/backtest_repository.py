@@ -109,8 +109,14 @@ class BacktestRepository:
         dataset = self.session.scalar(select(BacktestDataset).where(BacktestDataset.dataset_id == dataset_id))
         if dataset is None:
             raise KeyError(f"dataset not found: {dataset_id}")
-        if dataset.status != "active" or dataset.reconstruction_mode != "complete_segments_only":
-            raise ValueError("only active complete_segments_only datasets can be used for backtests")
+        if (
+            dataset.status != "active"
+            or not isinstance(dataset.manifest, dict)
+            or dataset.manifest.get("publication_scope") != "complete_segments_only"
+        ):
+            raise ValueError(
+                "only active datasets published with complete_segments_only can be used for backtests"
+            )
         if not dataset.final_manifest_hash or dataset_manifest_hash != dataset.final_manifest_hash:
             raise ValueError("dataset final manifest hash does not match the frozen dataset")
         rs_run = self.session.get(BacktestDatasetRsRun, rs_run_id)

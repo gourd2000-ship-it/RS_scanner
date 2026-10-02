@@ -40,8 +40,9 @@ def test_execution_storage_on_isolated_postgres_rejects_terminal_mutation():
                         dataset_id="postgres-complete-dataset",
                         manifest_hash="a" * 64, final_manifest_hash="b" * 64,
                         range_start=date(2020, 1, 2), range_end=date(2020, 1, 3),
-                        markets=["KOSPI", "KOSDAQ"], reconstruction_mode="complete_segments_only",
-                        adjustment_policy="fixture:1", policy_version="v1", manifest={}, status="active",
+                        markets=["KOSPI", "KOSDAQ"], reconstruction_mode="historical_reconstructed",
+                        adjustment_policy="fixture:1", policy_version="v1",
+                        manifest={"publication_scope": "complete_segments_only"}, status="active",
                     )
                     session.add(dataset)
                     session.flush()

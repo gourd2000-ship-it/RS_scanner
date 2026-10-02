@@ -45,4 +45,8 @@ class BacktestRunPreparationService:
             dataset_manifest_hash=selected.dataset_manifest_hash, rs_run_id=selected.rs_run.id,
             rs_result_hash=selected.rs_run.result_hash, range_start=range_start, range_end=range_end,
             markets=markets, benchmark_snapshots=selected.benchmark_snapshots,
+            candidate_exclusions=[
+                {"instrument_id": instrument_id, "market": market, "trade_date": trade_date.isoformat(), "reason": "insufficient_return_lookback"}
+                for instrument_id, market, trade_date in sorted(selected.lookback_excluded_candidates)
+            ],
         )

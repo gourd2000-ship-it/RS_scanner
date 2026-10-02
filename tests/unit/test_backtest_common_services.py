@@ -93,7 +93,7 @@ def test_input_selection_pins_latest_complete_dataset_rs_and_benchmark_closes():
     dataset, rs_run = _complete_inputs(session)
 
     selected = select_backtest_inputs(
-        session, range_start=date(2024, 1, 2), range_end=date(2024, 1, 5), markets=["KOSPI"],
+        session, range_start=date(2024, 1, 3), range_end=date(2024, 1, 5), markets=["KOSPI"],
         rebalance_dates=[date(2024, 1, 3), date(2024, 1, 5)],
     )
 
@@ -159,10 +159,36 @@ def test_input_selection_honors_configured_exchange_closure_for_benchmark_covera
         session.query(BenchmarkDailyPrice).filter_by(benchmark_id=benchmark.id, trade_date=date(2024, 1, 4)).delete()
     session.commit()
     selected = select_backtest_inputs(
-        session, range_start=date(2024, 1, 2), range_end=date(2024, 1, 5), markets=["KOSPI"],
+        session, range_start=date(2024, 1, 3), range_end=date(2024, 1, 5), markets=["KOSPI"],
         rebalance_dates=[date(2024, 1, 3)], market_closed_dates="2024-01-04",
     )
     assert len(selected.benchmark_snapshots) == 2
+
+
+def test_return_lookback_excludes_candidate_even_when_its_rs_row_is_available():
+    session = _session()
+    dataset, _ = _complete_inputs(session)
+    membership = next(item for item in dataset.memberships if item.market == "KOSPI" and item.trade_date == date(2024, 1, 3))
+    session.query(BacktestDatasetPrice).filter_by(
+        backtest_dataset_id=dataset.id, instrument_id=membership.instrument_id,
+        market="KOSPI", trade_date=date(2024, 1, 2),
+    ).delete()
+    session.commit()
+    selected = select_backtest_inputs(
+        session, range_start=date(2024, 1, 3), range_end=date(2024, 1, 5), markets=["KOSPI"],
+        rebalance_dates=[date(2024, 1, 3)], return_lookback_days=1,
+    )
+    assert (membership.instrument_id, "KOSPI", date(2024, 1, 3)) in selected.lookback_excluded_candidates
+
+    strategy = BacktestRepository(session).create_strategy(name="룩백 제외", config={})
+    run = BacktestRunPreparationService(session).prepare(
+        strategy_version_id=strategy.versions[0].id, range_start=date(2024, 1, 3), range_end=date(2024, 1, 5),
+        markets=["KOSPI"], rebalance_dates=[date(2024, 1, 3)], return_lookback_days=1,
+    )
+    assert run.candidate_exclusions == [{
+        "instrument_id": membership.instrument_id, "market": "KOSPI", "trade_date": "2024-01-03",
+        "reason": "insufficient_return_lookback",
+    }]
 
 
 def test_data_unavailable_attempt_keeps_an_auditable_run_without_invented_dataset_lineage():
@@ -258,6 +284,20 @@ def test_operator_session_expiry_is_always_eight_hours():
     assert operator.expires_at == (now + timedelta(hours=8)).replace(tzinfo=None)
 
 
+def test_operator_lockout_is_fixed_at_five_failures_for_fifteen_minutes():
+    session = _session()
+    service = BacktestOperatorAuthService(session, password="operator-secret")
+    now = datetime(2026, 1, 2, 9, tzinfo=timezone.utc)
+    preauth_token, csrf = service.issue_pre_auth(request_subject="127.0.0.4", now=now)
+    for _ in range(4):
+        with pytest.raises(PermissionError):
+            service.login(preauth_token=preauth_token, csrf_token=csrf, password="wrong", request_subject="127.0.0.4", now=now)
+    with pytest.raises(TimeoutError):
+        service.login(preauth_token=preauth_token, csrf_token=csrf, password="wrong", request_subject="127.0.0.4", now=now)
+    assert service.repository.is_login_locked(subject_hash=service.subject_hash("127.0.0.4"), now=now + timedelta(minutes=14))
+    assert not service.repository.is_login_locked(subject_hash=service.subject_hash("127.0.0.4"), now=now + timedelta(minutes=15))
+
+
 def test_backtest_auth_router_requires_preauth_csrf_then_rotates_the_cookie_session(monkeypatch):
     session = _session()
     app = FastAPI()
@@ -270,8 +310,7 @@ def test_backtest_auth_router_requires_preauth_csrf_then_rotates_the_cookie_sess
     monkeypatch.setattr(
         backtest_auth, "get_settings",
         lambda: type("Settings", (), {
-            "backtest_operator_password": "operator-secret", "backtest_session_hours": 8,
-            "backtest_login_max_failures": 5, "backtest_login_lock_minutes": 15,
+            "backtest_operator_password": "operator-secret",
         })(),
     )
     with TestClient(app, base_url="https://testserver") as client:

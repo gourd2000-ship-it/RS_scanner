@@ -101,6 +101,7 @@ class BacktestRepository:
         range_end: date,
         markets: list[str],
         benchmark_snapshots: tuple[BenchmarkSnapshotInput, BenchmarkSnapshotInput],
+        candidate_exclusions: list[dict[str, object]] | None = None,
         run_id: str | None = None,
     ) -> BacktestRun:
         if range_start > range_end:
@@ -149,6 +150,7 @@ class BacktestRepository:
             range_start=range_start,
             range_end=range_end,
             markets=sorted(set(markets)),
+            candidate_exclusions=candidate_exclusions or [],
             status="queued",
         )
         for snapshot in canonical_snapshots:
@@ -359,7 +361,12 @@ class BacktestRepository:
         row = self.session.scalar(
             select(BacktestOperatorLockout).where(BacktestOperatorLockout.subject_hash == subject_hash)
         )
-        return row is not None and row.locked_until > now
+        if row is None:
+            return False
+        # SQLite test storage does not round-trip timezone information, while
+        # PostgreSQL does. Compare equivalent UTC wall-clock values here.
+        comparison_now = now.replace(tzinfo=None) if row.locked_until.tzinfo is None else now
+        return row.locked_until > comparison_now
 
     def record_operator_audit(
         self, *, subject_hash: str, event_type: str, result: str, request_id: str | None = None,

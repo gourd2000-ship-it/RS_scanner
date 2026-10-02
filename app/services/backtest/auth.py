@@ -24,13 +24,10 @@ class BacktestOperatorAuthService:
     """Issues short-lived opaque sessions without persisting any credential plaintext."""
 
     def __init__(
-        self, session: Session, *, password: str | None, max_failures: int = 5,
-        lock_minutes: int = 15,
+        self, session: Session, *, password: str | None,
     ) -> None:
         self.repository = BacktestRepository(session)
         self.password = password
-        self.max_failures = max_failures
-        self.lock_minutes = lock_minutes
 
     @staticmethod
     def subject_hash(request_subject: str) -> str:
@@ -78,8 +75,8 @@ class BacktestOperatorAuthService:
             raise InvalidCsrfToken("valid pre-auth CSRF token is required")
         if not compare_digest(password, self.password):
             lockout = self.repository.record_login_failure(
-                subject_hash=subject_hash, now=now, max_failures=self.max_failures,
-                lock_duration=timedelta(minutes=self.lock_minutes), window=timedelta(minutes=self.lock_minutes),
+                subject_hash=subject_hash, now=now, max_failures=5,
+                lock_duration=timedelta(minutes=15), window=timedelta(minutes=15),
             )
             self.repository.record_operator_audit(
                 subject_hash=subject_hash, event_type="login", result="locked" if lockout else "failed",

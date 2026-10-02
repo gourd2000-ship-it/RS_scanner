@@ -156,8 +156,6 @@ class Settings(BaseSettings):
     # supplied only by the deployment secret store and never reused as an API
     # bearer token.
     backtest_operator_password: Optional[str] = Field(default=None, alias="BACKTEST_OPERATOR_PASSWORD")
-    backtest_login_max_failures: int = Field(default=5, ge=1, le=20, alias="BACKTEST_LOGIN_MAX_FAILURES")
-    backtest_login_lock_minutes: int = Field(default=15, ge=1, le=120, alias="BACKTEST_LOGIN_LOCK_MINUTES")
 
     # Sam repair API.  It is disabled until queue migration and canary approval
     # are complete; its scopes still live in the separate service-token entry.

@@ -100,6 +100,7 @@ class BacktestRun(Base):
     range_start: Mapped[date] = mapped_column(Date)
     range_end: Mapped[date] = mapped_column(Date)
     markets: Mapped[list[str]] = mapped_column(JSON)
+    candidate_exclusions: Mapped[list[dict]] = mapped_column(JSON, default=list)
     status: Mapped[str] = mapped_column(String(20), default="queued", index=True)
     error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     error_detail: Mapped[str | None] = mapped_column(Text, nullable=True)

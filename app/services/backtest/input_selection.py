@@ -39,6 +39,7 @@ class SelectedBacktestInputs:
     dataset_manifest_hash: str
     rs_run: BacktestDatasetRsRun
     benchmark_snapshots: tuple[BenchmarkSnapshotInput, BenchmarkSnapshotInput]
+    lookback_excluded_candidates: frozenset[tuple[int, str, date]]
 
 
 def _snapshot_hash(market: str, code: str, rows: list[BenchmarkDailyPrice]) -> str:
@@ -141,6 +142,7 @@ def select_backtest_inputs(
         BacktestDatasetPrice.trade_date <= range_end,
     ))}
     signal_dates = set(rebalance_dates or [])
+    lookback_excluded: set[tuple[int, str, date]] = set()
     rs_keys = set()
     if rs_run is not None and signal_dates:
         rs_keys = {(item.instrument_id, item.market, item.trade_date) for item in session.scalars(select(BacktestDatasetRs).where(
@@ -155,7 +157,7 @@ def select_backtest_inputs(
         key = (member.instrument_id, member.market, member.trade_date)
         if key not in price_keys:
             reasons.append(InputUnavailableReason("ohlcv_missing", "required complete OHLCV row is absent", member.instrument_id, member.trade_date, "ohlcv"))
-        if member.trade_date in signal_dates and key not in rs_keys:
+        if member.trade_date in signal_dates:
             historical_price_count = session.scalar(select(BacktestDatasetPrice.id).where(
                 BacktestDatasetPrice.backtest_dataset_id == dataset.id,
                 BacktestDatasetPrice.instrument_id == member.instrument_id,
@@ -166,10 +168,14 @@ def select_backtest_inputs(
             # is not an unavailable dataset: it is simply ineligible on this
             # signal date and can become eligible later.
             if historical_price_count is None:
+                lookback_excluded.add(key)
                 continue
-            reasons.append(InputUnavailableReason("rs_value_missing", "required rebalance-day RS value is absent", member.instrument_id, member.trade_date, "rs"))
+            if key not in rs_keys:
+                reasons.append(InputUnavailableReason("rs_value_missing", "required rebalance-day RS value is absent", member.instrument_id, member.trade_date, "rs"))
     if reasons:
         raise BacktestInputUnavailable(reasons)
     if len(snapshots) != 2:
         raise BacktestInputUnavailable([InputUnavailableReason("benchmark_missing", "both benchmarks are required")])
-    return SelectedBacktestInputs(dataset, dataset.final_manifest_hash, rs_run, tuple(snapshots))
+    return SelectedBacktestInputs(
+        dataset, dataset.final_manifest_hash, rs_run, tuple(snapshots), frozenset(lookback_excluded)
+    )

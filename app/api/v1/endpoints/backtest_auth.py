@@ -30,8 +30,6 @@ def _service(session: Session) -> BacktestOperatorAuthService:
     settings = get_settings()
     return BacktestOperatorAuthService(
         session, password=settings.backtest_operator_password,
-        max_failures=settings.backtest_login_max_failures,
-        lock_minutes=settings.backtest_login_lock_minutes,
     )
 
 

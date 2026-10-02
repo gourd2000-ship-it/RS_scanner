@@ -8,7 +8,7 @@ import json
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import create_engine, update
+from sqlalchemy import create_engine, delete, update
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
@@ -81,6 +81,33 @@ def test_execution_storage_on_isolated_postgres_rejects_terminal_mutation():
                         with pytest.raises(DBAPIError):
                             session.flush()
                         savepoint.rollback()
+                    terminal_history_run = BacktestRun(
+                        run_id=uuid4().hex,
+                        backtest_strategy_version_id=strategy.versions[0].id,
+                        backtest_dataset_id=dataset.id,
+                        backtest_dataset_rs_run_id=rs_run.id,
+                        dataset_id=dataset.dataset_id,
+                        dataset_manifest_hash=dataset.final_manifest_hash,
+                        rs_result_hash=rs_run.result_hash,
+                        range_start=date(2020, 1, 2), range_end=date(2020, 1, 3),
+                        markets=["KOSPI"], status="queued",
+                    )
+                    session.add(terminal_history_run)
+                    session.flush()
+                    session.execute(
+                        update(BacktestRun)
+                        .where(BacktestRun.id == terminal_history_run.id)
+                        .values(status="running")
+                    )
+                    session.execute(
+                        update(BacktestRun)
+                        .where(BacktestRun.id == terminal_history_run.id)
+                        .values(status="completed")
+                    )
+                    savepoint = session.begin_nested()
+                    with pytest.raises(DBAPIError):
+                        session.execute(delete(BacktestRun).where(BacktestRun.id == terminal_history_run.id))
+                    savepoint.rollback()
                     run = repository.enqueue_run(
                         strategy_version_id=strategy.versions[0].id, dataset_id=dataset.dataset_id,
                         dataset_manifest_hash=dataset.final_manifest_hash, rs_run_id=rs_run.id,

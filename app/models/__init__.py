@@ -54,6 +54,14 @@ from app.models.universe_audit import UniverseAuditDecision, UniverseAuditRun
 from app.models.universe_reconciliation import UniverseReconciliationRun
 from app.models.universe_canary_decision import UniverseCanaryDecision
 from app.models.symbol import Symbol
+from app.models.indicator import (
+    IndicatorCalculationRun,
+    IndicatorGeneration,
+    IndicatorInputSnapshot,
+    IndicatorSeries,
+    IndicatorValue,
+    PriceObservationIdentitySnapshot,
+)
 
 __all__ = [
     "BatchCheckpoint",
@@ -106,6 +114,12 @@ __all__ = [
     "ListingEvent",
     "RsScore",
     "Symbol",
+    "PriceObservationIdentitySnapshot",
+    "IndicatorSeries",
+    "IndicatorGeneration",
+    "IndicatorCalculationRun",
+    "IndicatorInputSnapshot",
+    "IndicatorValue",
     "SymbolUniverseSnapshot",
     "UniverseAuditDecision",
     "UniverseAuditRun",

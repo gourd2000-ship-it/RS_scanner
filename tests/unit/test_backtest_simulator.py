@@ -1,0 +1,115 @@
+from datetime import date, timedelta
+from decimal import Decimal
+from hashlib import sha256
+import json
+
+import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+
+import app.models  # noqa: F401
+from app.core.base import Base
+from app.models.backtest_dataset import BacktestDataset, BacktestDatasetPrice, BacktestDatasetRs, BacktestDatasetRsRun
+from app.repositories.backtest_repository import BacktestRepository, BenchmarkSnapshotInput
+from app.services.backtest.execution import BacktestExecutionService
+from app.services.backtest.simulator import MarketBar, simulate
+from app.services.backtest.strategy import StrategyValidationError, validate_config
+
+
+def _config(**changes):
+    value = {
+        "markets": ["KOSPI"], "rebalance_interval_days": 1, "max_holdings": 1,
+        "max_position_weight": "1", "cash_reserve_ratio": "0", "buy_fee_rate": "0.001",
+        "sell_fee_rate": "0.001", "buy_slippage_rate": "0.01", "sell_slippage_rate": "0.01",
+        "buy_conditions": {"type": "group", "operator": "AND", "children": [{"type": "rule", "field": "rs_rating", "operator": "gte", "value": 80}]},
+        "sell_conditions": {"type": "group", "operator": "AND", "children": [{"type": "rule", "field": "rs_rating", "operator": "lt", "value": 80}]},
+        "stop_loss_rate": "-0.1", "take_profit_rate": "0.2", "max_holding_days": None,
+    }
+    value.update(changes)
+    return value
+
+
+def _bars():
+    first = date(2024, 1, 2)
+    data = []
+    for index, (opening, closing, rating) in enumerate(((100, 100, 90), (100, 100, 90), (110, 110, 70), (115, 115, 70))):
+        data.append(MarketBar(first + timedelta(days=index), 1, "000001", "KOSPI", Decimal(opening), Decimal(closing), 1000, rating, 1))
+    return data
+
+
+def test_simulator_uses_close_signal_then_next_open_and_forces_end_close():
+    result = simulate(_config(), _bars())
+    assert result.orders[0].side == "buy"
+    assert result.orders[0].signal_date == date(2024, 1, 2)
+    assert result.orders[0].execution_date == date(2024, 1, 3)
+    assert result.orders[0].execution_price == Decimal("101.00")
+    assert result.orders[1].side == "sell"
+    assert result.orders[1].signal_date == date(2024, 1, 4)
+    assert result.orders[1].execution_date == date(2024, 1, 5)
+    assert result.trades[0].exit_reason_codes == ["sell_condition"]
+    assert result.metrics["win_rate"]["value"] == Decimal("1")
+
+
+def test_simulator_combines_exit_reasons_and_keeps_cash_when_cap_prevents_buy():
+    result = simulate(_config(stop_loss_rate="-0.1", take_profit_rate="0.01"), _bars())
+    assert set(result.trades[0].exit_reason_codes) == {"sell_condition", "take_profit"}
+    capped = simulate(_config(max_position_weight="0.000001"), _bars())
+    assert capped.orders == []
+    assert capped.daily_equity[-1].cash == Decimal("10000000.00")
+
+
+def test_forced_end_close_is_a_completed_trade_and_metric_null_reasons_are_explicit():
+    config = _config(sell_conditions={"type": "group", "operator": "AND", "children": [{"type": "rule", "field": "rs_rating", "operator": "gt", "value": 1000}]}, take_profit_rate=None)
+    result = simulate(config, _bars())
+    assert result.trades[-1].exit_reason_codes == ["forced_close"]
+    assert result.metrics["profit_loss_ratio"]["null_reason"] in {None, "no_losing_trades"}
+
+
+def test_invalid_condition_or_rate_is_rejected_before_persistence():
+    with pytest.raises(StrategyValidationError):
+        validate_config(_config(buy_conditions={"type": "group", "operator": "AND", "children": []}))
+    with pytest.raises(StrategyValidationError):
+        validate_config(_config(buy_fee_rate="1"))
+    with pytest.raises(StrategyValidationError):
+        validate_config(_config(buy_conditions={"type": "rule", "field": "unknown", "operator": "gt", "value": 1}))
+
+
+def test_claimed_run_persists_daily_holdings_metrics_orders_and_trades():
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    session = Session(engine)
+    manifest = {"publication_scope": "complete_segments_only"}
+    manifest_hash = sha256(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    dataset = BacktestDataset(dataset_id="dataset", manifest_hash="a" * 64, final_manifest_hash=manifest_hash,
+        range_start=date(2024, 1, 2), range_end=date(2024, 1, 5), markets=["KOSPI"],
+        reconstruction_mode="fixture", adjustment_policy="fixture", policy_version="v1", manifest=manifest, status="active")
+    session.add(dataset)
+    session.flush()
+    rs_run = BacktestDatasetRsRun(backtest_dataset_id=dataset.id, formula_version="v1", policy_version="v1", input_hash="b" * 64, result_hash="c" * 64, status="completed", manifest={})
+    session.add(rs_run)
+    session.flush()
+    for bar in _bars():
+        session.add(BacktestDatasetPrice(backtest_dataset_id=dataset.id, instrument_id=bar.instrument_id, source_symbol_id=1,
+            code=bar.code, name=bar.code, market=bar.market, trade_date=bar.trade_date, open=bar.open, high=bar.open,
+            low=bar.open, close=bar.close, volume=bar.volume, change_rate=Decimal("0"), provider="fixture"))
+        session.add(BacktestDatasetRs(backtest_dataset_rs_run_id=rs_run.id, backtest_dataset_id=dataset.id,
+            instrument_id=bar.instrument_id, code=bar.code, market=bar.market, trade_date=bar.trade_date,
+            status="available", required_observations=1, available_observations=1, rs_rating=bar.rs_rating,
+            rank_in_market=bar.rank_in_market, input_hash="d" * 64))
+    repository = BacktestRepository(session)
+    strategy = repository.create_strategy(name="fixture", config=_config())
+    snapshots = tuple(BenchmarkSnapshotInput(market, market, "0" * 64, tuple((bar.trade_date, Decimal("100")) for bar in _bars())) for market in ("KOSPI", "KOSDAQ"))
+    queued = repository.enqueue_run(strategy_version_id=strategy.versions[0].id, dataset_id=dataset.dataset_id,
+        dataset_manifest_hash=manifest_hash, rs_run_id=rs_run.id, rs_result_hash=rs_run.result_hash,
+        range_start=date(2024, 1, 2), range_end=date(2024, 1, 5), markets=["KOSPI"], benchmark_snapshots=snapshots)
+    claimed = repository.claim_next_run()
+    assert claimed is not None and claimed.run_id == queued.run_id
+    result = BacktestExecutionService(session).execute(claimed)
+    session.commit()
+    stored = repository.get_run(queued.run_id)
+    assert stored is not None and stored.status == "completed"
+    assert len(stored.daily_equity) == len(_bars())
+    assert stored.daily_equity[1].holdings["000001"]["quantity"] > 0
+    assert stored.metrics["win_rate"]["null_reason"] is None
+    assert len(stored.orders) == len(result.orders)
+    assert len(stored.trades) == len(result.trades)

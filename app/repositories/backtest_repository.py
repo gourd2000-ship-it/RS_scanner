@@ -243,12 +243,13 @@ class BacktestRepository:
         return self._transition(self._required_run(run_id), new_status, error_code, error_detail)
 
     def add_daily_equity(
-        self, run_id: str, *, trade_date: date, cash: Decimal, holdings_value: Decimal, net_asset_value: Decimal
+        self, run_id: str, *, trade_date: date, cash: Decimal, holdings_value: Decimal, net_asset_value: Decimal,
+        holdings: dict | None = None,
     ) -> BacktestDailyEquity:
         run = self._mutable_run(run_id)
         row = BacktestDailyEquity(
             backtest_run_id=run.id, trade_date=trade_date, cash=cash,
-            holdings_value=holdings_value, net_asset_value=net_asset_value,
+            holdings_value=holdings_value, net_asset_value=net_asset_value, holdings=holdings or {},
         )
         self.session.add(row)
         self.session.flush()

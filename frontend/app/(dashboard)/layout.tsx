@@ -13,6 +13,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     { href: '/valuation', label: '벨류에이션' },
     { href: '/lift', label: '리프트' },
     { href: '/operations', label: '운영 모니터링' },
+    { href: '/backtests', label: '백테스트' },
   ];
 
   return (

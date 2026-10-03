@@ -198,6 +198,21 @@ def test_input_enums_are_normalized_and_unknown_values_are_rejected():
         _row(1, "100", reason="not-a-reason")
 
 
+@pytest.mark.parametrize(
+    "status",
+    (
+        EmaInputStatus.ELIGIBLE,
+        EmaInputStatus.MISSING,
+        EmaInputStatus.INVALID,
+        EmaInputStatus.REVIEW_REQUIRED,
+        EmaInputStatus.CONFIRMED_TRADING_HALT,
+    ),
+)
+def test_warming_up_is_never_valid_input_evidence(status):
+    with pytest.raises(ValueError, match="warming_up is a calculation result"):
+        _row(1, None, status=status, reason=InputReasonCode.WARMING_UP)
+
+
 def test_missing_source_policy_or_observation_time_is_data_unavailable_without_type_error():
     row = _row(1, "100")
     no_policy = EmaInputRow(**{**row.__dict__, "source_policy": None})

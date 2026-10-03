@@ -218,8 +218,8 @@ class EmaInputRow:
             raise ValueError(f"unsupported input policy version: {self.input_policy_version}")
         if self.observed_at is not None and (self.observed_at.tzinfo is None or self.observed_at.utcoffset() is None):
             raise ValueError("observed_at must be timezone-aware")
-        if self.input_status is EmaInputStatus.ELIGIBLE and self.reason_code is InputReasonCode.WARMING_UP:
-            raise ValueError("warming_up is a calculation result, not eligible input evidence")
+        if self.reason_code is InputReasonCode.WARMING_UP:
+            raise ValueError("warming_up is a calculation result, not input evidence")
 
     def effective_reason(self, source_policy: EmaSourcePolicy | None = None) -> InputReasonCode | None:
         """계산기가 신뢰할 입력 판정을 반환한다. 명시적 selector 판정이 우선한다."""

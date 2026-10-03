@@ -21,9 +21,12 @@ def _number(value: Any, label: str) -> Decimal:
     if isinstance(value, bool):
         raise StrategyValidationError(f"{label} must be numeric")
     try:
-        return Decimal(str(value))
+        parsed = Decimal(str(value))
     except Exception as exc:
         raise StrategyValidationError(f"{label} must be numeric") from exc
+    if not parsed.is_finite():
+        raise StrategyValidationError(f"{label} must be finite")
+    return parsed
 
 
 def validate_condition(node: Any) -> None:

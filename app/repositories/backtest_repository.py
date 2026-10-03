@@ -85,6 +85,7 @@ class BacktestRepository:
             config=json.loads(serialized),
             config_hash=sha256(serialized.encode()).hexdigest(),
         )
+        strategy.updated_at = datetime.now(timezone.utc)
         self.session.add(row)
         self.session.flush()
         return row

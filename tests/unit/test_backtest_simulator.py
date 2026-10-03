@@ -12,6 +12,7 @@ from app.core.base import Base
 from app.models.backtest_dataset import BacktestDataset, BacktestDatasetPrice, BacktestDatasetRs, BacktestDatasetRsRun
 from app.repositories.backtest_repository import BacktestRepository, BenchmarkSnapshotInput
 from app.services.backtest.execution import BacktestExecutionService
+from app.api.v1.endpoints.backtest_execution import _version, get_run as get_run_detail
 from app.services.backtest.simulator import MarketBar, simulate
 from app.services.backtest.strategy import StrategyValidationError, validate_config
 
@@ -72,6 +73,10 @@ def test_invalid_condition_or_rate_is_rejected_before_persistence():
         validate_config(_config(buy_fee_rate="1"))
     with pytest.raises(StrategyValidationError):
         validate_config(_config(buy_conditions={"type": "rule", "field": "unknown", "operator": "gt", "value": 1}))
+    with pytest.raises(StrategyValidationError, match="finite"):
+        validate_config(_config(buy_fee_rate="NaN"))
+    with pytest.raises(StrategyValidationError, match="finite"):
+        validate_config(_config(max_position_weight="Infinity"))
 
 
 def test_browser_configuration_aliases_are_canonicalized_and_return_lookback_is_accepted():
@@ -159,3 +164,22 @@ def test_claimed_run_persists_daily_holdings_metrics_orders_and_trades():
     assert stored.metrics["win_rate"]["null_reason"] is None
     assert len(stored.orders) == len(result.orders)
     assert len(stored.trades) == len(result.trades)
+    detail = get_run_detail(queued.run_id, orders_page=1, orders_size=1, trades_page=1, trades_size=1, _operator=object(), session=session)
+    assert detail.orders["total_count"] == len(result.orders)
+    assert len(detail.orders["items"]) == 1
+    assert detail.trades["total_count"] == len(result.trades)
+    assert len(detail.trades["items"]) == 1
+
+
+def test_version_response_exposes_strategy_identity_and_configuration_hash():
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    session = Session(engine)
+    repository = BacktestRepository(session)
+    strategy = repository.create_strategy(name="version fixture", config=_config())
+    initial_updated_at = strategy.updated_at
+    version = repository.add_strategy_version(strategy.id, config=_config(max_holdings=2))
+    assert strategy.updated_at >= initial_updated_at
+    response = _version(version)
+    assert response.strategy_id == strategy.strategy_id
+    assert response.configuration_hash == version.config_hash

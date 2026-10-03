@@ -24,6 +24,8 @@ class StrategyVersionResponse(BaseModel):
     version_id: int
     version_number: int
     configuration: dict[str, Any]
+    strategy_id: str
+    configuration_hash: str
 
 
 class StrategyResponse(BaseModel):

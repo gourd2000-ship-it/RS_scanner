@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.api.v1.endpoints.backtest_auth import require_backtest_csrf, require_backtest_operator
 from app.core.database import get_db_session
-from app.models.backtest_run import BacktestRun, BacktestStrategy, BacktestStrategyVersion
+from app.models.backtest_run import BacktestOrder, BacktestRun, BacktestStrategy, BacktestStrategyVersion, BacktestTrade
 from app.repositories.backtest_repository import BacktestRepository
 from app.schemas.backtest_execution import (
     BacktestRunCreateRequest, BacktestRunDetailResponse, BacktestRunListResponse, BacktestRunResponse,
@@ -39,7 +39,8 @@ def _version(row: BacktestStrategyVersion) -> StrategyVersionResponse:
     return StrategyVersionResponse(
         id=row.id, version=row.version, config=configuration, config_hash=row.config_hash,
         created_at=row.created_at, version_id=row.id, version_number=row.version,
-        configuration=configuration,
+        configuration=configuration, strategy_id=row.strategy.strategy_id,
+        configuration_hash=row.config_hash,
     )
 
 
@@ -169,7 +170,11 @@ def list_runs(page: int = Query(1, ge=1), size: int = Query(50, ge=1, le=100), _
 
 
 @router.get("/runs/{run_id}", response_model=BacktestRunDetailResponse)
-def get_run(run_id: str, _operator=Depends(require_backtest_operator), session: Session = Depends(get_db_session)):
+def get_run(
+    run_id: str, orders_page: int = Query(1, ge=1), orders_size: int = Query(100, ge=1, le=500),
+    trades_page: int = Query(1, ge=1), trades_size: int = Query(100, ge=1, le=500),
+    _operator=Depends(require_backtest_operator), session: Session = Depends(get_db_session),
+):
     row = BacktestRepository(session).get_run(run_id)
     if row is None:
         raise HTTPException(status_code=404, detail="backtest run not found")
@@ -181,12 +186,16 @@ def get_run(run_id: str, _operator=Depends(require_backtest_operator), session: 
             for p in snapshot.prices
         ]
         benchmarks[snapshot.market.lower()] = {"benchmark_code": snapshot.benchmark_code, "snapshot_hash": snapshot.snapshot_hash, "daily_values": daily_values}
+    orders_total = session.scalar(select(func.count(BacktestOrder.id)).where(BacktestOrder.backtest_run_id == row.id)) or 0
+    order_rows = list(session.scalars(select(BacktestOrder).where(BacktestOrder.backtest_run_id == row.id).order_by(BacktestOrder.sequence).offset((orders_page - 1) * orders_size).limit(orders_size)))
+    trades_total = session.scalar(select(func.count(BacktestTrade.id)).where(BacktestTrade.backtest_run_id == row.id)) or 0
+    trade_rows = list(session.scalars(select(BacktestTrade).where(BacktestTrade.backtest_run_id == row.id).order_by(BacktestTrade.id).offset((trades_page - 1) * trades_size).limit(trades_size)))
     return BacktestRunDetailResponse(
         run=_run(row), metrics=row.metrics,
         equity_curve=[{"trade_date": item.trade_date, "cash": item.cash, "holdings_value": item.holdings_value, "net_asset_value": item.net_asset_value, "holdings": item.holdings} for item in row.daily_equity],
         benchmarks=benchmarks,
-        orders={"page": 1, "size": len(row.orders), "total_count": len(row.orders), "items": [{"sequence": item.sequence, "code": item.code, "side": item.side, "signal_date": item.signal_date, "execution_date": item.execution_date, "quantity": item.quantity, "execution_price": item.execution_price, "fee": item.fee, "slippage": item.slippage, "reason_codes": item.reason_codes, "status": item.status} for item in row.orders]},
-        trades={"page": 1, "size": len(row.trades), "total_count": len(row.trades), "items": [{"code": item.code, "entry_date": item.entry_date, "exit_date": item.exit_date, "quantity": item.quantity, "entry_value": item.entry_value, "exit_value": item.exit_value, "profit_loss": item.profit_loss, "return_rate": item.return_rate, "exit_reason_codes": item.exit_reason_codes} for item in row.trades]},
+        orders={"page": orders_page, "size": orders_size, "total_count": orders_total, "items": [{"sequence": item.sequence, "code": item.code, "side": item.side, "signal_date": item.signal_date, "execution_date": item.execution_date, "quantity": item.quantity, "execution_price": item.execution_price, "fee": item.fee, "slippage": item.slippage, "reason_codes": item.reason_codes, "status": item.status} for item in order_rows]},
+        trades={"page": trades_page, "size": trades_size, "total_count": trades_total, "items": [{"code": item.code, "entry_date": item.entry_date, "exit_date": item.exit_date, "quantity": item.quantity, "entry_value": item.entry_value, "exit_value": item.exit_value, "profit_loss": item.profit_loss, "return_rate": item.return_rate, "exit_reason_codes": item.exit_reason_codes} for item in trade_rows]},
     )
 
 

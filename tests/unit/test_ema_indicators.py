@@ -21,6 +21,12 @@ from app.services.indicators import (
 )
 
 
+_POLICY = EmaSourcePolicy(
+    provider="kiwoom", adjustment_type="1", allowed_parser_versions=("kiwoom-v2",),
+    observation_cutoff=datetime(2025, 1, 1, tzinfo=timezone.utc),
+)
+
+
 def _row(
     day: int,
     close: str | None,
@@ -60,6 +66,7 @@ def _row(
         payload_hash=f"{day:064x}",
         input_status=status,
         reason_code=reason,
+        source_policy=_POLICY,
     )
 
 
@@ -168,6 +175,43 @@ def test_identity_snapshot_is_required_and_current_symbol_is_not_an_input():
 
     assert all(value.status is EmaStatus.DATA_UNAVAILABLE for value in result.values)
     assert all(value.reason_code is InputReasonCode.IDENTITY_UNAVAILABLE for value in result.values)
+
+
+def test_identity_mapping_valid_to_is_an_exclusive_bound():
+    row = _row(2, "100")
+    ending_that_day = IdentitySnapshot(**{**row.identity.__dict__, "valid_to": row.trade_date})
+    result = compute_ema([EmaInputRow(**{**row.__dict__, "identity": ending_that_day})])
+
+    assert all(value.status is EmaStatus.DATA_UNAVAILABLE for value in result.values)
+    assert all(value.reason_code is InputReasonCode.IDENTITY_UNAVAILABLE for value in result.values)
+
+
+def test_input_enums_are_normalized_and_unknown_values_are_rejected():
+    normalized = _row(1, "100", status="eligible", reason="identity_unavailable")
+
+    assert normalized.input_status is EmaInputStatus.ELIGIBLE
+    assert normalized.reason_code is InputReasonCode.IDENTITY_UNAVAILABLE
+    assert normalized.fingerprint_material()["reason_code"] is InputReasonCode.IDENTITY_UNAVAILABLE
+    with pytest.raises(ValueError, match="unsupported EMA input status"):
+        _row(1, "100", status="not-a-status")
+    with pytest.raises(ValueError, match="unsupported EMA input reason code"):
+        _row(1, "100", reason="not-a-reason")
+
+
+def test_missing_source_policy_or_observation_time_is_data_unavailable_without_type_error():
+    row = _row(1, "100")
+    no_policy = EmaInputRow(**{**row.__dict__, "source_policy": None})
+    no_observed_at = EmaInputRow(**{**row.__dict__, "observed_at": None})
+    past_cutoff = EmaSourcePolicy(
+        provider="kiwoom", adjustment_type="1", allowed_parser_versions=("kiwoom-v2",),
+        observation_cutoff=datetime(2023, 12, 31, tzinfo=timezone.utc),
+    )
+    after_cutoff = EmaInputRow(**{**row.__dict__, "source_policy": past_cutoff})
+
+    for candidate in (no_policy, no_observed_at, after_cutoff):
+        result = compute_ema([candidate])
+        assert all(value.status is EmaStatus.DATA_UNAVAILABLE for value in result.values)
+        assert all(value.reason_code is InputReasonCode.MISSING_SELECTED_SOURCE for value in result.values)
 
 
 def test_fingerprint_and_result_hash_are_canonical_and_deterministic():

@@ -38,7 +38,10 @@ EMA 일일 입력 계약의 버전은 `validated-observation-close-v3`이다. �
 validation case는 `open_validation_case`로, 비수치 또는 비유한 승인 보정은
 `invalid_approved_correction`으로 확정한다. identity snapshot의 mapping 상태가
 `matched`가 아니거나 한 mapping을 증명하지 못하면 현재 Symbol이나 DailyPrice로 추정하지
-않고 사용 불가로 둔다.
+않고 사용 불가로 둔다. mapping 유효 범위는 `[valid_from, valid_to)`이므로 `valid_to`와
+같은 거래일에는 그 mapping을 사용하지 않는다. source policy, UTC cutoff 또는
+`observed_at`이 없거나 cutoff 뒤인 행은 `missing_selected_source`의 사용 불가 행으로
+기록한다. 계산기는 이 근거가 없는 행을 정상 입력으로 취급하거나 예외를 내지 않는다.
 
 행 fingerprint는 위 snapshot 전체를 canonical JSON으로 직렬화해 SHA-256으로 계산한다.
 canonical JSON은 키를 정렬하고 공백 없이 직렬화하며, Decimal은 유한한 고정 소수 문자열,

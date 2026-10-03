@@ -89,7 +89,9 @@ class IdentitySnapshot:
             return InputReasonCode.IDENTITY_UNAVAILABLE
         if self.valid_from is not None and trade_date < self.valid_from:
             return InputReasonCode.IDENTITY_UNAVAILABLE
-        if self.valid_to is not None and trade_date > self.valid_to:
+        # ProviderSymbol validity is [valid_from, valid_to): the date at valid_to
+        # belongs to a later mapping and must never be attributed to this one.
+        if self.valid_to is not None and trade_date >= self.valid_to:
             return InputReasonCode.IDENTITY_UNAVAILABLE
         return None
 
@@ -147,6 +149,7 @@ class EmaSourcePolicy:
             row.provider == self.provider
             and row.adjustment_type == self.adjustment_type
             and row.parser_version in self.allowed_parser_versions
+            and row.observed_at is not None
             and row.observed_at <= self.observation_cutoff
         )
 
@@ -200,6 +203,17 @@ class EmaInputRow:
     source_policy: EmaSourcePolicy | None = None
 
     def __post_init__(self) -> None:
+        try:
+            normalized_status = EmaInputStatus(self.input_status)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"unsupported EMA input status: {self.input_status!r}") from exc
+        object.__setattr__(self, "input_status", normalized_status)
+        if self.reason_code is not None:
+            try:
+                normalized_reason = InputReasonCode(self.reason_code)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"unsupported EMA input reason code: {self.reason_code!r}") from exc
+            object.__setattr__(self, "reason_code", normalized_reason)
         if self.input_policy_version != INPUT_POLICY_VERSION:
             raise ValueError(f"unsupported input policy version: {self.input_policy_version}")
         if self.observed_at is not None and (self.observed_at.tzinfo is None or self.observed_at.utcoffset() is None):
@@ -215,6 +229,12 @@ class EmaInputRow:
             return self.reason_code
         if self.input_status is not EmaInputStatus.ELIGIBLE:
             return InputReasonCode.MISSING_SELECTED_SOURCE
+        effective_policy = source_policy or self.source_policy
+        # A selected observation is meaningful only under the source policy and
+        # cutoff that selected it. Missing evidence is unavailable, never an
+        # implicit "accept all" policy.
+        if effective_policy is None or self.observed_at is None:
+            return InputReasonCode.MISSING_SELECTED_SOURCE
         if self.identity is None:
             return InputReasonCode.IDENTITY_UNAVAILABLE
         identity_reason = self.identity.proves(
@@ -225,8 +245,9 @@ class EmaInputRow:
         )
         if identity_reason is not None:
             return identity_reason
-        effective_policy = source_policy or self.source_policy
-        if effective_policy is not None and not effective_policy.accepts(self):
+        if self.observed_at > effective_policy.observation_cutoff:
+            return InputReasonCode.MISSING_SELECTED_SOURCE
+        if not effective_policy.accepts(self):
             return InputReasonCode.PROVIDER_OR_ADJUSTMENT_DISCONTINUITY
         if self.close is None or not self.close.is_finite() or self.close <= 0 or self.volume is None or self.volume < 0:
             return InputReasonCode.INVALID_OHLCV

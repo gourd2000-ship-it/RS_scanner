@@ -1,0 +1,8 @@
+{
+  "base": [
+    {"day": 1, "close": "100"},
+    {"day": 2, "close": "101"},
+    {"day": 3, "close": "102"}
+  ],
+  "extension": {"day": 4, "close": "103"}
+}

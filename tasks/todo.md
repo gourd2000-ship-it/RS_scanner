@@ -1,3 +1,198 @@
+# EMA 5·20·50·200 이전 작업 목록
+
+이 목록의 EMA01~EMA13은 2026-10-03 검토 전 초안이며 실행하지 않는다. 승인 대기 중인 현재 범위와 기준은 [EMA DB 누적 구현계획](../docs/plans/ema-indicators.md)을 따른다. 특히 사용 가능 시점은 5N이 아니라 각 EMA 기간 N개 관측 후이며, EMA 조건·백테스트 화면은 후속 작업이다.
+
+## EMA01: 계산·입력·조건 계약 확정
+
+**설명:** 기간, seed, 준비 이력, Decimal 정책, 결측·정지, lineage, 조건 v2 및 legacy 호환 계약을 명문화한다.
+
+**완료 기준:**
+- [ ] 5/20/50/200, 첫 종가 seed, 5N 준비와 사용 가능 구간 감소를 명시한다.
+- [ ] daily/dataset 입력 경계, 3값 조건 평가, 교차 전일 정의 및 고정 입력 참조를 문서화한다.
+- [ ] 수작업 수열과 seed/준비 경계 검증 fixture를 준비한다.
+
+**검증:** fixture를 독립 재귀 계산과 대조하고 계약 예제의 기존 전략 호환성을 검토한다.
+**의존성:** 없음 · **크기:** M
+**예상 파일:** docs/plans/ema-indicators.md, docs/business-rules.md, docs/contracts.md, tests/fixtures/ema_cases.json(신규).
+
+## EMA02: 지표 저장 모델과 migration
+
+**설명:** indicator_series/runs/values 및 입력 세대·관측 참조·정확한 재개 상태를 저장한다.
+
+**완료 기준:**
+- [ ] 유일성/FK/상태·value CHECK 및 날짜 범위 조회 인덱스를 구현한다.
+- [ ] 신규 revision으로만 변경하고 기존 가격·RS·백테스트 데이터를 수정하지 않는다.
+- [ ] 완료 결과 덮어쓰기 차단과 미완료 run 비노출을 저장 계층에서 지원한다.
+
+**검증:** 빈 격리 PostgreSQL 및 기존 데이터 fixture DB에서 upgrade, 중복·참조 오류·상태 제약 테스트.
+**의존성:** EMA01 · **크기:** M
+**예상 파일:** app/models/indicator.py(신규), app/models/__init__.py, alembic/versions/<new>_indicator_storage.py, tests/integration/test_indicator_storage.py(신규).
+
+## EMA03: 백테스트 지표 입력 참조 저장
+
+**설명:** 백테스트 실행이 사용하는 지표 세대/결과와 범위 hash를 불변으로 고정할 저장 기반을 만든다.
+
+**완료 기준:**
+- [ ] run과 indicator 참조를 FK·범위·결과 hash로 연결한다.
+- [ ] EMA 없는 기존 실행은 그대로 유효하고 완료 실행 참조는 변경 불가다.
+- [ ] 참조된 지표 결과 삭제 및 다른 dataset 결과 연결을 차단한다.
+
+**검증:** 격리 DB upgrade 및 기존 실행 재현/완료 후 mutation 거부 테스트.
+**의존성:** EMA02 · **크기:** M
+**예상 파일:** app/models/backtest_run.py, app/repositories/backtest_repository.py, alembic/versions/<new>_backtest_indicator_refs.py, tests/integration/test_backtest_execution_storage_postgres.py.
+
+### 관문 A: 구조
+
+- [ ] 신규 migration 모두 격리 DB 통과, 기존 데이터/전략 호환 유지, seed/준비 정책과 사용 가능 구간 제한이 검토 가능하다.
+
+## EMA04: 적격 가격 입력과 구간 선택
+
+**설명:** 일일 관측 및 고정 dataset을 같은 계산 입력으로 변환하되 출처 경계를 유지한다.
+
+**완료 기준:**
+- [ ] lifecycle·provider·수정 기준·cutoff와 선택 가격/관측 근거를 고정한다.
+- [ ] 품질 결측 및 공급자 단절은 구간을 분리하고 정지/휴장과 구분한다.
+- [ ] dataset 준비 구간에서도 complete 제한을 유지하고 조용한 canonical fallback을 금지한다.
+
+**검증:** 혼합 소스, 수정 기준 변경, 코드 재사용, 미래 관측, 결측/휴장/정지 fixture 단위 테스트.
+**의존성:** EMA01~EMA02 · **크기:** M
+**예상 파일:** app/services/indicators/inputs.py(신규), app/repositories/indicator_input_repository.py(신규), tests/unit/test_indicator_inputs.py(신규).
+
+## EMA05: EMA 순수 계산기
+
+**설명:** 네 기간을 한 순회에서 계산하고 준비/단절 상태와 정확한 재개 상태를 반환한다.
+
+**완료 기준:**
+- [ ] 수작업 기대값과 일치하고 5N-1/5N 경계가 네 기간 모두 정확하다.
+- [ ] 전체·일별·중간 재개 결과가 정의한 반올림 후 동일하다.
+- [ ] 미래 가격 수정은 과거 결과를 바꾸지 않으며 단절 뒤 재준비한다.
+
+**검증:** `.venv/bin/pytest tests/unit/test_ema_calculator.py -q`; 수작업/독립 구현 비교, Decimal 상태 직렬화 왕복.
+**의존성:** EMA01, EMA04 · **크기:** S
+**예상 파일:** app/services/indicators/ema.py(신규), tests/unit/test_ema_calculator.py(신규).
+
+## EMA06: 저장·증분·재계산 서비스
+
+**설명:** 동일 입력은 재사용하고 새 날짜를 누적하며 교정은 별도 세대로 재계산한다.
+
+**완료 기준:**
+- [ ] 같은 run 재시도·중복 worker에서 중복 row 또는 다른 값 덮어쓰기가 없다.
+- [ ] 날짜 추가와 과거 revision/품질 변경을 구분하고 새 세대는 완성 후 전환한다.
+- [ ] 실패/재개, 정확한 checkpoint, prefix 근거 hash 및 성공/제외 수량을 보존한다.
+
+**검증:** 장애 주입·동시 실행·같은 가격 ID의 내용 변경·새 세대 전환 통합 테스트, 구 세대 불변 확인.
+**의존성:** EMA02, EMA04~EMA05 · **크기:** M
+**예상 파일:** app/repositories/indicator_repository.py(신규), app/services/indicators/calculation.py(신규), tests/integration/test_indicator_calculation.py(신규).
+
+### 관문 B: 공통기능
+
+- [ ] 입력·계산·저장 통합 테스트 통과, 교정 전후 결과가 구분되고 재개 결과가 전체 계산과 같다.
+
+## EMA07: 과거 계산 CLI와 dry-run 보고서
+
+**설명:** 범위를 고정해 과거 EMA를 계산하고 처리 규모/사용 가능 날짜를 먼저 보여준다.
+
+**완료 기준:**
+- [ ] 기본 dry-run은 DB에 쓰지 않으며 기간·시장·종목·정책·cutoff를 manifest로 남긴다.
+- [ ] EMA별 최초 사용 가능일, 준비 부족/품질 제외 및 예상 4배 행 수·용량을 보고한다.
+- [ ] 명시적 적용·resume 모드에서 제한된 chunk로 처리하고 동일 실행을 재현한다.
+
+**검증:** `.venv/bin/pytest tests/unit/test_indicator_backfill.py -q`; 격리 DB 표본 backfill/재실행 및 메모리·시간 측정. 운영 대량 쓰기는 포함하지 않는다.
+**의존성:** EMA06 · **크기:** M
+**예상 파일:** scripts/backfill_ema.py(신규), app/services/indicators/report.py(신규), tests/unit/test_indicator_backfill.py(신규), docs/operations.md.
+
+## EMA08: 두 일일 배치 경로 연결
+
+**설명:** 완료 가격으로 EMA를 누적하고 실패·재시도·기능 flag를 기존 배치 관리에 연결한다.
+
+**완료 기준:**
+- [ ] 일반 daily job과 orchestrator 모두 같은 EMA service/대상일·checkpoint 규칙을 사용한다.
+- [ ] validation block과 RS 도중 가격 변경을 반영해 입력이 확정되기 전 publish하지 않는다.
+- [ ] 기능 off/RS-only 호환을 유지하고 EMA 실패는 배치 부분 실패로 집계한다.
+
+**검증:** `.venv/bin/pytest tests/integration/test_batch_harness.py tests/unit/test_batch_ema.py -q`; 정상/차단/지연 가격/실패 재개 양쪽 진입점 테스트.
+**의존성:** EMA06~EMA07 · **크기:** M
+**예상 파일:** app/services/batch/run_daily_job.py, app/services/batch/orchestrator.py, app/services/batch/context.py, app/core/config.py, tests/unit/test_batch_ema.py(신규). 실제 context 경로는 구현 전 확인한다.
+
+## EMA09: EMA 읽기 조회 계약
+
+**설명:** 운영자에게 값과 사용 가능 상태·기준일·근거 버전을 제공한다.
+
+**완료 기준:**
+- [ ] 종목·기간·날짜 범위와 페이지 제한을 검증하고 저장된 완료 결과만 반환한다.
+- [ ] warming_up/품질 제외/null 사유와 오래된 기준일을 표시한다.
+- [ ] 기존 운영자 인증을 유지하고 자동화 쓰기 scope 또는 계산 POST API를 추가하지 않는다.
+
+**검증:** 미인증 거부, 권한, pagination, null 상태, 다른 dataset 선택 방지 API 테스트.
+**의존성:** EMA06 · **크기:** M
+**예상 파일:** app/schemas/indicator.py(신규), app/api/v1/endpoints/backtest_execution.py, app/repositories/indicator_repository.py, tests/unit/test_indicator_api.py(신규).
+
+### 관문 C: DB 누적 기능
+
+- [ ] 네 EMA 과거/일일 저장·재실행·조회가 격리 환경에서 동작한다. dry-run의 EMA200 준비 부족 영향과 저장 공간 추정이 검토 가능하다.
+
+## EMA10: 지표 비교·교차 조건 평가
+
+**설명:** 기존 상수 비교를 유지하며 양쪽 지표와 EMA 기간, 상향/하향 돌파를 추가한다.
+
+**완료 기준:**
+- [ ] legacy 전략 hash/의미를 보존하고 새 schema에서 네 기간 외 입력을 거부한다.
+- [ ] 가격/EMA 및 EMA/EMA 비교·교차의 전일/당일·동률 조건이 정확하다.
+- [ ] unavailable을 구분하는 AND/OR와 필요한 EMA/전일 의존성을 수집한다.
+
+**검증:** `.venv/bin/pytest tests/unit/test_ema_conditions.py tests/unit/test_backtest_simulator.py -q`; nested AND/OR와 기존 전략 회귀.
+**의존성:** EMA01, EMA05 · **크기:** M
+**예상 파일:** app/services/backtest/strategy.py, app/services/backtest/conditions.py(필요 시 신규), app/schemas/backtest_execution.py, tests/unit/test_ema_conditions.py(신규).
+
+## EMA11: 백테스트 고정 입력과 실행 연결
+
+**설명:** 전략이 요구하는 EMA를 같은 dataset의 완료 결과로 고정하고 simulator에 공급한다.
+
+**완료 기준:**
+- [ ] 입력 선택 시 dataset/정책/기간/hash 일치를 확인하고 일일 최신 EMA fallback을 차단한다.
+- [ ] 준비 구간에는 매매하지 않고 unavailable 종목·날짜 사유를 보존한다.
+- [ ] 이후 일일 계산/가격 교정에도 저장 실행의 신호·결과가 동일하게 재현된다.
+
+**검증:** 고정 입력 통합 fixture에서 종가 신호→다음 시가 체결, 매도 우선·마지막 청산 회귀, 지표 미준비·hash 불일치·미래 데이터 변경 검사.
+**의존성:** EMA03, EMA06, EMA10 · **크기:** M
+**예상 파일:** app/services/backtest/input_selection.py, run_preparation.py, execution.py, simulator.py, tests/integration/test_backtest_ema_inputs.py(신규); 앞 네 파일은 같은 backtest 디렉터리다.
+
+## EMA12: 선택형 조건 UI
+
+**설명:** EMA 기간과 비교 대상을 선택하고 기존 전략 버전을 불러와 수정할 수 있게 한다.
+
+**완료 기준:**
+- [ ] EMA5/20/50/200 선택, 가격/EMA·EMA/EMA 비교·교차 및 AND/OR 묶음을 지원한다.
+- [ ] 새 조건 저장/불러오기 왕복과 기존 전략 유지, 수정 후 실행 잠금이 동작한다.
+- [ ] 사용 불가 사유를 숨기지 않고 모바일/키보드 입력과 잘못된 값 안내가 동작한다.
+
+**검증:** form-model 회귀 및 브라우저 흐름 테스트, `npm run lint`, `npm run build`. 기존 unrelated lint 실패와 새 변경 오류를 구분해 기록한다.
+**의존성:** EMA09~EMA11 · **크기:** M
+**예상 파일:** frontend/app/(dashboard)/backtests/form-model.ts, condition-editor.tsx, page.tsx, frontend/tests/backtest-form.test.mjs; 앞 세 파일은 같은 backtests 디렉터리다.
+
+### 관문 D: 백테스트 연결
+
+- [ ] 대표 EMA 조건 전략을 저장·조회·실행하고 고정 결과를 재현한다. 기존 비 EMA 전략 테스트와 운영자 인증 테스트가 통과한다.
+
+## EMA13: 운영 전환 보고서와 문서
+
+**설명:** 표본 성능·기존 데이터 호환성과 운영 적용/복구 절차를 정리한다.
+
+**완료 기준:**
+- [ ] 표본 계산값/hash·수량·처리 시간·peak memory·DB 용량을 보고하고 운영 범위로 추정한다.
+- [ ] 운영 적용 전 dry-run, 백업, flag off 복구, 과거 결과 보존 절차를 제공한다.
+- [ ] 현재 코드에 맞게 관련 문서를 갱신하고 DB 누적·조건 지원·워커 운영 완료 상태를 분리해 기록한다.
+
+**검증:** 관련 단위·통합 회귀, `python -m compileall app scripts`, `git diff --check`; 신규 migration 격리 검증과 프런트 build 증거 검토. 운영 DB 적용은 저장소의 사람 운영자 절차에 따른다.
+**의존성:** EMA07~EMA12 · **크기:** M
+**예상 파일:** docs/operations.md, docs/contracts.md, docs/business-rules.md, docs/tracking/status.md, docs/plans/ema-indicators.md.
+
+### 관문 E: 완료 판정
+
+- [ ] 구현·회귀·복구 절차와 실제 운영 적용 여부를 각각 기록한다. 준비 미완료/품질 제외 값이 조건에 사용되지 않으며 과거 백테스트 입력을 보존한다.
+
+---
+
 # OHLCV 클렌징 CL01~CL12
 
 개정: 2026-10-02 · [구현 계획](plan.md#ohlcv-클렌징-구현-계획)<br>

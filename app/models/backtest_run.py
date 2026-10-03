@@ -41,6 +41,7 @@ class BacktestStrategy(Base):
     strategy_id: Mapped[str] = mapped_column(String(80), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
     versions: Mapped[list["BacktestStrategyVersion"]] = relationship(
         back_populates="strategy", cascade="all, delete-orphan", order_by="BacktestStrategyVersion.version"
@@ -104,6 +105,9 @@ class BacktestRun(Base):
     status: Mapped[str] = mapped_column(String(20), default="queued", index=True)
     error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     error_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Results are written once by the queue worker before the run enters its
+    # terminal state.  Input pins above remain the source of reproducibility.
+    metrics: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     queued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -173,6 +177,7 @@ class BacktestDailyEquity(Base):
     cash: Mapped[Decimal] = mapped_column(Numeric(18, 2))
     holdings_value: Mapped[Decimal] = mapped_column(Numeric(18, 2))
     net_asset_value: Mapped[Decimal] = mapped_column(Numeric(18, 2))
+    holdings: Mapped[dict] = mapped_column(JSON, default=dict)
 
     run: Mapped[BacktestRun] = relationship(back_populates="daily_equity")
 

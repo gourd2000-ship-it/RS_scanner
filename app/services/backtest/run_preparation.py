@@ -23,6 +23,8 @@ class BacktestRunPreparationService:
         self, *, strategy_version_id: int, range_start: date, range_end: date, markets: list[str],
         rebalance_dates: list[date], return_lookback_days: int = 0,
     ) -> BacktestRun:
+        if range_start >= range_end:
+            raise ValueError("range_start must be before range_end")
         try:
             selected = select_backtest_inputs(
                 self.session, range_start=range_start, range_end=range_end, markets=markets,

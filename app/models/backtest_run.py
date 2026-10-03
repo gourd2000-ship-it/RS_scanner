@@ -41,6 +41,7 @@ class BacktestStrategy(Base):
     strategy_id: Mapped[str] = mapped_column(String(80), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
     versions: Mapped[list["BacktestStrategyVersion"]] = relationship(
         back_populates="strategy", cascade="all, delete-orphan", order_by="BacktestStrategyVersion.version"

@@ -10,7 +10,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class StrategyCreateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=255)
-    config: dict[str, Any]
+    configuration: dict[str, Any] | None = None
+    config: dict[str, Any] | None = None
 
 
 class StrategyVersionResponse(BaseModel):
@@ -20,21 +21,28 @@ class StrategyVersionResponse(BaseModel):
     config: dict[str, Any]
     config_hash: str
     created_at: datetime
+    version_id: int
+    version_number: int
+    configuration: dict[str, Any]
 
 
 class StrategyResponse(BaseModel):
     strategy_id: str
     name: str
     created_at: datetime
+    updated_at: datetime
+    current_version_id: int | None
     versions: list[StrategyVersionResponse] = []
 
 
 class StrategyPatchRequest(BaseModel):
-    name: str = Field(min_length=1, max_length=255)
+    configuration: dict[str, Any] | None = None
+    config: dict[str, Any] | None = None
 
 
 class StrategyVersionCreateRequest(BaseModel):
-    config: dict[str, Any]
+    configuration: dict[str, Any] | None = None
+    config: dict[str, Any] | None = None
 
 
 class BacktestRunCreateRequest(BaseModel):
@@ -56,19 +64,30 @@ class BacktestRunResponse(BaseModel):
     end: date
     error_code: str | None = None
     error_detail: str | None = None
+    dataset_final_manifest_hash: str | None
+    rs_run_id: int | None
+    benchmark_snapshot_hash: dict[str, str]
+    reason: object | None = None
 
 
 class BacktestRunListResponse(BaseModel):
     items: list[BacktestRunResponse]
     page: int
     size: int
-    total: int
+    total_count: int
+
+
+class StrategyListResponse(BaseModel):
+    items: list[StrategyResponse]
+    page: int
+    size: int
+    total_count: int
 
 
 class BacktestRunDetailResponse(BaseModel):
     run: BacktestRunResponse
     metrics: dict[str, Any] | None
     equity_curve: list[dict[str, Any]]
-    benchmarks: dict[str, list[dict[str, Any]]]
-    orders: list[dict[str, Any]]
-    trades: list[dict[str, Any]]
+    benchmarks: dict[str, dict[str, Any]]
+    orders: dict[str, Any]
+    trades: dict[str, Any]

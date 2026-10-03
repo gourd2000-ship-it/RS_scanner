@@ -74,6 +74,52 @@ def test_invalid_condition_or_rate_is_rejected_before_persistence():
         validate_config(_config(buy_conditions={"type": "rule", "field": "unknown", "operator": "gt", "value": 1}))
 
 
+def test_browser_configuration_aliases_are_canonicalized_and_return_lookback_is_accepted():
+    config = _config()
+    for key in ("markets", "rebalance_interval_days", "max_holding_days", "buy_conditions", "sell_conditions"):
+        config.pop(key, None)
+    config.update({
+        "market": "BOTH", "rebalance_interval_trading_days": 3, "max_holding_trading_days": 7,
+        "entry_conditions": {"type": "rule", "field": "return_n_days", "operator": "gt", "value": 0, "n_days": {"lookback_trading_days": 5}},
+        "exit_conditions": {"type": "rule", "field": "rs_rating", "operator": "lt", "value": 20},
+    })
+    canonical = validate_config(config)
+    assert canonical["markets"] == ["KOSPI", "KOSDAQ"]
+    assert canonical["rebalance_interval_days"] == 3
+    assert canonical["buy_conditions"]["n_days"] == 5
+
+
+def test_rebalance_replaces_pending_full_exit_and_freezes_equal_weight_batch_budget():
+    first = date(2024, 1, 2)
+    bars = [
+        MarketBar(first, 1, "000001", "KOSPI", Decimal("100"), Decimal("100"), 1, 90, 1),
+        MarketBar(first, 2, "000002", "KOSPI", Decimal("200"), Decimal("200"), 1, 0, 2),
+        MarketBar(first + timedelta(days=1), 1, "000001", "KOSPI", Decimal("100"), Decimal("100"), 1, 70, 2),
+        MarketBar(first + timedelta(days=1), 2, "000002", "KOSPI", Decimal("200"), Decimal("200"), 1, 90, 1),
+        MarketBar(first + timedelta(days=2), 1, "000001", "KOSPI", Decimal("100"), Decimal("100"), 1, 70, 2),
+        MarketBar(first + timedelta(days=2), 2, "000002", "KOSPI", Decimal("200"), Decimal("200"), 1, 90, 1),
+    ]
+    result = simulate(_config(), bars)
+    day_three = [order for order in result.orders if order.execution_date == first + timedelta(days=2)]
+    assert [order.side for order in day_three[:2]] == ["sell", "buy"]
+    assert day_three[1].code == "000002"
+
+    equal_bars = [
+        MarketBar(first, 1, "000001", "KOSPI", Decimal("100"), Decimal("100"), 1, 90, 1),
+        MarketBar(first, 2, "000002", "KOSPI", Decimal("200"), Decimal("200"), 1, 90, 2),
+        MarketBar(first + timedelta(days=1), 1, "000001", "KOSPI", Decimal("100"), Decimal("100"), 1, 90, 1),
+        MarketBar(first + timedelta(days=1), 2, "000002", "KOSPI", Decimal("200"), Decimal("200"), 1, 90, 2),
+        MarketBar(first + timedelta(days=2), 1, "000001", "KOSPI", Decimal("100"), Decimal("100"), 1, 90, 1),
+        MarketBar(first + timedelta(days=2), 2, "000002", "KOSPI", Decimal("200"), Decimal("200"), 1, 90, 2),
+    ]
+    equal = simulate(_config(max_holdings=2, max_position_weight="1", sell_conditions={"type": "rule", "field": "rs_rating", "operator": "gt", "value": 1000}, take_profit_rate=None), equal_bars)
+    buys = [order for order in equal.orders if order.side == "buy"]
+    assert len(buys) == 2
+    assert abs((buys[0].quantity * buys[0].execution_price) - (buys[1].quantity * buys[1].execution_price)) <= Decimal("200")
+    assert equal.metrics["mdd"]["value"] >= 0
+    assert "average_profit_loss_ratio" in equal.metrics
+
+
 def test_claimed_run_persists_daily_holdings_metrics_orders_and_trades():
     engine = create_engine("sqlite://")
     Base.metadata.create_all(engine)

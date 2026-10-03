@@ -47,6 +47,9 @@ def validate_condition(node: Any) -> None:
         _number(node.get("value"), "condition value")
         n_days = node.get("n_days")
         if node["field"] == "return_n_days":
+            if isinstance(n_days, dict):
+                n_days = n_days.get("lookback_trading_days")
+                node["n_days"] = n_days
             if not isinstance(n_days, int) or isinstance(n_days, bool) or n_days < 1:
                 raise StrategyValidationError("return_n_days requires n_days >= 1")
         elif n_days is not None:
@@ -73,6 +76,23 @@ def return_lookback_days(config: dict[str, Any]) -> int:
 def validate_config(config: Any) -> dict[str, Any]:
     if not isinstance(config, dict):
         raise StrategyValidationError("strategy config must be an object")
+    config = dict(config)
+    market = config.pop("market", None)
+    if market is not None and "markets" not in config:
+        if market == "BOTH":
+            config["markets"] = ["KOSPI", "KOSDAQ"]
+        elif market in MARKETS:
+            config["markets"] = [market]
+        else:
+            raise StrategyValidationError("market must be KOSPI, KOSDAQ, or BOTH")
+    for external, internal in {
+        "rebalance_interval_trading_days": "rebalance_interval_days",
+        "max_holding_trading_days": "max_holding_days",
+        "entry_conditions": "buy_conditions",
+        "exit_conditions": "sell_conditions",
+    }.items():
+        if external in config and internal not in config:
+            config[internal] = config.pop(external)
     required = {
         "markets", "rebalance_interval_days", "max_holdings", "max_position_weight",
         "cash_reserve_ratio", "buy_conditions", "sell_conditions", "buy_fee_rate",
@@ -106,6 +126,9 @@ def validate_config(config: Any) -> dict[str, Any]:
         raise StrategyValidationError("max_holding_days must be an integer >= 1")
     validate_condition(config["buy_conditions"])
     validate_condition(config["sell_conditions"])
+    config["market"] = "BOTH" if set(config["markets"]) == MARKETS else config["markets"][0]
+    config["rebalance_interval_trading_days"] = config["rebalance_interval_days"]
+    config["max_holding_trading_days"] = config.get("max_holding_days")
     return config
 
 

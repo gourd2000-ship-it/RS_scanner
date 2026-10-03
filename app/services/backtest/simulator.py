@@ -101,7 +101,7 @@ def _metrics(snapshots: list[DailySnapshot], trades: list[SimTrade]) -> dict[str
     mdd = ZERO
     for row in snapshots:
         peak = max(peak, row.net_asset_value)
-        mdd = min(mdd, row.net_asset_value / peak - 1)
+        mdd = max(mdd, (peak - row.net_asset_value) / peak)
     wins = [trade.profit_loss for trade in trades if trade.profit_loss > ZERO]
     losses = [trade.profit_loss for trade in trades if trade.profit_loss < ZERO]
     decisive = len(wins) + len(losses)
@@ -114,6 +114,10 @@ def _metrics(snapshots: list[DailySnapshot], trades: list[SimTrade]) -> dict[str
         "profit_loss_ratio": _metric(gross_profit / gross_loss if gross_loss else None, None if gross_loss else "no_losing_trades"),
         "average_win": _metric(gross_profit / len(wins) if wins else None, None if wins else "no_winning_trades"),
         "average_loss": _metric(gross_loss / len(losses) if losses else None, None if losses else "no_losing_trades"),
+        "average_profit_loss_ratio": _metric(
+            (gross_profit / len(wins)) / (gross_loss / len(losses)) if wins and losses else None,
+            None if wins and losses else ("no_winning_trades" if not wins else "no_losing_trades"),
+        ),
         "completed_trade_count": _metric(Decimal(len(trades))),
     }
 
@@ -149,6 +153,12 @@ def simulate(
         # Sells are processed before buys on the same opening price.
         scheduled = pending.pop(today, [])
         for side in ("sell", "buy"):
+            buy_batch_nav = buy_batch_target = buy_batch_budget = None
+            if side == "buy":
+                holdings_at_open = sum((today_bars[p.instrument_id].open * p.quantity for p in positions.values() if p.instrument_id in today_bars), ZERO)
+                buy_batch_nav = cash + holdings_at_open
+                buy_batch_target = min(buy_batch_nav / Decimal(config["max_holdings"]), buy_batch_nav * Decimal(str(config["max_position_weight"])))
+                buy_batch_budget = max(ZERO, cash - buy_batch_nav * Decimal(str(config["cash_reserve_ratio"])))
             for action, subject, reasons, signal_date in [item for item in scheduled if item[0] == side]:
                 if side == "sell":
                     position = subject  # type: ignore[assignment]
@@ -178,20 +188,19 @@ def simulate(
                         continue
                     if bar.instrument_id in positions:
                         continue
-                    # Target allocation is fixed from the pre-buy NAV; no spare cash is reallocated.
-                    holdings_at_open = sum((today_bars[p.instrument_id].open * p.quantity for p in positions.values() if p.instrument_id in today_bars), ZERO)
-                    nav = cash + holdings_at_open
-                    target = min(nav / Decimal(config["max_holdings"]), nav * Decimal(str(config["max_position_weight"])))
-                    allowed_cash = max(ZERO, cash - nav * Decimal(str(config["cash_reserve_ratio"])))
+                    # One post-sell, pre-buy NAV and reserve budget applies to
+                    # every selection in this opening batch.
+                    assert buy_batch_target is not None and buy_batch_budget is not None
                     price = current.open * (Decimal(1) + Decimal(str(config["buy_slippage_rate"])))
                     unit_cost = price * (Decimal(1) + Decimal(str(config["buy_fee_rate"])))
-                    quantity = int((min(target, allowed_cash) / unit_cost).to_integral_value(rounding=ROUND_DOWN))
+                    quantity = int((min(buy_batch_target, buy_batch_budget) / unit_cost).to_integral_value(rounding=ROUND_DOWN))
                     if quantity <= 0:
                         continue
                     gross = price * quantity
                     fee = _money(gross * Decimal(str(config["buy_fee_rate"])))
                     cost = _money(gross + fee)
                     cash -= cost
+                    buy_batch_budget = max(ZERO, buy_batch_budget - cost)
                     sequence += 1
                     orders.append(SimOrder(sequence, bar.instrument_id, bar.code, "buy", signal_date, today, quantity, price, fee, price - current.open, reasons))
                     positions[bar.instrument_id] = _Position(bar.instrument_id, bar.code, quantity, today, cost, cost / quantity, day_index)
@@ -235,14 +244,18 @@ def simulate(
             if reasons:
                 pending.setdefault(next_date, []).append(("sell", position, reasons, today))
         if day_index % config["rebalance_interval_days"] == 0:
+            pending_exit_ids = {
+                candidate.instrument_id for action, candidate, _, _ in pending.get(next_date, [])
+                if action == "sell" and isinstance(candidate, _Position)
+            }
             candidates = []
             for bar in by_date[today]:
-                if bar.instrument_id in positions:
+                if bar.instrument_id in positions and bar.instrument_id not in pending_exit_ids:
                     continue
                 context = _context(bar, history.get(bar.instrument_id, []) + [bar])
                 if evaluate_condition(config["buy_conditions"], context):
                     candidates.append(bar)
-            vacancies = max(0, config["max_holdings"] - len(positions))
+            vacancies = max(0, config["max_holdings"] - (len(positions) - len(pending_exit_ids)))
             for bar in sorted(candidates, key=lambda b: (-(b.rs_rating if b.rs_rating is not None else -1), b.code))[:vacancies]:
                 pending.setdefault(next_date, []).append(("buy", bar, ["buy_condition"], today))
         for bar in by_date[today]:

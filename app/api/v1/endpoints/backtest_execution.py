@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
@@ -13,7 +16,7 @@ from app.repositories.backtest_repository import BacktestRepository
 from app.schemas.backtest_execution import (
     BacktestRunCreateRequest, BacktestRunDetailResponse, BacktestRunListResponse, BacktestRunResponse,
     StrategyCreateRequest, StrategyPatchRequest, StrategyResponse, StrategyVersionCreateRequest,
-    StrategyVersionResponse,
+    StrategyVersionResponse, StrategyListResponse,
 )
 from app.services.backtest.run_preparation import BacktestRunPreparationService
 from app.services.backtest.strategy import StrategyValidationError, return_lookback_days, validate_config
@@ -24,21 +27,47 @@ from app.core.market_calendar import krx_market_day_status
 router = APIRouter()
 
 
+def _request_configuration(body) -> dict:
+    configuration = getattr(body, "configuration", None) or getattr(body, "config", None)
+    if not isinstance(configuration, dict):
+        raise StrategyValidationError("configuration is required")
+    return configuration
+
+
 def _version(row: BacktestStrategyVersion) -> StrategyVersionResponse:
-    return StrategyVersionResponse(id=row.id, version=row.version, config=row.config, config_hash=row.config_hash, created_at=row.created_at)
+    configuration = validate_config(row.config)
+    return StrategyVersionResponse(
+        id=row.id, version=row.version, config=configuration, config_hash=row.config_hash,
+        created_at=row.created_at, version_id=row.id, version_number=row.version,
+        configuration=configuration,
+    )
 
 
 def _strategy(row: BacktestStrategy, *, include_versions: bool = True) -> StrategyResponse:
-    return StrategyResponse(strategy_id=row.strategy_id, name=row.name, created_at=row.created_at, versions=[_version(v) for v in row.versions] if include_versions else [])
+    versions = [_version(v) for v in row.versions] if include_versions else []
+    current = max(versions, key=lambda version: version.version_number, default=None)
+    return StrategyResponse(
+        strategy_id=row.strategy_id, name=row.name, created_at=row.created_at,
+        updated_at=row.updated_at or row.created_at,
+        current_version_id=current.version_id if current else None, versions=versions,
+    )
 
 
 def _run(row: BacktestRun) -> BacktestRunResponse:
+    hashes = {item.market.lower(): item.snapshot_hash for item in row.benchmark_snapshots}
+    try:
+        reason = json.loads(row.error_detail) if row.error_detail else None
+    except (TypeError, json.JSONDecodeError):
+        reason = row.error_detail
     return BacktestRunResponse(
         run_id=row.run_id, status=row.status, strategy_version_id=row.backtest_strategy_version_id,
         dataset_id=row.dataset_id, dataset_manifest_hash=row.dataset_manifest_hash,
         rs_formula_version=row.rs_formula_version, rs_result_hash=row.rs_result_hash,
         markets=row.markets, start=row.range_start, end=row.range_end,
         error_code=row.error_code, error_detail=row.error_detail,
+        dataset_final_manifest_hash=row.dataset_manifest_hash,
+        rs_run_id=row.backtest_dataset_rs_run_id,
+        benchmark_snapshot_hash=hashes, reason=reason,
     )
 
 
@@ -54,16 +83,18 @@ def _rebalance_dates(start, end, interval: int):
     return dates[::interval]
 
 
-@router.get("/strategies", response_model=list[StrategyResponse])
-def list_strategies(_operator=Depends(require_backtest_operator), session: Session = Depends(get_db_session)):
-    return [_strategy(row) for row in session.scalars(select(BacktestStrategy).options(selectinload(BacktestStrategy.versions)).order_by(BacktestStrategy.created_at.desc())).unique()]
+@router.get("/strategies", response_model=StrategyListResponse)
+def list_strategies(page: int = Query(1, ge=1), size: int = Query(50, ge=1, le=100), _operator=Depends(require_backtest_operator), session: Session = Depends(get_db_session)):
+    total = session.scalar(select(func.count(BacktestStrategy.id))) or 0
+    rows = session.scalars(select(BacktestStrategy).options(selectinload(BacktestStrategy.versions)).order_by(BacktestStrategy.created_at.desc()).offset((page - 1) * size).limit(size)).unique()
+    return StrategyListResponse(items=[_strategy(row) for row in rows], page=page, size=size, total_count=total)
 
 
 @router.post("/strategies", response_model=StrategyResponse, status_code=status.HTTP_201_CREATED)
 def create_strategy(body: StrategyCreateRequest, _operator=Depends(require_backtest_csrf), session: Session = Depends(get_db_session)):
     try:
-        validate_config(body.config)
-        row = BacktestRepository(session).create_strategy(name=body.name, config=body.config)
+        configuration = validate_config(_request_configuration(body))
+        row = BacktestRepository(session).create_strategy(name=body.name, config=configuration)
         session.commit()
         return _strategy(row)
     except StrategyValidationError as exc:
@@ -79,13 +110,17 @@ def get_strategy(strategy_id: str, _operator=Depends(require_backtest_operator),
 
 
 @router.patch("/strategies/{strategy_id}", response_model=StrategyResponse)
-def rename_strategy(strategy_id: str, body: StrategyPatchRequest, _operator=Depends(require_backtest_csrf), session: Session = Depends(get_db_session)):
+def patch_strategy(strategy_id: str, body: StrategyPatchRequest, _operator=Depends(require_backtest_csrf), session: Session = Depends(get_db_session)):
     row = session.scalar(select(BacktestStrategy).options(selectinload(BacktestStrategy.versions)).where(BacktestStrategy.strategy_id == strategy_id))
     if row is None:
         raise HTTPException(status_code=404, detail="strategy not found")
-    row.name = body.name.strip()
-    session.commit()
-    return _strategy(row)
+    try:
+        BacktestRepository(session).add_strategy_version(row.id, config=validate_config(_request_configuration(body)))
+        session.commit()
+        session.refresh(row)
+        return _strategy(row)
+    except StrategyValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.post("/strategies/{strategy_id}/versions", response_model=StrategyVersionResponse, status_code=status.HTTP_201_CREATED)
@@ -94,8 +129,7 @@ def append_strategy_version(strategy_id: str, body: StrategyVersionCreateRequest
     if strategy is None:
         raise HTTPException(status_code=404, detail="strategy not found")
     try:
-        validate_config(body.config)
-        version = BacktestRepository(session).add_strategy_version(strategy.id, config=body.config)
+        version = BacktestRepository(session).add_strategy_version(strategy.id, config=validate_config(_request_configuration(body)))
         session.commit()
         return _version(version)
     except StrategyValidationError as exc:
@@ -104,6 +138,8 @@ def append_strategy_version(strategy_id: str, body: StrategyVersionCreateRequest
 
 @router.post("/runs", response_model=BacktestRunResponse, status_code=status.HTTP_201_CREATED)
 def create_run(body: BacktestRunCreateRequest, _operator=Depends(require_backtest_csrf), session: Session = Depends(get_db_session)):
+    if body.start >= body.end:
+        raise HTTPException(status_code=422, detail="start must be before end")
     version = session.get(BacktestStrategyVersion, body.strategy_version_id)
     if version is None:
         raise HTTPException(status_code=404, detail="strategy version not found")
@@ -120,7 +156,8 @@ def create_run(body: BacktestRunCreateRequest, _operator=Depends(require_backtes
         session.rollback()
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     if run.status == "data_unavailable":
-        raise HTTPException(status_code=409, detail=_run(run).model_dump(mode="json"))
+        payload = _run(run).model_dump(mode="json")
+        return JSONResponse(status_code=409, content={"run": payload, "reason": payload["reason"]})
     return _run(run)
 
 
@@ -128,7 +165,7 @@ def create_run(body: BacktestRunCreateRequest, _operator=Depends(require_backtes
 def list_runs(page: int = Query(1, ge=1), size: int = Query(50, ge=1, le=100), _operator=Depends(require_backtest_operator), session: Session = Depends(get_db_session)):
     total = session.scalar(select(func.count(BacktestRun.id))) or 0
     rows = list(session.scalars(select(BacktestRun).order_by(BacktestRun.queued_at.desc(), BacktestRun.id.desc()).offset((page - 1) * size).limit(size)))
-    return BacktestRunListResponse(items=[_run(row) for row in rows], page=page, size=size, total=total)
+    return BacktestRunListResponse(items=[_run(row) for row in rows], page=page, size=size, total_count=total)
 
 
 @router.get("/runs/{run_id}", response_model=BacktestRunDetailResponse)
@@ -136,13 +173,20 @@ def get_run(run_id: str, _operator=Depends(require_backtest_operator), session: 
     row = BacktestRepository(session).get_run(run_id)
     if row is None:
         raise HTTPException(status_code=404, detail="backtest run not found")
-    benchmarks = {snapshot.market: [{"trade_date": p.trade_date, "close": p.close} for p in snapshot.prices] for snapshot in row.benchmark_snapshots}
+    benchmarks = {}
+    for snapshot in row.benchmark_snapshots:
+        first_close = snapshot.prices[0].close if snapshot.prices else None
+        daily_values = [
+            {"trade_date": p.trade_date, "close": p.close, "price_return": (p.close / first_close - 1) if first_close else None}
+            for p in snapshot.prices
+        ]
+        benchmarks[snapshot.market.lower()] = {"benchmark_code": snapshot.benchmark_code, "snapshot_hash": snapshot.snapshot_hash, "daily_values": daily_values}
     return BacktestRunDetailResponse(
         run=_run(row), metrics=row.metrics,
         equity_curve=[{"trade_date": item.trade_date, "cash": item.cash, "holdings_value": item.holdings_value, "net_asset_value": item.net_asset_value, "holdings": item.holdings} for item in row.daily_equity],
         benchmarks=benchmarks,
-        orders=[{"sequence": item.sequence, "code": item.code, "side": item.side, "signal_date": item.signal_date, "execution_date": item.execution_date, "quantity": item.quantity, "execution_price": item.execution_price, "fee": item.fee, "slippage": item.slippage, "reason_codes": item.reason_codes, "status": item.status} for item in row.orders],
-        trades=[{"code": item.code, "entry_date": item.entry_date, "exit_date": item.exit_date, "quantity": item.quantity, "entry_value": item.entry_value, "exit_value": item.exit_value, "profit_loss": item.profit_loss, "return_rate": item.return_rate, "exit_reason_codes": item.exit_reason_codes} for item in row.trades],
+        orders={"page": 1, "size": len(row.orders), "total_count": len(row.orders), "items": [{"sequence": item.sequence, "code": item.code, "side": item.side, "signal_date": item.signal_date, "execution_date": item.execution_date, "quantity": item.quantity, "execution_price": item.execution_price, "fee": item.fee, "slippage": item.slippage, "reason_codes": item.reason_codes, "status": item.status} for item in row.orders]},
+        trades={"page": 1, "size": len(row.trades), "total_count": len(row.trades), "items": [{"code": item.code, "entry_date": item.entry_date, "exit_date": item.exit_date, "quantity": item.quantity, "entry_value": item.entry_value, "exit_value": item.exit_value, "profit_loss": item.profit_loss, "return_rate": item.return_rate, "exit_reason_codes": item.exit_reason_codes} for item in row.trades]},
     )
 
 

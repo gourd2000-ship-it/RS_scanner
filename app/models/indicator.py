@@ -153,6 +153,11 @@ class IndicatorGeneration(Base):
     __tablename__ = "indicator_generations"
     __table_args__ = (
         UniqueConstraint("series_id", "generation", name="uq_indicator_generation_number"),
+        ForeignKeyConstraint(
+            ["parent_generation_id", "series_id"],
+            ["indicator_generations.id", "indicator_generations.series_id"],
+            name="fk_indicator_generation_parent_series",
+        ),
         # This candidate key lets runs carry ``series_id`` for the exact
         # one-running-run database invariant without permitting a mismatched
         # generation and series pair.
@@ -176,9 +181,7 @@ class IndicatorGeneration(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     series_id: Mapped[int] = mapped_column(ForeignKey("indicator_series.id"), nullable=False)
     generation: Mapped[int] = mapped_column(Integer, nullable=False)
-    parent_generation_id: Mapped[int | None] = mapped_column(
-        ForeignKey("indicator_generations.id"), nullable=True
-    )
+    parent_generation_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     replacement_reason: Mapped[str | None] = mapped_column(String(100), nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="building")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)

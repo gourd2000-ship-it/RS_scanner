@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.models.data_quality import PriceObservation
 from app.models.indicator import (
     IndicatorCalculationRun,
+    IndicatorGeneration,
     IndicatorInputSnapshot,
     IndicatorValue,
     PriceObservationIdentitySnapshot,
@@ -146,6 +147,55 @@ def test_indicator_storage_on_isolated_postgres_rejects_immutable_history_mutati
                     _assert_rejected(
                         session,
                         delete(IndicatorCalculationRun).where(IndicatorCalculationRun.id == run.id),
+                    )
+
+                    other_series = repository.create_series(
+                        instrument_id=instrument.id,
+                        policy=EmaSourcePolicy(
+                            provider="kiwoom",
+                            adjustment_type="1",
+                            allowed_parser_versions=("kiwoom-v2",),
+                            observation_cutoff=datetime(2024, 2, 2, tzinfo=UTC),
+                        ),
+                    )
+                    wrong_parent = IndicatorGeneration(
+                        series_id=other_series.id,
+                        generation=1,
+                        parent_generation_id=generation.id,
+                        status="building",
+                    )
+                    parent_savepoint = session.begin_nested()
+                    session.add(wrong_parent)
+                    with pytest.raises(DBAPIError):
+                        session.flush()
+                    parent_savepoint.rollback()
+
+                    incomplete_generation = repository.create_generation(
+                        series_id=series.id,
+                        generation=2,
+                    )
+                    incomplete_run = repository.create_run(
+                        generation=incomplete_generation,
+                        run_kind="rebuild",
+                        input_cutoff=datetime(2024, 2, 1, tzinfo=UTC),
+                    )
+                    incomplete_inputs = repository.append_inputs(
+                        run=incomplete_run,
+                        rows=(row,),
+                        prefix_hashes=result.prefix_hashes,
+                    )
+                    _assert_rejected(
+                        session,
+                        update(IndicatorCalculationRun)
+                        .where(IndicatorCalculationRun.id == incomplete_run.id)
+                        .values(
+                            status="completed",
+                            input_hash=result.input_hash,
+                            result_hash=result.result_hash,
+                            input_count=len(incomplete_inputs),
+                            result_count=0,
+                            completed_at=datetime(2024, 1, 3, tzinfo=UTC),
+                        ),
                     )
             finally:
                 transaction.rollback()

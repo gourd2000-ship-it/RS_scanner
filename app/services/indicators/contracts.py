@@ -81,10 +81,14 @@ class IdentitySnapshot:
 
     def proves(self, *, instrument_id: int, provider: str, provider_symbol: str, trade_date: date) -> InputReasonCode | None:
         """해당 거래일의 정확히 하나인 matched mapping을 증명하는지 판단한다."""
-        if self.snapshot_id is None or self.instrument_id is None or self.provider_mapping_id is None:
+        if self.snapshot_id is None:
             return InputReasonCode.IDENTITY_UNAVAILABLE
+        if self.mapping_status == "ambiguous":
+            return InputReasonCode.AMBIGUOUS_IDENTITY_MAPPING
         if self.mapping_status != "matched":
-            return InputReasonCode.AMBIGUOUS_IDENTITY_MAPPING if self.mapping_status == "ambiguous" else InputReasonCode.IDENTITY_UNAVAILABLE
+            return InputReasonCode.IDENTITY_UNAVAILABLE
+        if self.instrument_id is None or self.provider_mapping_id is None:
+            return InputReasonCode.IDENTITY_UNAVAILABLE
         if self.instrument_id != instrument_id or self.provider != provider or self.provider_symbol != provider_symbol:
             return InputReasonCode.IDENTITY_UNAVAILABLE
         if self.valid_from is not None and trade_date < self.valid_from:

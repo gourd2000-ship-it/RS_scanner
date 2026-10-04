@@ -4,7 +4,8 @@ from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
 import pytest
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 import app.models  # noqa: F401 -- register metadata
@@ -126,6 +127,100 @@ def test_selector_uses_identity_snapshots_and_records_review_and_correction_reas
     assert rows[3].reason_code is InputReasonCode.MISSING_SELECTED_SOURCE
     # The selector did not infer ownership through the current Symbol link.
     assert first.symbol_id == symbol.id and symbol.instrument_id is None
+
+
+@pytest.mark.parametrize(
+    ("mapping_status", "expected_reason"),
+    (
+        ("unmatched", InputReasonCode.IDENTITY_UNAVAILABLE),
+        ("ambiguous", InputReasonCode.AMBIGUOUS_IDENTITY_MAPPING),
+    ),
+)
+def test_selector_materializes_unresolved_identity_snapshot_provenance(
+    session: Session, mapping_status: str, expected_reason: InputReasonCode,
+):
+    instrument, symbol, mapping = _seed(session)
+    # This immutable matched snapshot establishes the provider symbol history
+    # for the requested historical instrument; no current Symbol link is used.
+    _observation(
+        session, instrument=instrument, symbol=symbol, mapping=mapping, trade_date=date(2024, 1, 2),
+        close="100", observed_at=datetime(2024, 1, 2, tzinfo=UTC),
+    )
+    unresolved_day = date(2024, 1, 3)
+    observation = PriceObservation(
+        symbol_id=symbol.id, trade_date=unresolved_day, open=Decimal("101"), high=Decimal("102"),
+        low=Decimal("100"), close=Decimal("101"), volume=1000, change_rate=Decimal(0),
+        provider="kiwoom", parser_version="kiwoom-v2", adjustment_type="1", payload_hash="f" * 64,
+        observed_at=datetime(2024, 1, 3, tzinfo=UTC),
+    )
+    session.add(observation)
+    session.flush()
+    IndicatorRepository(session).create_identity_snapshot(
+        price_observation_id=observation.id, instrument_id=None, provider_symbol_mapping_id=None,
+        provider="kiwoom", provider_symbol="EMAT3", mapping_status=mapping_status,
+        mapping_valid_from=None, mapping_valid_to=None, resolver_version="resolver-v1",
+        resolved_at=datetime(2024, 1, 3, tzinfo=UTC),
+    )
+
+    selected = EmaInputSelector(session).select_rows(
+        instrument_id=instrument.id, trade_dates=(unresolved_day,), policy=_policy(),
+    )[0]
+
+    assert selected.observation_id == observation.id
+    assert selected.identity is not None and selected.identity.snapshot_id is not None
+    assert selected.effective_reason() is expected_reason
+
+
+def test_repository_requires_running_state_for_append_complete_and_failure_transition(session: Session):
+    instrument, symbol, mapping = _seed(session)
+    day = date(2024, 1, 2)
+    observation = _observation(
+        session, instrument=instrument, symbol=symbol, mapping=mapping, trade_date=day,
+        close="100", observed_at=datetime(2024, 1, 2, tzinfo=UTC),
+    )
+    repository = IndicatorRepository(session)
+    series = repository.get_or_create_series(instrument_id=instrument.id, policy=_policy())
+    generation = repository.create_generation(series_id=series.id, generation=1)
+    run = repository.create_run(generation=generation, run_kind="backfill", input_cutoff=_policy().observation_cutoff)
+    input_row = EmaInputSelector(session).select_rows(
+        instrument_id=instrument.id, trade_dates=(day,), policy=_policy(),
+    )[0]
+    from app.services.indicators.ema import compute_ema
+
+    result = compute_ema((input_row,))
+    # Simulate a concurrent worker that changed the DB row after this session
+    # received the run object.  The repository re-reads and locks the row.
+    session.execute(update(IndicatorCalculationRun).where(IndicatorCalculationRun.id == run.id).values(status="failed"))
+    session.flush()
+    with pytest.raises(ValueError, match="only running"):
+        repository.append_inputs(run=run, rows=(input_row,), prefix_hashes=result.prefix_hashes)
+    with pytest.raises(ValueError, match="only running"):
+        repository.append_values(run=run, values=result.values)
+    with pytest.raises(ValueError, match="only running"):
+        repository.complete_run(run=run, input_rows=(input_row,), result=result)
+    with pytest.raises(ValueError, match="only running"):
+        repository.fail_run(run, failure_reason="second transition")
+    assert session.scalar(select(IndicatorCalculationRun.status).where(IndicatorCalculationRun.id == run.id)) == "failed"
+
+
+def test_get_or_create_series_recovers_from_duplicate_first_create(session: Session, monkeypatch):
+    instrument, _, _ = _seed(session)
+    repository = IndicatorRepository(session)
+    winner = repository.create_series(instrument_id=instrument.id, policy=_policy())
+    original_find = repository.find_series
+    calls = 0
+
+    def stale_first_lookup(*, instrument_id: int, policy: EmaSourcePolicy):
+        nonlocal calls
+        calls += 1
+        return None if calls == 1 else original_find(instrument_id=instrument_id, policy=policy)
+
+    def duplicate_create(*, instrument_id: int, policy: EmaSourcePolicy):
+        raise IntegrityError("insert", {}, Exception("duplicate"))
+
+    monkeypatch.setattr(repository, "find_series", stale_first_lookup)
+    monkeypatch.setattr(repository, "create_series", duplicate_create)
+    assert repository.get_or_create_series(instrument_id=instrument.id, policy=_policy()).id == winner.id
 
 
 def test_calculation_full_incremental_idempotent_rebuild_and_cleanup_candidates(session: Session):

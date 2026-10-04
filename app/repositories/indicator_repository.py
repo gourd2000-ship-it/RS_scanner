@@ -6,6 +6,7 @@ from collections.abc import Iterable, Sequence
 from datetime import UTC, date, datetime
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.indicator import (
@@ -98,6 +99,25 @@ class IndicatorRepository:
         expected_versions = tuple(sorted(policy.allowed_parser_versions))
         return next((row for row in candidates if tuple(sorted(row.allowed_parser_versions)) == expected_versions), None)
 
+    def get_or_create_series(self, *, instrument_id: int, policy: EmaSourcePolicy) -> IndicatorSeries:
+        """Create a policy series once, including under concurrent first use.
+
+        The policy uniqueness constraint is the durable arbiter.  A competing
+        insert is isolated in a savepoint, then the winning committed row is
+        fetched instead of leaving the outer calculation transaction failed.
+        """
+        existing = self.find_series(instrument_id=instrument_id, policy=policy)
+        if existing is not None:
+            return existing
+        try:
+            with self.session.begin_nested():
+                return self.create_series(instrument_id=instrument_id, policy=policy)
+        except IntegrityError:
+            existing = self.find_series(instrument_id=instrument_id, policy=policy)
+            if existing is None:
+                raise
+            return existing
+
     def lock_series(self, series_id: int) -> IndicatorSeries:
         """Serialize selection and generation promotion for one policy series."""
         series = self.session.scalar(
@@ -182,7 +202,7 @@ class IndicatorRepository:
         prefix_hashes: Sequence[str],
     ) -> list[IndicatorInputSnapshot]:
         """Copy contract rows so later source edits cannot change this run."""
-        self.assert_run_mutable(run)
+        self.assert_run_running(run)
         if len(rows) != len(prefix_hashes):
             raise ValueError("EMA input rows and prefix hashes must have equal length")
         snapshots = [self._input_snapshot(run, row, prefix_hash) for row, prefix_hash in zip(rows, prefix_hashes, strict=True)]
@@ -193,7 +213,7 @@ class IndicatorRepository:
     def append_values(
         self, *, run: IndicatorCalculationRun, values: Iterable[EmaValue]
     ) -> list[IndicatorValue]:
-        self.assert_run_mutable(run)
+        self.assert_run_running(run)
         rows = [
             IndicatorValue(
                 calculation_run_id=run.id,
@@ -238,7 +258,7 @@ class IndicatorRepository:
         snapshots and all four period values before the status transition so
         PostgreSQL's completed-run trigger observes a complete artifact.
         """
-        self.assert_run_mutable(run)
+        self.assert_run_running(run)
         if len(result.values) != len(input_rows) * 4:
             raise ValueError("every EMA input date must have all four period values")
         expected_dates = {row.trade_date for row in input_rows}
@@ -261,7 +281,7 @@ class IndicatorRepository:
         return run
 
     def fail_run(self, run: IndicatorCalculationRun, *, failure_reason: str) -> IndicatorCalculationRun:
-        self.assert_run_mutable(run)
+        self.assert_run_running(run)
         run.status = "failed"
         run.failed_at = datetime.now(UTC)
         run.failure_reason = failure_reason[:200]
@@ -319,14 +339,23 @@ class IndicatorRepository:
             ))
         return tuple(materialized)
 
-    def assert_run_mutable(self, run: IndicatorCalculationRun) -> None:
+    def assert_run_running(self, run: IndicatorCalculationRun) -> None:
+        """Lock the persisted run and allow writes only during ``running``.
+
+        The row lock prevents another calculation worker from failing or
+        completing the run between the state check and its child inserts.
+        """
         status = self.session.scalar(
-            select(IndicatorCalculationRun.status).where(IndicatorCalculationRun.id == run.id)
+            select(IndicatorCalculationRun.status)
+            .where(IndicatorCalculationRun.id == run.id)
+            .with_for_update()
         )
         if status is None:
             raise KeyError(f"indicator calculation run not found: {run.id}")
         if status == "completed":
             raise ValueError("completed indicator calculation runs are immutable")
+        if status != "running":
+            raise ValueError(f"only running indicator calculation runs are writable (status={status})")
 
     @staticmethod
     def _input_snapshot(

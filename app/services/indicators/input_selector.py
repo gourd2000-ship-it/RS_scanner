@@ -13,7 +13,7 @@ from decimal import Decimal, InvalidOperation
 from types import SimpleNamespace
 from typing import Iterable
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.data_quality import OhlcCorrection, OhlcExclusion, PriceObservation, ValidationCase
@@ -52,15 +52,38 @@ class EmaInputSelector:
         dates = tuple(sorted(set(trade_dates)))
         if not dates:
             return ()
+        # An unresolved snapshot cannot name an instrument itself.  It can
+        # still be relevant when its immutable provider symbol matches a
+        # symbol previously proven for this historical instrument.  Keep it
+        # as unavailable evidence instead of silently turning it into a
+        # missing source.  No current Symbol or DailyPrice relationship is
+        # consulted here.
+        known_provider_symbols = tuple(self.session.scalars(
+            select(PriceObservationIdentitySnapshot.provider_symbol).where(
+                PriceObservationIdentitySnapshot.instrument_id == instrument_id,
+                PriceObservationIdentitySnapshot.provider == policy.provider,
+                PriceObservationIdentitySnapshot.provider_symbol.is_not(None),
+            ).distinct()
+        ))
+        ownership = PriceObservationIdentitySnapshot.instrument_id == instrument_id
+        if known_provider_symbols:
+            ownership = or_(
+                ownership,
+                and_(
+                    PriceObservationIdentitySnapshot.instrument_id.is_(None),
+                    PriceObservationIdentitySnapshot.provider == policy.provider,
+                    PriceObservationIdentitySnapshot.provider_symbol.in_(known_provider_symbols),
+                ),
+            )
         observations = list(self.session.execute(
             select(PriceObservation, PriceObservationIdentitySnapshot)
-            .join(
+            .outerjoin(
                 PriceObservationIdentitySnapshot,
                 PriceObservationIdentitySnapshot.price_observation_id == PriceObservation.id,
             )
             .where(
-                PriceObservationIdentitySnapshot.instrument_id == instrument_id,
                 PriceObservation.trade_date.in_(dates),
+                ownership,
             )
             .order_by(PriceObservation.trade_date, PriceObservation.observed_at, PriceObservation.id)
         ))

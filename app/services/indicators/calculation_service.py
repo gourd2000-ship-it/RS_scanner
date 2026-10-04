@@ -68,9 +68,7 @@ class EmaCalculationService:
         if not dates:
             raise ValueError("EMA calculation requires at least one expected trade date")
         with self.session.begin_nested():
-            series = self.repository.find_series(instrument_id=instrument_id, policy=policy)
-            if series is None:
-                series = self.repository.create_series(instrument_id=instrument_id, policy=policy)
+            series = self.repository.get_or_create_series(instrument_id=instrument_id, policy=policy)
             series = self.repository.lock_series(series.id)
             current = self.repository.current_generation(series.id, lock=True)
             selected = self.selector.select_rows(

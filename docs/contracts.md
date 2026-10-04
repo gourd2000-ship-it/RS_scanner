@@ -17,7 +17,7 @@
 
 backtest 요청의 `start`와 `end`는 포함 범위다. cursor는 요청 필터와 dataset ID에 묶이며, 데이터가 바뀌어 일관된 page를 보장할 수 없으면 409를 반환한다. `strict` 결과도 `complete` 구간 조건을 완화하지 않는다. 가격 없는 기대 행, `partial` 구간, 상장폐지 lifecycle은 현재 발행 대상이 아니다.
 
-EMA 운영자 조회는 code가 여러 역사 Instrument에 연결되면 409를 반환하며, 호출자는 유효한 `instrument_id`를 명시해야 한다. 결과는 거래일 오름차순으로 page를 나누고, `as_of`와 `calculated_at`은 조회 범위와 무관하게 현재 generation의 최신 입력·계산 시각을 나타낸다. 각 거래일에는 5·20·50·200 결과를 모두 포함한다. `value`는 JSON number가 아닌 Decimal 문자열이며, `status`와 `reason_code`는 값의 사용 가능 여부를 함께 나타낸다.
+EMA 운영자 조회는 code가 여러 역사 Instrument에 연결되면 409를 반환하며, 호출자는 유효한 `instrument_id`를 명시해야 한다. 한 Instrument에 source policy 변경으로 여러 current EMA series가 있으면 완료 시각이 가장 최근인 series 하나를 선택하고, 동률은 generation ID와 series ID 내림차순으로 결정한다. 결과는 거래일 오름차순으로 page를 나누고, `as_of`와 `calculated_at`은 조회 범위와 무관하게 선택된 current generation의 최신 입력·계산 시각을 나타낸다. 각 거래일에는 5·20·50·200 결과를 모두 포함한다. `value`는 JSON number가 아닌 Decimal 문자열이며, `status`와 `reason_code`는 값의 사용 가능 여부를 함께 나타낸다.
 
 ## 공급자·파일 입력
 

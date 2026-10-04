@@ -68,10 +68,17 @@ def ema_client():
     engine.dispose()
 
 
-def _persist_current_ema(session: Session, *, instrument_id: int) -> None:
+def _persist_current_ema(
+    session: Session,
+    *,
+    instrument_id: int,
+    source_provider: str = "test-provider",
+    completed_at: datetime = datetime(2024, 1, 4, 1, tzinfo=UTC),
+    first_value: Decimal = Decimal("100.125"),
+) -> None:
     series = IndicatorSeries(
         instrument_id=instrument_id,
-        source_provider="test-provider",
+        source_provider=source_provider,
         adjustment_policy="test-adjustment",
         allowed_parser_versions=["test-v1"],
         observation_cutoff=datetime(2024, 1, 4, tzinfo=UTC),
@@ -91,12 +98,12 @@ def _persist_current_ema(session: Session, *, instrument_id: int) -> None:
         result_hash="b" * 64,
         input_count=2,
         result_count=8,
-        completed_at=datetime(2024, 1, 4, 1, tzinfo=UTC),
+        completed_at=completed_at,
     )
     session.add(run)
     session.flush()
     for trade_date, status, reason, value in (
-        (date(2024, 1, 2), "warming_up", "warming_up", Decimal("100.125")),
+        (date(2024, 1, 2), "warming_up", "warming_up", first_value),
         (date(2024, 1, 3), "data_unavailable", "missing_selected_source", None),
     ):
         for period in (5, 20, 50, 200):
@@ -173,6 +180,28 @@ def test_ema_query_paginates_by_trade_date_deterministically(ema_client):
     assert first.json()["total_count"] == second.json()["total_count"] == 2
     assert first.json()["items"][0]["trade_date"] == "2024-01-02"
     assert second.json()["items"][0]["trade_date"] == "2024-01-03"
+
+
+def test_ema_query_selects_latest_completed_current_policy_series(ema_client):
+    _persist_current_ema(
+        ema_client.ema_session,
+        instrument_id=ema_client.primary_instrument_id,
+        source_provider="replacement-policy-provider",
+        completed_at=datetime(2024, 1, 5, 1, tzinfo=UTC),
+        first_value=Decimal("200.5"),
+    )
+    ema_client.ema_session.commit()
+
+    response = ema_client.get(
+        "/api/v1/backtests/indicators/ema",
+        params=_params(instrument_id=ema_client.primary_instrument_id),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["calculated_at"] == "2024-01-05T01:00:00Z"
+    assert body["total_count"] == 2
+    assert Decimal(body["items"][0]["values"][0]["value"]) == Decimal("200.5")
 
 
 def test_ema_query_rejects_unknown_instrument_and_invalid_range(ema_client):

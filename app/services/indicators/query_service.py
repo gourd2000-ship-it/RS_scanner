@@ -88,6 +88,7 @@ class EmaQueryService:
 
         rows, total_count = self.repository.current_ema_page(
             instrument_id=resolved.id,
+            series_id=metadata.series_id,
             generation_id=metadata.generation_id,
             start=start,
             end=end,

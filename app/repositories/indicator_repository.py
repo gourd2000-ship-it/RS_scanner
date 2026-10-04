@@ -38,6 +38,7 @@ from app.services.indicators.contracts import (
 class CurrentEmaMetadata:
     """Freshness metadata for an exposed current EMA generation."""
 
+    series_id: int
     generation_id: int
     as_of: date
     calculated_at: datetime
@@ -92,8 +93,14 @@ class IndicatorRepository:
 
     def current_ema_metadata(self, *, instrument_id: int) -> CurrentEmaMetadata | None:
         """Return freshness only from a fully completed current generation."""
+        # An instrument can have several current series when the immutable
+        # source-policy tuple changes.  Publish one complete series rather
+        # than letting a code lookup combine policy versions.  Completion time
+        # is the primary freshness rule; generation then series ID make an
+        # equal-time result deterministic.
         row = self.session.execute(
             select(
+                IndicatorSeries.id,
                 IndicatorGeneration.id,
                 func.max(IndicatorValue.trade_date),
                 func.max(IndicatorCalculationRun.completed_at),
@@ -111,16 +118,28 @@ class IndicatorRepository:
                 IndicatorGeneration.status == "current",
                 IndicatorCalculationRun.status == "completed",
             )
-            .group_by(IndicatorGeneration.id)
-        ).one_or_none()
-        if row is None or row[1] is None or row[2] is None:
+            .group_by(IndicatorSeries.id, IndicatorGeneration.id)
+            .order_by(
+                func.max(IndicatorCalculationRun.completed_at).desc(),
+                IndicatorGeneration.id.desc(),
+                IndicatorSeries.id.desc(),
+            )
+            .limit(1)
+        ).first()
+        if row is None or row[2] is None or row[3] is None:
             return None
-        return CurrentEmaMetadata(generation_id=row[0], as_of=row[1], calculated_at=_as_utc(row[2]))
+        return CurrentEmaMetadata(
+            series_id=row[0],
+            generation_id=row[1],
+            as_of=row[2],
+            calculated_at=_as_utc(row[3]),
+        )
 
     def current_ema_page(
         self,
         *,
         instrument_id: int,
+        series_id: int,
         generation_id: int,
         start: date,
         end: date,
@@ -130,6 +149,7 @@ class IndicatorRepository:
         """Read an ordered page by trading day from one current generation."""
         filters = (
             IndicatorSeries.instrument_id == instrument_id,
+            IndicatorSeries.id == series_id,
             IndicatorGeneration.id == generation_id,
             IndicatorGeneration.status == "current",
             IndicatorCalculationRun.status == "completed",

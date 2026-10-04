@@ -1,8 +1,9 @@
-"""Unregistered protected API for strategy versions and backtest results."""
+"""Protected browser API for strategy versions, results, and EMA evidence."""
 
 from __future__ import annotations
 
 import json
+from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
@@ -18,13 +19,81 @@ from app.schemas.backtest_execution import (
     StrategyCreateRequest, StrategyPatchRequest, StrategyResponse, StrategyVersionCreateRequest,
     StrategyVersionResponse, StrategyListResponse,
 )
+from app.schemas.indicator import EmaDailyResponse, EmaPeriodValueResponse, EmaQueryResponse
 from app.services.backtest.run_preparation import BacktestRunPreparationService
 from app.services.backtest.strategy import StrategyValidationError, return_lookback_days, validate_config
+from app.services.indicators.query_service import (
+    AmbiguousInstrumentCodeError,
+    EmaNotCalculatedError,
+    EmaQueryError,
+    EmaQueryService,
+    UnknownInstrumentError,
+)
 from app.core.config import get_settings
 from app.core.market_calendar import krx_market_day_status
 
 
 router = APIRouter()
+
+
+@router.get("/indicators/ema", response_model=EmaQueryResponse)
+def get_current_ema(
+    code: str = Query(..., min_length=1, max_length=20),
+    start: date = Query(...),
+    end: date = Query(...),
+    instrument_id: int | None = Query(default=None, ge=1),
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=250, ge=1, le=1_000),
+    _operator=Depends(require_backtest_operator),
+    session: Session = Depends(get_db_session),
+):
+    """Return current-generation EMA evidence for one historical instrument.
+
+    This browser operator read endpoint always returns the four supported
+    periods.  Values remain strings so the Decimal calculation result does
+    not become a lossy JSON floating point value.
+    """
+    try:
+        result = EmaQueryService(session).current_page(
+            code=code,
+            instrument_id=instrument_id,
+            start=start,
+            end=end,
+            page=page,
+            size=size,
+        )
+    except AmbiguousInstrumentCodeError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except (UnknownInstrumentError, EmaNotCalculatedError) as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except EmaQueryError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    return EmaQueryResponse(
+        instrument_id=result.instrument_id,
+        code=result.code,
+        as_of=result.as_of,
+        calculated_at=result.calculated_at,
+        page=result.page,
+        size=result.size,
+        total_count=result.total_count,
+        items=[
+            EmaDailyResponse(
+                trade_date=item.trade_date,
+                values=[
+                    EmaPeriodValueResponse(
+                        period=value.period,
+                        value=format(value.value, "f") if value.value is not None else None,
+                        status=value.status,
+                        reason_code=value.reason_code,
+                        available_observations=value.available_observations,
+                    )
+                    for value in item.values
+                ],
+            )
+            for item in result.items
+        ],
+    )
 
 
 def _request_configuration(body) -> dict:

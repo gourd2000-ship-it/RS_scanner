@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
+from dataclasses import dataclass
 from datetime import UTC, date, datetime
+from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -17,6 +19,8 @@ from app.models.indicator import (
     IndicatorValue,
     PriceObservationIdentitySnapshot,
 )
+from app.models.instrument import Instrument
+from app.models.symbol import Symbol
 from app.services.indicators.contracts import (
     EMA_FORMULA_VERSION,
     EmaCalculationResult,
@@ -30,8 +34,30 @@ from app.services.indicators.contracts import (
 )
 
 
+@dataclass(frozen=True)
+class CurrentEmaMetadata:
+    """Freshness metadata for an exposed current EMA generation."""
+
+    series_id: int
+    generation_id: int
+    as_of: date
+    calculated_at: datetime
+
+
+@dataclass(frozen=True)
+class EmaStoredValue:
+    """One persisted period value returned from the current generation."""
+
+    trade_date: date
+    period: int
+    value: Decimal | None
+    status: str
+    reason_code: str | None
+    available_observations: int
+
+
 class IndicatorRepository:
-    """Write only immutable EMA evidence and calculation output.
+    """Persistence boundary for immutable EMA evidence and calculation output.
 
     Promotion of a generation and completion transactions belong to the
     calculation orchestration layer.  This repository deliberately provides no
@@ -40,6 +66,146 @@ class IndicatorRepository:
 
     def __init__(self, session: Session) -> None:
         self.session = session
+
+    def find_instruments_for_code(self, *, code: str) -> tuple[Instrument, ...]:
+        """Return every historical identity known for a displayed code.
+
+        The legacy Symbol table can retain a prior code and the canonical
+        Instrument also has a KRX short code.  Treating either one as a unique
+        identity would make a code reuse silently select the wrong EMA series.
+        """
+        rows = self.session.scalars(
+            select(Instrument)
+            .outerjoin(Symbol, Symbol.instrument_id == Instrument.id)
+            .where(
+                or_(
+                    Instrument.krx_short_code == code,
+                    Symbol.code == code,
+                    Symbol.legacy_code == code,
+                )
+            )
+            .order_by(Instrument.id)
+        ).unique()
+        return tuple(rows)
+
+    def get_instrument(self, instrument_id: int) -> Instrument | None:
+        return self.session.get(Instrument, instrument_id)
+
+    def current_ema_metadata(self, *, instrument_id: int) -> CurrentEmaMetadata | None:
+        """Return freshness only from a fully completed current generation."""
+        # An instrument can have several current series when the immutable
+        # source-policy tuple changes.  Publish one complete series rather
+        # than letting a code lookup combine policy versions.  Completion time
+        # is the primary freshness rule; generation then series ID make an
+        # equal-time result deterministic.
+        row = self.session.execute(
+            select(
+                IndicatorSeries.id,
+                IndicatorGeneration.id,
+                func.max(IndicatorValue.trade_date),
+                func.max(IndicatorCalculationRun.completed_at),
+            )
+            .select_from(IndicatorValue)
+            .join(
+                IndicatorCalculationRun,
+                (IndicatorCalculationRun.id == IndicatorValue.calculation_run_id)
+                & (IndicatorCalculationRun.generation_id == IndicatorValue.generation_id),
+            )
+            .join(IndicatorGeneration, IndicatorGeneration.id == IndicatorValue.generation_id)
+            .join(IndicatorSeries, IndicatorSeries.id == IndicatorGeneration.series_id)
+            .where(
+                IndicatorSeries.instrument_id == instrument_id,
+                IndicatorGeneration.status == "current",
+                IndicatorCalculationRun.status == "completed",
+            )
+            .group_by(IndicatorSeries.id, IndicatorGeneration.id)
+            .order_by(
+                func.max(IndicatorCalculationRun.completed_at).desc(),
+                IndicatorGeneration.id.desc(),
+                IndicatorSeries.id.desc(),
+            )
+            .limit(1)
+        ).first()
+        if row is None or row[2] is None or row[3] is None:
+            return None
+        return CurrentEmaMetadata(
+            series_id=row[0],
+            generation_id=row[1],
+            as_of=row[2],
+            calculated_at=_as_utc(row[3]),
+        )
+
+    def current_ema_page(
+        self,
+        *,
+        instrument_id: int,
+        series_id: int,
+        generation_id: int,
+        start: date,
+        end: date,
+        page: int,
+        size: int,
+    ) -> tuple[tuple[EmaStoredValue, ...], int]:
+        """Read an ordered page by trading day from one current generation."""
+        filters = (
+            IndicatorSeries.instrument_id == instrument_id,
+            IndicatorSeries.id == series_id,
+            IndicatorGeneration.id == generation_id,
+            IndicatorGeneration.status == "current",
+            IndicatorCalculationRun.status == "completed",
+            IndicatorValue.trade_date >= start,
+            IndicatorValue.trade_date <= end,
+        )
+        date_statement = (
+            select(IndicatorValue.trade_date)
+            .select_from(IndicatorValue)
+            .join(
+                IndicatorCalculationRun,
+                (IndicatorCalculationRun.id == IndicatorValue.calculation_run_id)
+                & (IndicatorCalculationRun.generation_id == IndicatorValue.generation_id),
+            )
+            .join(IndicatorGeneration, IndicatorGeneration.id == IndicatorValue.generation_id)
+            .join(IndicatorSeries, IndicatorSeries.id == IndicatorGeneration.series_id)
+            .where(*filters)
+            .distinct()
+            .order_by(IndicatorValue.trade_date)
+        )
+        total_count = self.session.scalar(select(func.count()).select_from(date_statement.subquery())) or 0
+        trade_dates = tuple(
+            self.session.scalars(date_statement.offset((page - 1) * size).limit(size))
+        )
+        if not trade_dates:
+            return (), total_count
+        rows = self.session.execute(
+            select(
+                IndicatorValue.trade_date,
+                IndicatorValue.period,
+                IndicatorValue.value,
+                IndicatorValue.status,
+                IndicatorValue.reason_code,
+                IndicatorValue.available_observations,
+            )
+            .select_from(IndicatorValue)
+            .join(
+                IndicatorCalculationRun,
+                (IndicatorCalculationRun.id == IndicatorValue.calculation_run_id)
+                & (IndicatorCalculationRun.generation_id == IndicatorValue.generation_id),
+            )
+            .join(IndicatorGeneration, IndicatorGeneration.id == IndicatorValue.generation_id)
+            .join(IndicatorSeries, IndicatorSeries.id == IndicatorGeneration.series_id)
+            .where(*filters, IndicatorValue.trade_date.in_(trade_dates))
+            .order_by(IndicatorValue.trade_date, IndicatorValue.period)
+        )
+        return (
+            tuple(
+                EmaStoredValue(
+                    trade_date=row[0], period=row[1], value=row[2], status=row[3],
+                    reason_code=row[4], available_observations=row[5],
+                )
+                for row in rows
+            ),
+            total_count,
+        )
 
     def create_identity_snapshot(
         self,

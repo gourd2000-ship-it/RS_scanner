@@ -36,6 +36,12 @@ schema 변경은 위 검증과 별도로 격리 PostgreSQL에서 `alembic upgrad
 
 입력 변환 회귀 테스트: `cd frontend && node --experimental-strip-types --test tests/backtest-form.test.mjs` (Node 22.6 이상).
 
+## EMA 운영자 조회
+
+EMA 결과는 브라우저에서 백테스트 운영자 로그인 세션을 가진 경우에만 조회한다. `GET /api/v1/backtests/indicators/ema`에 `code`, `start`, `end`를 넣고, 코드가 과거 여러 `Instrument`에 연결될 수 있으면 응답의 409 사유를 확인한 뒤 `instrument_id`를 함께 넣는다. 코드만으로 역사 identity를 임의 선택하지 않는다.
+
+응답은 현재 generation의 거래일 오름차순 page이며, 매 거래일마다 EMA 5·20·50·200을 모두 반환한다. `value`는 Decimal 정밀도를 보존하는 문자열이고, `status`와 `reason_code`를 함께 확인해야 한다. `warming_up`과 `data_unavailable` 값은 조건 또는 백테스트 입력으로 사용하면 안 된다. `as_of`는 현재 generation의 최신 거래일, `calculated_at`은 그 generation의 마지막 완료 계산 시각이다.
+
 ## 일상 배치와 감사
 
 일상 수집은 `python -m app.main_batch`로 실행한다. 명부만 갱신할 때는 `--symbols-only`를 사용한다. 배치 실패는 재시도 대상·오류 원인을 보존하며, 실패를 정상 거래일로 기록하지 않는다.

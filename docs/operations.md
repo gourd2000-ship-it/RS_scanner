@@ -86,6 +86,18 @@ APP_ENV=production .venv/bin/python scripts/backfill_ema.py \
 
 적용 결과에서는 plan/application report hash, 종목별 run ID와 input/result hash, created/reused 수를 보관한다. 오류가 나면 범위나 cutoff를 넓히지 말고 실패 원인과 마지막 완료 종목을 확인한 뒤 같은 고정 인수로 재개한다. EMA 값은 아직 백테스트 dataset이나 조건 입력에 연결하지 않는다.
 
+## 거래량 50일 평균 보고서
+
+거래량 50일 평균은 현재 읽기 전용 검토 도구다. DB 값을 만들거나 수정하지 않으며, 0 거래량은 정상 관측값으로 평균에 포함한다. 다음 명령은 대상·준비 중·사용 불가·사용 가능 수와 종목별 결과 hash를 JSON으로 남긴다.
+
+```bash
+.venv/bin/python scripts/plan_volume_sma50.py \
+  --start 2013-01-02 --end 2026-09-04 \
+  --provider kiwoom --adjustment-type 1 --parser-version kiwoom-history-v1 \
+  --observation-cutoff 9999-12-31T23:59:59Z \
+  --instrument-id 5 --output reports/volume_ma50/sample.json
+```
+
 ## 배포
 
 이미지는 `docker compose up -d` 또는 운영 오케스트레이터로 기동한다. 배포 전 migration 호환성, 비밀값 주입, 내부 자동화 token의 읽기 scope, health endpoint를 확인한다. 배포 후에는 최근 batch의 상태·coverage·인증 거부 로그를 확인한다. 비밀값 노출 의심 시 배포를 계속하지 말고 token/키 교체 후 연결 설정을 갱신한다.

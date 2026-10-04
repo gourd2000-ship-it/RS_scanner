@@ -53,6 +53,33 @@ APP_ENV=production .venv/bin/python scripts/audit_historical_ohlcv.py \
 
 결과의 manifest, summary, assessment, gaps, anomalies, source conflicts, excluded universe를 함께 보관한다. 현재 기준선에서 dataset 생성 전에는 `complete` 판정만 선택한다. `scripts/create_clean_backtest_dataset.py --create`는 운영 DB에 쓰므로 감사 결과와 발행 범위를 사람이 검토한 뒤에만 실행한다.
 
+## 역사 EMA 계산
+
+EMA 5·20·50·200은 검증된 관측 원본과 당시의 identity snapshot만 사용한다. 먼저 격리 PostgreSQL에서 migration과 대표 종목 계산을 확인한 뒤, 운영에서는 같은 범위·공급자·조정 기준·parser version·UTC cutoff를 명시한 dry-run 보고서를 만든다. 기본 명령은 DB에 series, run, input snapshot, value를 하나도 쓰지 않는다.
+
+```bash
+APP_ENV=production .venv/bin/python scripts/backfill_ema.py \
+  --start 2013-01-01 --end 2026-09-04 \
+  --provider kiwoom --adjustment-type 1 --parser-version kiwoom-v2 \
+  --observation-cutoff 2026-10-02T08:40:00Z \
+  --chunk-size 25 --output reports/ema/plan_2013_20260904.json
+```
+
+보고서에서 대상 종목, 각 EMA 최초 `available` 일자, `warming_up`·`data_unavailable` 수, 예상 input/value 행·저장량·시간, `rebuild` 대상을 검토한다. `report_hash`와 입력 정책을 운영 기록에 남긴다. dry-run의 대상은 KRX 거래일과 cutoff 이전의 정책 일치 immutable identity 관측으로 결정되며, `--instrument-id`를 반복해 표본이나 재처리 대상을 고정할 수 있다.
+
+운영 적용은 backup, migration 상태, dry-run 보고서를 검토한 뒤에만 같은 인수에 `--apply`를 추가해 실행한다. 명령은 종목별로 완료된 불변 run을 커밋하므로 중단 뒤에는 같은 인수와 `--apply --resume`으로 재개한다. 이미 완료된 같은 input hash는 재사용하며 기존 run·입력 snapshot·EMA value를 수정하지 않는다. 과거 입력의 hash가 바뀐 대상만 새 `rebuild` generation을 만들고, 이전 generation은 보존한다.
+
+```bash
+APP_ENV=production .venv/bin/python scripts/backfill_ema.py \
+  --start 2013-01-01 --end 2026-09-04 \
+  --provider kiwoom --adjustment-type 1 --parser-version kiwoom-v2 \
+  --observation-cutoff 2026-10-02T08:40:00Z \
+  --chunk-size 25 --apply --resume \
+  --output reports/ema/apply_2013_20260904.json
+```
+
+적용 결과에서는 plan/application report hash, 종목별 run ID와 input/result hash, created/reused 수를 보관한다. 오류가 나면 범위나 cutoff를 넓히지 말고 실패 원인과 마지막 완료 종목을 확인한 뒤 같은 고정 인수로 재개한다. EMA 값은 아직 백테스트 dataset이나 조건 입력에 연결하지 않는다.
+
 ## 배포
 
 이미지는 `docker compose up -d` 또는 운영 오케스트레이터로 기동한다. 배포 전 migration 호환성, 비밀값 주입, 내부 자동화 token의 읽기 scope, health endpoint를 확인한다. 배포 후에는 최근 batch의 상태·coverage·인증 거부 로그를 확인한다. 비밀값 노출 의심 시 배포를 계속하지 말고 token/키 교체 후 연결 설정을 갱신한다.

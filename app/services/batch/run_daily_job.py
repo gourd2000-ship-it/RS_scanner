@@ -15,6 +15,13 @@ from app.services.batch.sync_eod import sync_eod_prices
 from app.services.batch.sync_prices import PriceSyncResult, sync_prices
 from app.services.batch.sync_krx_universe import sync_krx_universe
 from app.services.batch.sync_symbols import sync_symbols
+from app.services.batch.ema_adapter import (
+    EmaBatchOutcome,
+    calculate_daily_ema,
+    completed_ema_outcome,
+    ema_enabled,
+    record_ema_checkpoint,
+)
 from app.services.validation.data_quality import validate_crawl_job
 from app.services.validation.report import write_validation_report
 from app.core.metrics import increment_metric
@@ -56,7 +63,10 @@ def run_daily_job(
     # 작업 추적 시작 (선택적)
     job = None
     job_id = None
-    if context.crawl_job_repository:
+    if context.job_id is not None:
+        job_id = context.job_id
+        logger.info("using existing crawl job: %s", job_id)
+    elif context.crawl_job_repository:
         job = context.crawl_job_repository.create_job("daily_full")
         job_id = job.id
         context.job_id = job_id
@@ -122,6 +132,24 @@ def run_daily_job(
             else calculate_rs(context, target_date=target_date)
         )
 
+        # EMA is optional and runs only after the clean validation decision and
+        # RS publication.  A missing policy or a calculation problem is
+        # retained as EMA evidence without discarding otherwise valid RS.
+        ema_result: EmaBatchOutcome | None = None
+        if ema_enabled(settings):
+            ema_result = completed_ema_outcome(context)
+            if ema_result is None:
+                ema_result = (
+                    EmaBatchOutcome.skipped("validation_gate_blocked")
+                    if validation_blocked
+                    else calculate_daily_ema(
+                        context,
+                        target_date=target_date or context.target_date,
+                        settings=settings,
+                    )
+                )
+                record_ema_checkpoint(context, ema_result)
+
         # 가격 단계 결과에서 실제 종목별 통계를 계산한다.
         price_stats = prices if isinstance(prices, PriceSyncResult) else None
         universe_degraded = (
@@ -133,12 +161,12 @@ def run_daily_job(
         symbols_failed = price_stats.unsuccessful_count if price_stats else 0
         job_status = (
             "completed_with_errors"
-            if symbols_failed or universe_degraded or validation_blocked
+            if symbols_failed or universe_degraded or validation_blocked or (ema_result and ema_result.has_errors)
             else "completed"
         )
         job_message = (
             "Daily batch completed with errors"
-            if symbols_failed or universe_degraded or validation_blocked
+            if symbols_failed or universe_degraded or validation_blocked or (ema_result and ema_result.has_errors)
             else "Daily batch completed successfully"
         )
 
@@ -161,7 +189,7 @@ def run_daily_job(
                     logger.exception("failed to create crawl quality report for job %s", job_id)
 
         duration = (datetime.utcnow() - started_at).total_seconds()
-        if symbols_failed or universe_degraded:
+        if symbols_failed or universe_degraded or (ema_result and ema_result.has_errors):
             notification_service.send_batch_failure_sync(
                 job_type="daily_full",
                 error_message=job_message,
@@ -186,6 +214,7 @@ def run_daily_job(
             "validation": validation_result.to_dict() if validation_result else None,
             "validation_report": validation_report_path,
             "validation_blocked": validation_blocked,
+            "ema": ema_result.to_dict() if ema_result is not None else None,
             "krx_universe_snapshot_id": context.krx_universe_snapshot_id,
             "krx_universe_snapshot_status": context.krx_universe_snapshot_status,
         }

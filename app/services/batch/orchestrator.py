@@ -22,6 +22,12 @@ from app.services.batch.sync_eod import sync_eod_prices
 from app.services.batch.sync_prices import PriceSyncResult, sync_prices
 from app.services.batch.sync_krx_universe import KrxUniverseSyncResult, sync_krx_universe
 from app.services.batch.sync_symbols import sync_symbols
+from app.services.batch.ema_adapter import (
+    EmaBatchOutcome,
+    calculate_daily_ema,
+    ema_enabled,
+    record_ema_checkpoint,
+)
 from app.core.config import get_settings
 from app.core.metrics import increment_metric
 from app.core.market_calendar import batch_target_date, krx_market_day_status
@@ -164,6 +170,25 @@ class BatchOrchestrator:
                     description="RS 계산",
                 )
 
+            # EMA follows validation and RS.  Its evidence is optional and a
+            # failed/blocked EMA pass must never retract RS that was already
+            # persisted for this crawl job.
+            ema_result: EmaBatchOutcome | None = None
+            if ema_enabled(settings):
+                if validation_blocked:
+                    ema_result = EmaBatchOutcome.skipped("validation_gate_blocked")
+                    self._record_ema_outcome(ema_result)
+                else:
+                    ema_result = self._run_step(
+                        step_name="ema",
+                        step_func=lambda ctx: calculate_daily_ema(
+                            ctx,
+                            target_date=self.target_date or batch_target_date(settings),
+                            settings=settings,
+                        ),
+                        description="EMA 계산",
+                    )
+
             price_stats = prices if isinstance(prices, PriceSyncResult) else None
             universe_degraded = (
                 self.universe_snapshot_status in {"partial", "failed"}
@@ -174,12 +199,12 @@ class BatchOrchestrator:
             symbols_failed = price_stats.unsuccessful_count if price_stats else 0
             job_status = (
                 "completed_with_errors"
-                if symbols_failed or universe_degraded or validation_blocked
+                if symbols_failed or universe_degraded or validation_blocked or (ema_result and ema_result.has_errors)
                 else "completed"
             )
             job_message = (
                 "Daily batch completed with errors"
-                if symbols_failed or universe_degraded or validation_blocked
+                if symbols_failed or universe_degraded or validation_blocked or (ema_result and ema_result.has_errors)
                 else "Daily batch completed successfully"
             )
 
@@ -198,7 +223,7 @@ class BatchOrchestrator:
             )
 
             duration = (datetime.utcnow() - self.started_at).total_seconds()
-            if symbols_failed or universe_degraded:
+            if symbols_failed or universe_degraded or (ema_result and ema_result.has_errors):
                 notification_service.send_batch_failure_sync(
                     job_type="daily_full",
                     error_message=job_message,
@@ -222,6 +247,7 @@ class BatchOrchestrator:
                 "rs_results": {market: len(rows) for market, rows in rs_results.items()} if rs_results else {},
                 "validation": validation_result.to_dict() if isinstance(validation_result, ValidationResult) else None,
                 "validation_blocked": validation_blocked,
+                "ema": ema_result.to_dict() if ema_result is not None else None,
                 "reconciliation_report": str(reconciliation_report_path)
                 if reconciliation_report_path is not None
                 else None,
@@ -254,6 +280,9 @@ class BatchOrchestrator:
 
     def _create_job(self) -> None:
         """작업 생성 (별도 트랜잭션)"""
+        if self.job_id is not None:
+            logger.info("using existing crawl job: %s", self.job_id)
+            return
         with session_scope() as session:
             context = build_db_batch_context(session)
             if context.crawl_job_repository:
@@ -263,7 +292,10 @@ class BatchOrchestrator:
 
                 # 각 단계에 대한 체크포인트 초기화
                 if context.checkpoint_repository:
-                    for step_name in ["krx_shadow", "symbols", "benchmarks", "prices", "validation", "rs"]:
+                    step_names = ["krx_shadow", "symbols", "benchmarks", "prices", "validation", "rs"]
+                    if ema_enabled():
+                        step_names.append("ema")
+                    for step_name in step_names:
                         context.checkpoint_repository.create_checkpoint(
                             job_id=self.job_id,
                             step_name=step_name,
@@ -399,6 +431,12 @@ class BatchOrchestrator:
                 run = repository.latest_validation_run(crawl_job_id=self.job_id)
                 if run is not None:
                     return ValidationResult(run=run, cases=[], metrics=run.metrics or {})
+        if step_name == "ema" and self.job_id:
+            with session_scope() as session:
+                context = build_db_batch_context(session)
+                checkpoint = context.checkpoint_repository.get_checkpoint(self.job_id, "ema")
+                if checkpoint is not None and checkpoint.status == "completed":
+                    return EmaBatchOutcome.completed(processed=checkpoint.items_processed)
         return None
 
     def _start_step_checkpoint(self, step_name: str) -> None:
@@ -437,6 +475,11 @@ class BatchOrchestrator:
             if result.status != "completed":
                 items_failed = 1
                 checkpoint_status = "completed_with_errors"
+        elif isinstance(result, EmaBatchOutcome):
+            items_processed = result.processed
+            items_failed = result.failed
+            if result.has_errors:
+                checkpoint_status = "completed_with_errors"
         elif isinstance(result, list):
             items_processed = len(result)
         elif isinstance(result, dict):
@@ -462,6 +505,8 @@ class BatchOrchestrator:
                     metadata["universe_snapshot_status"] = self.universe_snapshot_status
                     if self.universe_snapshot_id is not None:
                         metadata["universe_snapshot_id"] = self.universe_snapshot_id
+                if isinstance(result, EmaBatchOutcome):
+                    metadata.update(json.loads(result.checkpoint_metadata()))
 
                 context.checkpoint_repository.complete_step(
                     job_id=self.job_id,
@@ -506,9 +551,19 @@ class BatchOrchestrator:
                 context.checkpoint_repository.complete_step(
                     job_id=self.job_id,
                     step_name=step_name,
-                    status="blocked",
-                    step_metadata=message,
+                    status="completed_with_errors",
+                    items_failed=1,
+                    step_metadata=json.dumps({"outcome": "skipped", "reason": message}, sort_keys=True),
                 )
+
+    def _record_ema_outcome(self, outcome: EmaBatchOutcome) -> None:
+        """Record an optional EMA skip against this crawl job only."""
+        if not self.job_id:
+            return
+        with session_scope() as session:
+            context = build_db_batch_context(session)
+            context.job_id = self.job_id
+            record_ema_checkpoint(context, outcome)
 
     def _execute_step(self, step_name: str, step_func: Callable[[BatchContext], Any]) -> Any:
         """단계 실행 (별도 트랜잭션)"""

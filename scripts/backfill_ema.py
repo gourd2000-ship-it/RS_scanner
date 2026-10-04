@@ -94,13 +94,19 @@ def execute(args: argparse.Namespace) -> dict[str, Any]:
     request = request_from_args(args)
     with SessionLocal() as session:
         service = EmaHistoricalBackfillService(session)
-        plan = service.plan(request)
-        plan_report = plan.report()
+        # The market-wide historical range is too large for the bounded in
+        # memory plan object.  The streaming report retains only compact
+        # instrument summaries and has the same deterministic report contract.
+        plan_report = service.streaming_plan_report(request)
         if not args.apply:
             # Session.close() rolls back the read transaction.  No write-capable
             # calculation service method is reached on the dry-run path.
             return plan_report
-        application = service.apply(plan, resume=args.resume)
+        application = service.apply_request(
+            request,
+            plan_report_hash=plan_report["report_hash"],
+            resume=args.resume,
+        )
         return {"plan": plan_report, "application": application.report()}
 
 

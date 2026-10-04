@@ -222,6 +222,87 @@ class EmaHistoricalBackfillService:
         )
         return EmaHistoricalBackfillPlan(request=request, targets=targets)
 
+    def streaming_plan_report(self, request: EmaHistoricalBackfillRequest) -> dict[str, Any]:
+        """Build the operator report one instrument at a time.
+
+        The historical production range contains millions of observations.  A
+        normal :meth:`plan` is useful for a bounded sample, but retaining every
+        ``EmaInputRow`` and ``EmaValue`` for the whole market would turn a
+        read-only dry-run into a multi-gigabyte allocation.  This path keeps
+        only the compact per-instrument report rows.
+        """
+        dates = tuple(_trading_dates(request.start, request.end, self.is_trading_day))
+        if not dates:
+            raise ValueError("EMA backfill range has no KRX trading dates")
+        instrument_ids = request.instrument_ids or self._discover_instrument_ids(request)
+        target_reports: list[dict[str, Any]] = []
+        counts = Counter()
+        for instrument_id in instrument_ids:
+            target = self._plan_target(
+                instrument_id=instrument_id,
+                trade_dates=dates,
+                request=request,
+            )
+            target_report = target.report_material()
+            target_reports.append(target_report)
+            counts["input_rows"] += target_report["expected_trade_dates"]
+            counts["indicator_value_rows"] += target_report["expected_trade_dates"] * len(EMA_PERIODS)
+            counts["warming_up_rows"] += target_report["warming_up_rows"]
+            counts["data_unavailable_rows"] += target_report["data_unavailable_rows"]
+            counts["available_rows"] += target_report["available_rows"]
+            counts["rebuild_targets"] += target_report["action"] == "rebuild"
+        counts["targets"] = len(target_reports)
+        return _plan_report_material(request=request, target_reports=target_reports, counts=counts)
+
+    def apply_request(
+        self,
+        request: EmaHistoricalBackfillRequest,
+        *,
+        plan_report_hash: str,
+        resume: bool = False,
+    ) -> EmaHistoricalBackfillApplication:
+        """Apply an unbounded historical request without retaining all rows.
+
+        Each instrument is selected, calculated and committed independently.
+        This is both the transaction/recovery boundary and the memory boundary;
+        a later ``--resume`` therefore reuses completed immutable runs.
+        """
+        del resume
+        dates = tuple(_trading_dates(request.start, request.end, self.is_trading_day))
+        if not dates:
+            raise ValueError("EMA backfill range has no KRX trading dates")
+        instrument_ids = request.instrument_ids or self._discover_instrument_ids(request)
+        outcomes: list[dict[str, Any]] = []
+        created = 0
+        reused = 0
+        chunks = 0
+        for instrument_chunk in _instrument_chunks(instrument_ids, request.chunk_size):
+            chunks += 1
+            for instrument_id in instrument_chunk:
+                try:
+                    outcome = EmaCalculationService(self.session).calculate(
+                        instrument_id=instrument_id,
+                        trade_dates=dates,
+                        policy=request.policy,
+                    )
+                    self.session.commit()
+                except Exception:
+                    self.session.rollback()
+                    raise
+                outcomes.append(self._outcome_report(instrument_id, outcome))
+                if outcome.reused:
+                    reused += 1
+                else:
+                    created += 1
+        return EmaHistoricalBackfillApplication(
+            report_hash=plan_report_hash,
+            attempted=len(instrument_ids),
+            created=created,
+            reused=reused,
+            chunks=chunks,
+            outcomes=tuple(outcomes),
+        )
+
     def apply(
         self,
         plan: EmaHistoricalBackfillPlan,
@@ -369,6 +450,50 @@ def _trading_dates(start: date, end: date, is_trading_day: Callable[[date], bool
 def _chunks(values: tuple[EmaHistoricalBackfillTarget, ...], size: int) -> Iterator[tuple[EmaHistoricalBackfillTarget, ...]]:
     for offset in range(0, len(values), size):
         yield values[offset: offset + size]
+
+
+def _instrument_chunks(values: tuple[int, ...], size: int) -> Iterator[tuple[int, ...]]:
+    for offset in range(0, len(values), size):
+        yield values[offset: offset + size]
+
+
+def _plan_report_material(
+    *,
+    request: EmaHistoricalBackfillRequest,
+    target_reports: list[dict[str, Any]],
+    counts: Counter,
+) -> dict[str, Any]:
+    """Render the stable report payload shared by bounded and streaming plans."""
+    input_rows = counts["input_rows"]
+    value_rows = counts["indicator_value_rows"]
+    storage_bytes = input_rows * _ESTIMATED_INPUT_SNAPSHOT_BYTES + value_rows * _ESTIMATED_VALUE_BYTES
+    report_without_hash = {
+        "schema_version": 1,
+        "mode": "dry_run_plan",
+        "request": request.report_material(),
+        "counts": {
+            "targets": counts["targets"],
+            "input_rows": input_rows,
+            "indicator_value_rows": value_rows,
+            "warming_up_rows": counts["warming_up_rows"],
+            "data_unavailable_rows": counts["data_unavailable_rows"],
+            "available_rows": counts["available_rows"],
+            "rebuild_targets": counts["rebuild_targets"],
+        },
+        "estimate": {
+            "input_snapshot_rows": input_rows,
+            "indicator_value_rows": value_rows,
+            "storage_bytes": storage_bytes,
+            "estimated_seconds": ceil(value_rows / _ESTIMATED_VALUES_PER_SECOND),
+        },
+        "targets": target_reports,
+    }
+    from hashlib import sha256
+
+    return {
+        **report_without_hash,
+        "report_hash": sha256(canonical_json(report_without_hash).encode("utf-8")).hexdigest(),
+    }
 
 
 def _json_ready(value: Any) -> dict[str, Any]:

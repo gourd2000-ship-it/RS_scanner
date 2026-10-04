@@ -216,3 +216,48 @@ def test_cli_default_dry_run_serializes_report_without_database_mutation(session
     assert report["mode"] == "dry_run_plan"
     assert report["request"]["policy"]["observation_cutoff"] == "2025-01-01T00:00:00.000000Z"
     json.dumps(report, ensure_ascii=False)
+
+
+def test_streaming_plan_and_apply_do_not_require_a_market_wide_plan(session: Session):
+    first, dates = _seed(session)
+    second = Instrument(
+        krx_short_code="EMABF2", name="EMA backfill 2", market="KOSPI",
+        security_type="stock", listing_status="listed",
+    )
+    symbol = Symbol(code="EMABF2", name="EMA backfill 2", market="KOSPI")
+    session.add_all((second, symbol))
+    session.flush()
+    mapping = ProviderSymbol(
+        instrument_id=second.id, provider="kiwoom", provider_symbol="EMABF2",
+        valid_from=date(2020, 1, 1), mapping_status="matched",
+    )
+    session.add(mapping)
+    session.flush()
+    for index, trade_date in enumerate(dates):
+        close = Decimal(200 + index)
+        observation = PriceObservation(
+            symbol_id=symbol.id, trade_date=trade_date, open=close, high=close + 1,
+            low=close - 1, close=close, volume=1000, change_rate=Decimal(0),
+            provider="kiwoom", parser_version="kiwoom-v2", adjustment_type="1",
+            payload_hash=f"{index + 11:064x}", observed_at=datetime(2024, 1, 2, tzinfo=UTC) + timedelta(days=index),
+        )
+        session.add(observation)
+        session.flush()
+        IndicatorRepository(session).create_identity_snapshot(
+            price_observation_id=observation.id, instrument_id=second.id,
+            provider_symbol_mapping_id=mapping.id, provider="kiwoom", provider_symbol="EMABF2",
+            mapping_status="matched", mapping_valid_from=date(2020, 1, 1),
+            mapping_valid_to=None, resolver_version="resolver-v1", resolved_at=observation.observed_at,
+        )
+    session.commit()
+    service = _service(session)
+    request = EmaHistoricalBackfillRequest(
+        start=dates[0], end=dates[-1], policy=_policy(),
+        instrument_ids=(first.id, second.id), chunk_size=1,
+    )
+    report = service.streaming_plan_report(request)
+    application = service.apply_request(request, plan_report_hash=report["report_hash"])
+
+    assert report["counts"]["targets"] == 2
+    assert application.created == 2
+    assert _counts(session) == (2, 2, 10, 40)

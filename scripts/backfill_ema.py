@@ -9,6 +9,7 @@ reuses completed runs; it never updates completed EMA evidence.
 from __future__ import annotations
 
 import argparse
+from hashlib import sha256
 import json
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -64,6 +65,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--chunk-size", type=int, default=50, help="커밋 경계당 최대 종목 수 (1~500)")
     parser.add_argument("--apply", action="store_true", help="검토된 계획을 실제 DB에 적용")
     parser.add_argument(
+        "--skip-full-plan",
+        action="store_true",
+        help="전체 dry-run 계산을 생략하고 요청 manifest만 남겨 적용 (반드시 --apply와 함께 사용)",
+    )
+    parser.add_argument(
         "--resume",
         action="store_true",
         help="같은 범위·정책 실행을 재개; 완료된 동일 input hash run은 재사용",
@@ -91,13 +97,28 @@ def request_from_args(args: argparse.Namespace) -> EmaHistoricalBackfillRequest:
 def execute(args: argparse.Namespace) -> dict[str, Any]:
     if args.resume and not args.apply:
         raise ValueError("--resume은 --apply와 함께 사용해야 합니다")
+    if args.skip_full_plan and not args.apply:
+        raise ValueError("--skip-full-plan은 --apply와 함께 사용해야 합니다")
     request = request_from_args(args)
     with SessionLocal() as session:
         service = EmaHistoricalBackfillService(session)
-        # The market-wide historical range is too large for the bounded in
-        # memory plan object.  The streaming report retains only compact
-        # instrument summaries and has the same deterministic report contract.
-        plan_report = service.streaming_plan_report(request)
+        if args.skip_full_plan:
+            manifest = {
+                "schema_version": 1,
+                "mode": "apply_request_manifest",
+                "request": request.report_material(),
+            }
+            plan_report = {
+                **manifest,
+                "report_hash": sha256(
+                    json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
+                ).hexdigest(),
+            }
+        else:
+            # The market-wide historical range is too large for the bounded in
+            # memory plan object.  The streaming report retains only compact
+            # instrument summaries and has the same deterministic report contract.
+            plan_report = service.streaming_plan_report(request)
         if not args.apply:
             # Session.close() rolls back the read transaction.  No write-capable
             # calculation service method is reached on the dry-run path.

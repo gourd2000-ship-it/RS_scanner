@@ -263,6 +263,20 @@ def test_streaming_plan_and_apply_do_not_require_a_market_wide_plan(session: Ses
     assert _counts(session) == (2, 2, 10, 40)
 
 
+def test_cli_skip_full_plan_requires_apply_and_emits_request_manifest(session: Session, monkeypatch):
+    instrument, dates = _seed(session)
+    monkeypatch.setattr(backfill_cli, "SessionLocal", sessionmaker(bind=session.bind))
+    args = backfill_cli.build_parser().parse_args([
+        "--start", dates[0].isoformat(), "--end", dates[-1].isoformat(),
+        "--provider", "kiwoom", "--adjustment-type", "1", "--parser-version", "kiwoom-v2",
+        "--observation-cutoff", "2025-01-01T00:00:00Z", "--instrument-id", str(instrument.id),
+        "--apply", "--skip-full-plan",
+    ])
+    report = backfill_cli.execute(args)
+    assert report["plan"]["mode"] == "apply_request_manifest"
+    assert report["application"]["created"] == 1
+
+
 def test_discovery_uses_compact_provider_identity_catalogue(session: Session):
     instrument, dates = _seed(session)
     discovered = _service(session)._discover_instrument_ids(

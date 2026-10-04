@@ -49,3 +49,16 @@ resolver 버전·확정 시각을 보존해야 한다. 현재 `DailyPrice` 행�
 EMA 입력을 고정 데이터셋이나 백테스트에 연결하는 기능, EMA 조건과 교차 판정은 아직
 구현하지 않는다. 이후 백테스트가 EMA를 사용하려면 고정 데이터셋 가격, EMA 계산 버전,
 입력 hash를 함께 고정해야 한다.
+
+### 일일 EMA 운영 설정
+
+일일 EMA는 기본 비활성(`EMA_ENABLED=false`)이다. 활성화하려면
+`EMA_SOURCE_PROVIDER`, `EMA_ADJUSTMENT_TYPE`, `EMA_ALLOWED_PARSER_VERSIONS`을 실제로
+축적된 불변 관측과 일치하게 고정한다. 이 세 값은 series 정책의 일부이므로 변경하면 기존
+series를 이어 쓰지 않는다.
+
+일일 실행은 관측 시각마다 cutoff를 앞으로 옮기지 않는다. 코드의 고정된 미래 수용 경계
+아래에서 새 관측을 계속 선택하고, 각 계산 run에는 선택된 input snapshot·prefix hash·결과
+hash를 불변으로 저장한다. 따라서 다음 거래일의 관측은 같은 series에 증분 추가되며, 과거
+관측의 선택 근거가 바뀌면 새 generation으로 재계산한다. 운영자는 별도의
+`EMA_OBSERVATION_CUTOFF`을 설정하거나 매일 갱신해서는 안 된다.

@@ -11,11 +11,11 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
-from datetime import UTC, date
+from datetime import date
 
 from sqlalchemy import select
 
-from app.core.config import Settings, get_settings
+from app.core.config import EMA_DAILY_OBSERVATION_BOUNDARY, Settings, get_settings
 from app.models.data_quality import PriceObservation
 from app.models.indicator import PriceObservationIdentitySnapshot
 from app.services.batch.context import BatchContext
@@ -78,9 +78,9 @@ def calculate_daily_ema(
 ) -> EmaBatchOutcome:
     """Calculate all policy-proven series through ``target_date``.
 
-    A source policy must be deliberately frozen in configuration.  This keeps
-    an operator from accidentally blending differently adjusted observations
-    merely by enabling the optional daily feature.
+    A source policy must be deliberately frozen in configuration.  A stable
+    acceptance boundary lets later daily observations extend the same series;
+    each completed run still copies its exact selected input evidence.
     """
     effective_settings = settings or get_settings()
     policy = _policy_from_settings(effective_settings)
@@ -161,16 +161,13 @@ def _policy_from_settings(settings: Settings) -> EmaSourcePolicy | None:
         for value in settings.ema_allowed_parser_versions.split(",")
         if value.strip()
     )
-    cutoff = settings.ema_observation_cutoff
-    if not settings.ema_source_provider or not settings.ema_adjustment_type or not versions or cutoff is None:
+    if not settings.ema_source_provider or not settings.ema_adjustment_type or not versions:
         return None
-    if cutoff.tzinfo is None:
-        cutoff = cutoff.replace(tzinfo=UTC)
     return EmaSourcePolicy(
         provider=settings.ema_source_provider,
         adjustment_type=settings.ema_adjustment_type,
         allowed_parser_versions=versions,
-        observation_cutoff=cutoff.astimezone(UTC),
+        observation_cutoff=EMA_DAILY_OBSERVATION_BOUNDARY,
     )
 
 

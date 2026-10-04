@@ -1,9 +1,15 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from functools import lru_cache
 from typing import Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+# EMA's source-policy boundary is deliberately stable across daily runs.  The
+# immutable input snapshots, rather than a moving "as of now" cutoff, preserve
+# each run's reproducible source evidence.
+EMA_DAILY_OBSERVATION_BOUNDARY = datetime(9999, 12, 31, 23, 59, 59, tzinfo=UTC)
 
 
 class Settings(BaseSettings):
@@ -236,16 +242,13 @@ class Settings(BaseSettings):
     )
 
     # EMA generation is opt-in while immutable observation identity coverage
-    # is being accumulated.  The source policy is frozen by the configured
-    # cutoff; changing it intentionally starts a separate indicator series.
+    # is being accumulated.  Source fields are an immutable series policy;
+    # do not use a per-run observation cutoff here.
     ema_enabled: bool = Field(default=False, alias="EMA_ENABLED")
     ema_source_provider: str = Field(default="kiwoom", alias="EMA_SOURCE_PROVIDER")
     ema_adjustment_type: str = Field(default="1", alias="EMA_ADJUSTMENT_TYPE")
     ema_allowed_parser_versions: str = Field(
         default="kiwoom-history-v1", alias="EMA_ALLOWED_PARSER_VERSIONS"
-    )
-    ema_observation_cutoff: datetime | None = Field(
-        default=None, alias="EMA_OBSERVATION_CUTOFF"
     )
 
 

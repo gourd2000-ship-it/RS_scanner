@@ -261,3 +261,14 @@ def test_streaming_plan_and_apply_do_not_require_a_market_wide_plan(session: Ses
     assert report["counts"]["targets"] == 2
     assert application.created == 2
     assert _counts(session) == (2, 2, 10, 40)
+
+
+def test_discovery_uses_compact_provider_identity_catalogue(session: Session):
+    instrument, dates = _seed(session)
+    discovered = _service(session)._discover_instrument_ids(
+        EmaHistoricalBackfillRequest(
+            start=dates[0], end=dates[-1], policy=_policy(), chunk_size=1,
+        )
+    )
+
+    assert discovered == (instrument.id,)

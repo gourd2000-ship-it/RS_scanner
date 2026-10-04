@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from app.core.market_calendar import krx_market_day_status
 from app.models.data_quality import PriceObservation
 from app.models.indicator import PriceObservationIdentitySnapshot
+from app.models.instrument import ProviderSymbol
 from app.repositories.indicator_repository import IndicatorRepository
 from app.services.indicators.calculation_service import EmaCalculationOutcome, EmaCalculationService
 from app.services.indicators.contracts import (
@@ -351,26 +352,22 @@ class EmaHistoricalBackfillService:
         )
 
     def _discover_instrument_ids(self, request: EmaHistoricalBackfillRequest) -> tuple[int, ...]:
-        """Find only instruments with policy-matching, immutable identity evidence."""
+        """Find mapped historical instruments without scanning every observation.
+
+        ``ProviderSymbol`` is the compact historical identity catalogue.  The
+        per-instrument selector still requires its immutable observation
+        snapshot and records an unavailable value if source evidence is absent;
+        discovery itself must not build a multi-million-row ``DISTINCT`` hash
+        merely to find a few thousand candidate instrument IDs.
+        """
         statement = (
-            select(PriceObservationIdentitySnapshot.instrument_id)
-            .join(
-                PriceObservation,
-                PriceObservation.id == PriceObservationIdentitySnapshot.price_observation_id,
-            )
+            select(ProviderSymbol.instrument_id)
             .where(
-                PriceObservationIdentitySnapshot.instrument_id.is_not(None),
-                PriceObservationIdentitySnapshot.mapping_status == "matched",
-                PriceObservation.provider == request.policy.provider,
-                PriceObservation.adjustment_type == request.policy.adjustment_type,
-                PriceObservation.parser_version.in_(request.policy.allowed_parser_versions),
-                PriceObservation.observed_at.is_not(None),
-                PriceObservation.observed_at <= request.policy.observation_cutoff,
-                PriceObservation.trade_date >= request.start,
-                PriceObservation.trade_date <= request.end,
+                ProviderSymbol.provider == request.policy.provider,
+                ProviderSymbol.mapping_status == "matched",
             )
             .distinct()
-            .order_by(PriceObservationIdentitySnapshot.instrument_id)
+            .order_by(ProviderSymbol.instrument_id)
         )
         return tuple(value for value in self.session.scalars(statement) if value is not None)
 

@@ -34,4 +34,24 @@ __all__ = [
     "InputHistoryKind", "InputReasonCode", "ValidationCaseEvidence", "build_prefix_hashes",
     "canonical_json", "compare_input_histories", "compute_ema", "input_row_fingerprint", "prefix_hash",
     "result_hash", "select_last_approved_close_correction", "select_latest_input",
+    "EmaCalculationOutcome", "EmaCalculationService", "EmaCleanupCandidate", "EmaInputSelector",
 ]
+
+
+def __getattr__(name: str):
+    """Keep persistence-model imports acyclic while exposing service entry points."""
+    if name == "EmaInputSelector":
+        from app.services.indicators.input_selector import EmaInputSelector
+        return EmaInputSelector
+    if name in {"EmaCalculationOutcome", "EmaCalculationService", "EmaCleanupCandidate"}:
+        from app.services.indicators.calculation_service import (
+            EmaCalculationOutcome,
+            EmaCalculationService,
+            EmaCleanupCandidate,
+        )
+        return {
+            "EmaCalculationOutcome": EmaCalculationOutcome,
+            "EmaCalculationService": EmaCalculationService,
+            "EmaCleanupCandidate": EmaCleanupCandidate,
+        }[name]
+    raise AttributeError(name)

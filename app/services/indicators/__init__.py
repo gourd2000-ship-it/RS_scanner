@@ -35,6 +35,8 @@ __all__ = [
     "canonical_json", "compare_input_histories", "compute_ema", "input_row_fingerprint", "prefix_hash",
     "result_hash", "select_last_approved_close_correction", "select_latest_input",
     "EmaCalculationOutcome", "EmaCalculationService", "EmaCleanupCandidate", "EmaInputSelector",
+    "EmaHistoricalBackfillApplication", "EmaHistoricalBackfillPlan", "EmaHistoricalBackfillRequest",
+    "EmaHistoricalBackfillService", "EmaHistoricalBackfillTarget",
 ]
 
 
@@ -53,5 +55,23 @@ def __getattr__(name: str):
             "EmaCalculationOutcome": EmaCalculationOutcome,
             "EmaCalculationService": EmaCalculationService,
             "EmaCleanupCandidate": EmaCleanupCandidate,
+        }[name]
+    if name in {
+        "EmaHistoricalBackfillApplication", "EmaHistoricalBackfillPlan", "EmaHistoricalBackfillRequest",
+        "EmaHistoricalBackfillService", "EmaHistoricalBackfillTarget",
+    }:
+        from app.services.indicators.backfill import (
+            EmaHistoricalBackfillApplication,
+            EmaHistoricalBackfillPlan,
+            EmaHistoricalBackfillRequest,
+            EmaHistoricalBackfillService,
+            EmaHistoricalBackfillTarget,
+        )
+        return {
+            "EmaHistoricalBackfillApplication": EmaHistoricalBackfillApplication,
+            "EmaHistoricalBackfillPlan": EmaHistoricalBackfillPlan,
+            "EmaHistoricalBackfillRequest": EmaHistoricalBackfillRequest,
+            "EmaHistoricalBackfillService": EmaHistoricalBackfillService,
+            "EmaHistoricalBackfillTarget": EmaHistoricalBackfillTarget,
         }[name]
     raise AttributeError(name)

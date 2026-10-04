@@ -91,11 +91,28 @@ class EmaInputSelector:
         for observation, identity in observations:
             if self._matches_source_policy(observation, policy):
                 by_date[observation.trade_date].append((observation, identity))
+        selected_by_date = {
+            trade_date: max(candidates, key=lambda item: (item[0].observed_at, item[0].id))
+            for trade_date, candidates in by_date.items()
+            if candidates
+        }
+        prefetched = self._prefetch_evidence(
+            tuple(observation for observation, _ in selected_by_date.values())
+        )
         return tuple(
             self._select_date(
                 instrument_id=instrument_id,
                 trade_date=trade_date,
                 candidates=by_date.get(trade_date, ()),
+                policy=policy,
+                selected=selected_by_date.get(trade_date),
+                cases=prefetched["cases"].get(_row_key(selected_by_date[trade_date][0]), ()),
+                corrections=prefetched["corrections"].get(_row_key(selected_by_date[trade_date][0]), ()),
+                approved_exclusion=_row_key(selected_by_date[trade_date][0]) in prefetched["exclusions"],
+            ) if trade_date in selected_by_date else self._select_date(
+                instrument_id=instrument_id,
+                trade_date=trade_date,
+                candidates=(),
                 policy=policy,
             )
             for trade_date in dates
@@ -119,6 +136,10 @@ class EmaInputSelector:
         trade_date: date,
         candidates: Iterable[tuple[PriceObservation, PriceObservationIdentitySnapshot]],
         policy: EmaSourcePolicy,
+        selected: tuple[PriceObservation, PriceObservationIdentitySnapshot] | None = None,
+        cases: tuple[ValidationCaseEvidence, ...] | None = None,
+        corrections: tuple[OhlcCorrection, ...] | None = None,
+        approved_exclusion: bool | None = None,
     ) -> EmaInputRow:
         candidate_rows = tuple(candidates)
         if not candidate_rows:
@@ -132,16 +153,19 @@ class EmaInputSelector:
             )
 
         # observed_at then immutable observation ID is the contract tie-break.
-        selected, identity_row = max(candidate_rows, key=lambda item: (item[0].observed_at, item[0].id))
+        selected, identity_row = selected or max(
+            candidate_rows, key=lambda item: (item[0].observed_at, item[0].id)
+        )
         identity = _identity_evidence(identity_row)
-        cases = self._validation_cases(selected)
-        correction_ids, corrected_close, correction_reason = self._close_correction(selected)
+        cases = cases if cases is not None else self._validation_cases(selected)
+        correction_ids, corrected_close, correction_reason = self._close_correction(selected, corrections)
         reason, status = self._decision(
             selected=selected,
             candidates=candidate_rows,
             cases=cases,
             correction_reason=correction_reason,
             corrected_close=corrected_close,
+            approved_exclusion=approved_exclusion,
         )
         return EmaInputRow(
             trade_date=trade_date,
@@ -180,9 +204,9 @@ class EmaInputSelector:
         )
 
     def _close_correction(
-        self, selected: PriceObservation
+        self, selected: PriceObservation, prefetched: tuple[OhlcCorrection, ...] | None = None,
     ) -> tuple[tuple[int, ...], Decimal | None, InputReasonCode | None]:
-        corrections = tuple(self.session.scalars(
+        corrections = prefetched if prefetched is not None else tuple(self.session.scalars(
             select(OhlcCorrection)
             .where(
                 OhlcCorrection.symbol_id == selected.symbol_id,
@@ -211,6 +235,7 @@ class EmaInputSelector:
         cases: tuple[ValidationCaseEvidence, ...],
         correction_reason: InputReasonCode | None,
         corrected_close: Decimal | None,
+        approved_exclusion: bool | None = None,
     ) -> tuple[InputReasonCode | None, EmaInputStatus]:
         # A conflicting source is intentionally not resolved by the latest
         # observation tie-break.  The tie-break identifies the copied evidence
@@ -221,14 +246,16 @@ class EmaInputSelector:
         }
         if len(ohlcv_values) > 1:
             return InputReasonCode.CONFLICTING_OBSERVATIONS, EmaInputStatus.REVIEW_REQUIRED
-        approved_exclusion = self.session.scalar(
-            select(OhlcExclusion.id).where(
-                OhlcExclusion.symbol_id == selected.symbol_id,
-                OhlcExclusion.trade_date == selected.trade_date,
-                OhlcExclusion.status == "APPROVED",
-            ).limit(1)
-        )
-        if approved_exclusion is not None:
+        approved_exclusion_id = None
+        if approved_exclusion is None:
+            approved_exclusion_id = self.session.scalar(
+                select(OhlcExclusion.id).where(
+                    OhlcExclusion.symbol_id == selected.symbol_id,
+                    OhlcExclusion.trade_date == selected.trade_date,
+                    OhlcExclusion.status == "APPROVED",
+                ).limit(1)
+            )
+        if approved_exclusion is True or (approved_exclusion is None and approved_exclusion_id is not None):
             return InputReasonCode.APPROVED_EXCLUSION, EmaInputStatus.INVALID
         if any(
             case.decision == "EXCLUDE" and case.case_status in {"auto_resolved", "approved"}
@@ -250,6 +277,54 @@ class EmaInputSelector:
         if assessment.status != "valid":
             return InputReasonCode.INVALID_OHLCV, EmaInputStatus.INVALID
         return None, EmaInputStatus.ELIGIBLE
+
+    def _prefetch_evidence(self, rows: tuple[PriceObservation, ...]) -> dict[str, object]:
+        """Fetch quality evidence in three bounded queries per instrument.
+
+        Historical backfills select millions of dates.  Performing the same
+        three lookups for every date turns an otherwise linear calculation
+        into millions of database round trips.
+        """
+        keys = {_row_key(row) for row in rows if row.symbol_id is not None}
+        if not keys:
+            return {"cases": {}, "corrections": {}, "exclusions": set()}
+        symbol_ids = tuple(sorted({symbol_id for symbol_id, _ in keys}))
+        trade_dates = tuple(sorted({trade_date for _, trade_date in keys}))
+        filters = (ValidationCase.symbol_id.in_(symbol_ids), ValidationCase.trade_date.in_(trade_dates))
+        cases_by_key: dict[tuple[int, date], list[ValidationCaseEvidence]] = defaultdict(list)
+        for row in self.session.scalars(
+            select(ValidationCase).where(ValidationCase.subject_type == "daily_price", *filters).order_by(ValidationCase.id)
+        ):
+            key = (row.symbol_id, row.trade_date)
+            if key in keys:
+                cases_by_key[key].append(
+                    ValidationCaseEvidence(case_id=row.id, case_status=row.case_status, decision=row.decision)
+                )
+        corrections_by_key: dict[tuple[int, date], list[OhlcCorrection]] = defaultdict(list)
+        for row in self.session.scalars(
+            select(OhlcCorrection).where(
+                OhlcCorrection.symbol_id.in_(symbol_ids), OhlcCorrection.trade_date.in_(trade_dates),
+                OhlcCorrection.field_name == "close", OhlcCorrection.status == "APPROVED",
+            ).order_by(OhlcCorrection.id)
+        ):
+            key = (row.symbol_id, row.trade_date)
+            if key in keys:
+                corrections_by_key[key].append(row)
+        exclusions = {
+            (row.symbol_id, row.trade_date)
+            for row in self.session.scalars(
+                select(OhlcExclusion).where(
+                    OhlcExclusion.symbol_id.in_(symbol_ids), OhlcExclusion.trade_date.in_(trade_dates),
+                    OhlcExclusion.status == "APPROVED",
+                )
+            )
+            if (row.symbol_id, row.trade_date) in keys
+        }
+        return {
+            "cases": {key: tuple(value) for key, value in cases_by_key.items()},
+            "corrections": {key: tuple(value) for key, value in corrections_by_key.items()},
+            "exclusions": exclusions,
+        }
 
 
 def _identity_evidence(row: PriceObservationIdentitySnapshot) -> IdentitySnapshot:
@@ -279,3 +354,9 @@ def _utc(value: datetime | None) -> datetime | None:
     if value is None:
         return None
     return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
+def _row_key(row: PriceObservation) -> tuple[int, date]:
+    if row.symbol_id is None:
+        raise ValueError("EMA selected observation requires symbol identity")
+    return row.symbol_id, row.trade_date

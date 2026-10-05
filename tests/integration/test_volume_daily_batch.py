@@ -2,15 +2,20 @@
 
 import json
 from datetime import UTC, datetime
+from decimal import Decimal
 
-from sqlalchemy import select
+import pytest
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
-from app.models.indicator import IndicatorCalculationRun, IndicatorSeries
+from app.models.benchmark import Benchmark
+from app.models.indicator import IndicatorCalculationRun, IndicatorSeries, IndicatorValue
 from app.models.instrument import Instrument, ProviderSymbol
+from app.models.rs_score import RsScore
 from app.models.symbol import Symbol
 from app.services.batch.context import build_db_batch_context
+from app.services.batch.ema_adapter import calculate_daily_ema, record_ema_checkpoint
 from app.services.batch.volume_adapter import (
     calculate_daily_volume_sma50, completed_volume_outcome, record_volume_checkpoint,
 )
@@ -80,3 +85,59 @@ def test_daily_volume_commits_incremental_failure_retry_and_rebuild(pg_engine, m
         assert runs[0].generation_id == runs[1].generation_id == runs[2].generation_id
         assert runs[3].generation_id != runs[2].generation_id
         assert session.scalars(select(IndicatorSeries.indicator_kind)).all() == ["volume_sma"]
+
+
+@pytest.mark.parametrize("selection_step", ["expected_trade_dates", "eligible_instrument_ids"])
+def test_input_sql_error_keeps_daily_rs_ema_and_volume_failure_committable(pg_engine, monkeypatch, selection_step):
+    settings = Settings(
+        _env_file=None,
+        ema_enabled=True, ema_source_provider="kiwoom", ema_adjustment_type="1",
+        ema_allowed_parser_versions="kiwoom-v2",
+        volume_sma50_enabled=True, volume_sma50_source_provider="kiwoom",
+        volume_sma50_adjustment_type="1", volume_sma50_allowed_parser_versions="kiwoom-v2",
+    )
+    with Session(pg_engine) as session:
+        _, symbol, _, dates = seed_history(session, 2)
+        benchmark = Benchmark(benchmark_code="KOSPI", name="KOSPI", market="KOSPI")
+        session.add(benchmark)
+        session.flush()
+        score = RsScore(
+            symbol_id=symbol.id, benchmark_id=benchmark.id, trade_date=dates[-1], market="KOSPI",
+            return_3m=Decimal("0.1"), return_6m=Decimal("0.1"), return_9m=Decimal("0.1"),
+            return_12m=Decimal("0.1"), relative_return_score=Decimal("0.1"),
+            rs_percentile=Decimal("1"), rs_rating=99, rank_in_market=1,
+        )
+        session.add(score)
+        context = build_db_batch_context(session)
+        job_id = context.crawl_job_repository.create_job("daily_full").id
+        context.job_id = job_id
+        context.checkpoint_repository.create_checkpoint(job_id, "rs", status="completed")
+        ema = calculate_daily_ema(context, target_date=dates[-1], settings=settings)
+        assert ema.outcome == "completed" and ema.processed == 1
+        record_ema_checkpoint(context, ema)
+        ema_run_id = session.scalar(select(IndicatorCalculationRun.id))
+        score_id = score.id
+
+        def sql_error(context, **_kwargs):
+            # PostgreSQL aborts the active transaction on this real statement error.
+            context.session.execute(text("SELECT 1 / 0"))
+
+        monkeypatch.setattr(f"app.services.batch.volume_adapter.{selection_step}", sql_error)
+        failed = calculate_daily_volume_sma50(context, target_date=dates[-1], settings=settings)
+        assert failed.outcome == "failed" and failed.reason == "DataError"
+        record_volume_checkpoint(context, failed, settings=settings)
+        session.commit()
+
+    with Session(pg_engine) as session:
+        assert session.get(RsScore, score_id).rs_rating == 99
+        ema_run = session.get(IndicatorCalculationRun, ema_run_id)
+        assert ema_run.status == "completed" and ema_run.result_hash is not None
+        assert session.scalar(select(func.count()).select_from(IndicatorValue).where(
+            IndicatorValue.calculation_run_id == ema_run_id)) == 8
+        context = build_db_batch_context(session)
+        for step in ("rs", "ema"):
+            assert context.checkpoint_repository.get_checkpoint(job_id, step).status == "completed"
+        checkpoint = context.checkpoint_repository.get_checkpoint(job_id, "volume_sma50")
+        assert checkpoint.status == "completed_with_errors" and checkpoint.items_failed == 1
+        assert json.loads(checkpoint.step_metadata) == {"outcome": "failed", "reason": "DataError"}
+        assert session.scalars(select(IndicatorSeries.indicator_kind)).all() == ["ema"]

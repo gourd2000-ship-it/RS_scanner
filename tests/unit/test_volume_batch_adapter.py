@@ -1,6 +1,7 @@
 """Daily Volume MA50 policy, persistence and checkpoint regression coverage."""
 
 import json
+from contextlib import nullcontext
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
@@ -124,7 +125,7 @@ def test_daily_adapter_records_query_failure_without_exposing_message(monkeypatc
         raise RuntimeError("private connection detail")
 
     monkeypatch.setattr("app.services.batch.volume_adapter.expected_trade_dates", fail)
-    result = calculate_daily_volume_sma50(SimpleNamespace(session=object()),
+    result = calculate_daily_volume_sma50(SimpleNamespace(session=SimpleNamespace(begin_nested=nullcontext)),
                                         target_date=datetime.now(UTC).date(), settings=volume_settings())
     assert result.reason == "RuntimeError" and result.outcome == "failed"
 
@@ -142,7 +143,8 @@ def test_daily_adapter_continues_other_series_after_failure(monkeypatch):
 
     monkeypatch.setattr("app.services.batch.volume_adapter.VolumeSmaCalculationService",
                         lambda _: SimpleNamespace(calculate=calculate))
-    result = calculate_daily_volume_sma50(SimpleNamespace(session=object()), target_date=day, settings=volume_settings())
+    result = calculate_daily_volume_sma50(SimpleNamespace(session=SimpleNamespace(begin_nested=nullcontext)),
+                                        target_date=day, settings=volume_settings())
     assert completed == [2]
     assert result == VolumeBatchOutcome.failure(processed=1, failed=1, reason="RuntimeError")
 
@@ -153,5 +155,5 @@ def test_daily_adapter_records_missing_input_evidence(monkeypatch, reason):
     monkeypatch.setattr("app.services.batch.volume_adapter.expected_trade_dates",
                         lambda *_args, **_kwargs: () if reason == "no_eligible_volume_observations" else (day,))
     monkeypatch.setattr("app.services.batch.volume_adapter.eligible_instrument_ids", lambda *_args, **_kwargs: ())
-    context = SimpleNamespace(session=None if reason == "volume_session_unavailable" else object())
+    context = SimpleNamespace(session=None if reason == "volume_session_unavailable" else SimpleNamespace(begin_nested=nullcontext))
     assert calculate_daily_volume_sma50(context, target_date=day, settings=volume_settings()) == VolumeBatchOutcome.skipped(reason)

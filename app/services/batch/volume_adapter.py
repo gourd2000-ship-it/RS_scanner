@@ -87,12 +87,16 @@ def calculate_daily_volume_sma50(
         return VolumeBatchOutcome.skipped("volume_session_unavailable")
 
     try:
-        trade_dates = expected_trade_dates(context, target_date=target_date, policy=policy)
-        if not trade_dates:
-            return VolumeBatchOutcome.skipped("no_eligible_volume_observations")
-        instrument_ids = eligible_instrument_ids(context, target_date=target_date, policy=policy)
-        if not instrument_ids:
-            return VolumeBatchOutcome.skipped("no_eligible_identity_inputs")
+        # A PostgreSQL statement error aborts its transaction. Roll back only
+        # the input reads so this daily session can still commit RS, EMA and
+        # the optional Volume failure checkpoint.
+        with context.session.begin_nested():
+            trade_dates = expected_trade_dates(context, target_date=target_date, policy=policy)
+            if not trade_dates:
+                return VolumeBatchOutcome.skipped("no_eligible_volume_observations")
+            instrument_ids = eligible_instrument_ids(context, target_date=target_date, policy=policy)
+            if not instrument_ids:
+                return VolumeBatchOutcome.skipped("no_eligible_identity_inputs")
         service = VolumeSmaCalculationService(context.session)
     except Exception as exc:  # noqa: BLE001 - optional indicators cannot cancel RS.
         logger.error("Volume MA50 input selection failed: %s", type(exc).__name__)

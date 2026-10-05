@@ -36,6 +36,14 @@ from app.services.batch.volume_adapter import (
     record_volume_checkpoint,
     volume_sma50_enabled,
 )
+from app.services.batch.atr_adapter import (
+    ATR_STEP_NAME,
+    AtrBatchOutcome,
+    atr14_enabled,
+    calculate_daily_atr14,
+    completed_atr_outcome,
+    record_atr_checkpoint,
+)
 from app.core.config import get_settings
 from app.core.metrics import increment_metric
 from app.core.market_calendar import batch_target_date, krx_market_day_status
@@ -223,7 +231,29 @@ class BatchOrchestrator:
                         volume_result = VolumeBatchOutcome.failure(processed=0, failed=1, reason=type(exc).__name__)
                         self._record_volume_outcome(volume_result)
 
-            indicator_errors = any(result is not None and result.has_errors for result in (ema_result, volume_result))
+            atr_result: AtrBatchOutcome | None = None
+            if atr14_enabled(settings):
+                if validation_blocked or not isinstance(validation_result, ValidationResult):
+                    atr_result = AtrBatchOutcome.skipped(
+                        "validation_gate_blocked" if validation_blocked else "validation_unavailable"
+                    )
+                    self._record_atr_outcome(atr_result)
+                else:
+                    try:
+                        atr_result = self._run_step(
+                            step_name=ATR_STEP_NAME,
+                            step_func=lambda ctx: calculate_daily_atr14(
+                                ctx, target_date=self.target_date or batch_target_date(settings), settings=settings,
+                            ),
+                            description="ATR14 계산",
+                        )
+                    except Exception as exc:  # noqa: BLE001 - preserve completed optional indicators.
+                        atr_result = AtrBatchOutcome.failure(processed=0, failed=1, reason=type(exc).__name__)
+                        self._record_atr_outcome(atr_result)
+
+            indicator_errors = any(
+                result is not None and result.has_errors for result in (ema_result, volume_result, atr_result)
+            )
 
             price_stats = prices if isinstance(prices, PriceSyncResult) else None
             universe_degraded = (
@@ -285,6 +315,7 @@ class BatchOrchestrator:
                 "validation_blocked": validation_blocked,
                 "ema": ema_result.to_dict() if ema_result is not None else None,
                 "volume_sma50": volume_result.to_dict() if volume_result is not None else None,
+                "atr14": atr_result.to_dict() if atr_result is not None else None,
                 "reconciliation_report": str(reconciliation_report_path)
                 if reconciliation_report_path is not None
                 else None,
@@ -334,6 +365,8 @@ class BatchOrchestrator:
                         step_names.append("ema")
                     if volume_sma50_enabled():
                         step_names.append(VOLUME_STEP_NAME)
+                    if atr14_enabled():
+                        step_names.append(ATR_STEP_NAME)
                     for step_name in step_names:
                         context.checkpoint_repository.create_checkpoint(
                             job_id=self.job_id,
@@ -443,7 +476,7 @@ class BatchOrchestrator:
             return result
 
         except Exception as e:
-            if step_name in {"ema", VOLUME_STEP_NAME}:
+            if step_name in {"ema", VOLUME_STEP_NAME, ATR_STEP_NAME}:
                 error_message = type(e).__name__
                 logger.error("step %s failed: %s", step_name, error_message)
             else:
@@ -466,6 +499,9 @@ class BatchOrchestrator:
                 if step_name == VOLUME_STEP_NAME:
                     context.job_id = self.job_id
                     return completed_volume_outcome(context, settings=get_settings()) is not None
+                if step_name == ATR_STEP_NAME:
+                    context.job_id = self.job_id
+                    return completed_atr_outcome(context, settings=get_settings()) is not None
                 return context.checkpoint_repository.is_step_completed(self.job_id, step_name)
         return False
 
@@ -489,6 +525,11 @@ class BatchOrchestrator:
                 context = build_db_batch_context(session)
                 context.job_id = self.job_id
                 return completed_volume_outcome(context, settings=get_settings())
+        if step_name == ATR_STEP_NAME and self.job_id:
+            with session_scope() as session:
+                context = build_db_batch_context(session)
+                context.job_id = self.job_id
+                return completed_atr_outcome(context, settings=get_settings())
         return None
 
     def _start_step_checkpoint(self, step_name: str) -> None:
@@ -527,7 +568,7 @@ class BatchOrchestrator:
             if result.status != "completed":
                 items_failed = 1
                 checkpoint_status = "completed_with_errors"
-        elif isinstance(result, (EmaBatchOutcome, VolumeBatchOutcome)):
+        elif isinstance(result, (EmaBatchOutcome, VolumeBatchOutcome, AtrBatchOutcome)):
             items_processed = result.processed
             items_failed = result.failed
             if result.has_errors:
@@ -558,6 +599,8 @@ class BatchOrchestrator:
                     if self.universe_snapshot_id is not None:
                         metadata["universe_snapshot_id"] = self.universe_snapshot_id
                 if isinstance(result, VolumeBatchOutcome):
+                    metadata.update(json.loads(result.checkpoint_metadata(settings=get_settings())))
+                elif isinstance(result, AtrBatchOutcome):
                     metadata.update(json.loads(result.checkpoint_metadata(settings=get_settings())))
                 elif isinstance(result, EmaBatchOutcome):
                     metadata.update(json.loads(result.checkpoint_metadata()))
@@ -627,6 +670,15 @@ class BatchOrchestrator:
             context = build_db_batch_context(session)
             context.job_id = self.job_id
             record_volume_checkpoint(context, outcome, settings=get_settings())
+
+    def _record_atr_outcome(self, outcome: AtrBatchOutcome) -> None:
+        """Persist ATR skip/failure without altering EMA or Volume checkpoints."""
+        if not self.job_id:
+            return
+        with session_scope() as session:
+            context = build_db_batch_context(session)
+            context.job_id = self.job_id
+            record_atr_checkpoint(context, outcome, settings=get_settings())
 
     def _execute_step(self, step_name: str, step_func: Callable[[BatchContext], Any]) -> Any:
         """단계 실행 (별도 트랜잭션)"""

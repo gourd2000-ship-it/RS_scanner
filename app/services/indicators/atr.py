@@ -9,6 +9,7 @@ from hashlib import sha256
 from app.services.indicators.contracts import EmaStatus, canonical_json
 
 ATR_PERIOD = 14
+ATR_FORMULA_VERSION = "wilder-atr-14-v1"
 
 @dataclass(frozen=True)
 class AtrValue:

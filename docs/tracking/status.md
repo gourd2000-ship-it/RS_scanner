@@ -20,3 +20,4 @@
 역사 상폐 데이터와 기업행위 근거의 비용·이용 조건·coverage가 확정되지 않았다. 따라서 현재 결과는 상폐 제외 개인 연구 범위의 검증 완료 구간에 한정된다.
 
 - 거래량 MA50: 공용 불변 input evidence, 저장 service, 계획·재개 백필 도구, 기본 비활성 일일 증분 구현 완료. 운영 migration과 과거 전체 백필 실행은 보고서·표본 검증 후 별도 운영 결정이 필요하다.
+- ATR14: 공용 OHLC evidence와 별도 series를 사용하는 영속 계산 service, 계획·재개 백필 도구, 기본 비활성 일일 증분을 구현했다. PostgreSQL에서 Decimal 값·hash·동시 worker·실패 롤백을 검증했다. 운영 migration·백필·일일 배치 활성화는 아직 실행하지 않았다.

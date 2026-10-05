@@ -70,3 +70,11 @@ hash를 불변으로 저장한다. 따라서 다음 거래일의 관측은 같�
 거래량 MA50의 입력 정책은 `validated-observation-ohlcv-v1`이다. 선택된 관측, 역사 identity, source/adjustment/parser, 품질·보정 근거와 입력·결과 hash, 계산 run과 generation을 append-only로 보존한다. 원천 근거가 바뀌면 기존 결과를 갱신하지 않고 새 generation으로 재계산한다. 기존 EMA 이력은 수정하지 않는다.
 
 일일 거래량 MA50은 기본 비활성이다. 활성화하려면 source 정책을 명시해야 하며, 가격 수집과 품질 검증 결과가 확인된 뒤에만 실행한다. 값은 아직 백테스트 조건이나 화면 API에 연결하지 않는다.
+
+## ATR14 저장과 계산
+
+ATR14는 검증된 high·low·close로 Wilder 방식의 true range를 계산한다. 첫 적격 거래일의 true range는 `high - low`이고, 이후에는 `max(high-low, abs(high-previous_close), abs(low-previous_close))`를 사용한다. 14개의 연속 적격 true range의 산술 평균을 첫 ATR로 삼고, 이후에는 `(이전 ATR × 13 + 현재 true range) / 14`로 갱신한다.
+
+결측·무효 OHLCV·identity 미확정·품질 검토·source 단절은 `data_unavailable`으로 기록하고 계산 상태를 초기화한다. 14개 연속 적격 입력 전에는 `warming_up`이며, 값 보간이나 이전 ATR 이월은 하지 않는다. high·low·close와 선택·identity·품질 근거는 `validated-observation-ohlcv-v1`의 append-only evidence로 저장한다. high 또는 low만 수정되어도 새 generation으로 rebuild한다.
+
+ATR14 일일 실행은 기본 비활성(`ATR14_ENABLED=false`)이다. 활성화 시 `ATR14_SOURCE_PROVIDER`, `ATR14_ADJUSTMENT_TYPE`, `ATR14_ALLOWED_PARSER_VERSIONS`을 명시하고 validation 완료 뒤에만 실행한다. ATR14 값은 아직 백테스트 조건이나 화면 API에 연결하지 않는다.

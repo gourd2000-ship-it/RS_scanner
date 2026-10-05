@@ -92,7 +92,7 @@ class EmaInputSelector:
             if self._matches_source_policy(observation, policy):
                 by_date[observation.trade_date].append((observation, identity))
         selected_by_date = {
-            trade_date: max(candidates, key=lambda item: (item[0].observed_at, item[0].id))
+            trade_date: max(candidates, key=lambda item: (_utc(item[0].observed_at), item[0].id))
             for trade_date, candidates in by_date.items()
             if candidates
         }
@@ -154,7 +154,7 @@ class EmaInputSelector:
 
         # observed_at then immutable observation ID is the contract tie-break.
         selected, identity_row = selected or max(
-            candidate_rows, key=lambda item: (item[0].observed_at, item[0].id)
+            candidate_rows, key=lambda item: (_utc(item[0].observed_at), item[0].id)
         )
         identity = _identity_evidence(identity_row)
         cases = cases if cases is not None else self._validation_cases(selected)

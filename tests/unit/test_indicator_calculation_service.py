@@ -293,3 +293,19 @@ def test_failed_building_generation_never_replaces_current_generation(session: S
     assert session.get(IndicatorGeneration, complete.generation_id).status == "current"
     assert session.get(IndicatorGeneration, building.id).status == "failed"
     assert session.get(IndicatorCalculationRun, run.id).status == "failed"
+
+
+def test_selector_orders_fresh_and_reloaded_observations_with_consistent_utc(session: Session):
+    """Naive DB timestamps and fresh aware timestamps must select the same latest fact."""
+    instrument, symbol, mapping = _seed(session)
+    day = date(2024, 1, 2)
+    first = _observation(session, instrument=instrument, symbol=symbol, mapping=mapping,
+                         trade_date=day, close='100', observed_at=datetime(2024, 1, 2, tzinfo=UTC))
+    session.expire(first)  # PriceObservation's DateTime column reloads without timezone metadata.
+    latest = _observation(session, instrument=instrument, symbol=symbol, mapping=mapping,
+                          trade_date=day, close='101', observed_at=datetime(2024, 2, 1, tzinfo=UTC))
+    selected = EmaInputSelector(session).select_rows(
+        instrument_id=instrument.id, trade_dates=(day,), policy=_policy())
+    assert selected[0].observation_id == latest.id
+    assert selected[0].observed_at == datetime(2024, 2, 1, tzinfo=UTC)
+    assert selected[0].close == Decimal('101')

@@ -29,6 +29,13 @@ from app.services.batch.volume_adapter import (
     record_volume_checkpoint,
     volume_sma50_enabled,
 )
+from app.services.batch.atr_adapter import (
+    AtrBatchOutcome,
+    atr14_enabled,
+    calculate_daily_atr14,
+    completed_atr_outcome,
+    record_atr_checkpoint,
+)
 from app.services.validation.data_quality import validate_crawl_job
 from app.services.validation.report import write_validation_report
 from app.core.metrics import increment_metric
@@ -180,7 +187,27 @@ def run_daily_job(
                     volume_result = VolumeBatchOutcome.failure(processed=0, failed=1, reason=type(exc).__name__)
                 record_volume_checkpoint(context, volume_result, settings=settings)
 
-        indicator_errors = any(result is not None and result.has_errors for result in (ema_result, volume_result))
+        atr_result: AtrBatchOutcome | None = None
+        if atr14_enabled(settings):
+            if validation_blocked or validation_result is None:
+                atr_result = AtrBatchOutcome.skipped(
+                    "validation_gate_blocked" if validation_blocked else "validation_unavailable"
+                )
+                record_atr_checkpoint(context, atr_result, settings=settings)
+            else:
+                atr_result = completed_atr_outcome(context, settings=settings)
+            if atr_result is None:
+                try:
+                    atr_result = calculate_daily_atr14(
+                        context, target_date=target_date or context.target_date, settings=settings,
+                    )
+                except Exception as exc:  # noqa: BLE001 - independent optional indicator.
+                    atr_result = AtrBatchOutcome.failure(processed=0, failed=1, reason=type(exc).__name__)
+                record_atr_checkpoint(context, atr_result, settings=settings)
+
+        indicator_errors = any(
+            result is not None and result.has_errors for result in (ema_result, volume_result, atr_result)
+        )
 
         # 가격 단계 결과에서 실제 종목별 통계를 계산한다.
         price_stats = prices if isinstance(prices, PriceSyncResult) else None
@@ -248,6 +275,7 @@ def run_daily_job(
             "validation_blocked": validation_blocked,
             "ema": ema_result.to_dict() if ema_result is not None else None,
             "volume_sma50": volume_result.to_dict() if volume_result is not None else None,
+            "atr14": atr_result.to_dict() if atr_result is not None else None,
             "krx_universe_snapshot_id": context.krx_universe_snapshot_id,
             "krx_universe_snapshot_status": context.krx_universe_snapshot_status,
         }

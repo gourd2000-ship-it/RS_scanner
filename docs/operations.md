@@ -126,3 +126,26 @@ APP_ENV=production .venv/bin/python scripts/backfill_volume_sma50.py \
 중단된 실행은 이미 존재하는 같은 checkpoint 경로에만 `--resume`을 추가해 재개한다.
 
 일일 실행은 `VOLUME_SMA50_ENABLED=false`가 기본이다. 활성화할 때 `VOLUME_SMA50_SOURCE_PROVIDER`, `VOLUME_SMA50_ADJUSTMENT_TYPE`, `VOLUME_SMA50_ALLOWED_PARSER_VERSIONS`을 명시한다. validation이 없거나 차단되면 값을 저장하지 않고 그 사유를 기록한다.
+
+## ATR14 저장과 역사 백필
+
+ATR14도 동일한 공용 OHLC evidence를 사용하지만, Volume MA50과 별도 series·generation·checkpoint를 보존한다. 다음 계획 명령은 읽기 전용이며 ATR true range 입력을 포함한 대상·제외 사유·정의/정책 fingerprint·입력 sequence hash·예상 행과 저장량을 고정한다.
+
+```bash
+APP_ENV=production .venv/bin/python scripts/plan_atr14_storage.py \
+  --start 2013-01-02 --end 2026-09-04 \
+  --provider kiwoom --adjustment-type 1 \
+  --parser-version kiwoom-history-v1 \
+  --observation-cutoff 9999-12-31T23:59:59Z \
+  --output reports/atr14/plan.json
+```
+
+두 지표는 같은 유지보수 창에서 schema migration을 적용하되, 계획 보고서와 표본의 저장값·hash·상태 수량을 검토한 뒤 **Volume MA50 전체 백필을 먼저**, ATR14 전체 백필을 다음으로 순차 실행한다. 두 명령 모두 `--apply`, 검토한 manifest hash, 별도 checkpoint를 요구한다. 기존 checkpoint가 있을 때만 `--resume`을 사용한다.
+
+```bash
+APP_ENV=production .venv/bin/python scripts/backfill_atr14.py \
+  --manifest reports/atr14/plan.json --manifest-hash '<계획 보고서의 manifest_hash>' \
+  --checkpoint reports/atr14/checkpoint.json --apply
+```
+
+일일 ATR14는 `ATR14_ENABLED=false`가 기본이다. 활성화하려면 `ATR14_SOURCE_PROVIDER`, `ATR14_ADJUSTMENT_TYPE`, `ATR14_ALLOWED_PARSER_VERSIONS`을 명시한다. validation이 없거나 차단되면 값을 저장하지 않고 checkpoint에 사유만 남긴다.

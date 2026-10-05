@@ -8,3 +8,15 @@
 | 상장폐지 lifecycle 데이터 없음 | 확인된 상폐 lifecycle 1,508개 제외 | 생존편향 제거 완료 주장과 상폐 청산 backtest 불가 | 비용·이용 조건이 맞는 역사 데이터 계약 전까지 범위 밖 유지 |
 | 수정 기준 차이 | canonical과 `kiwoom:1` 차이 362,887행 | 공급자 혼합 시 왜곡 가능 | 선택 정책을 고정하고 자동 보정 금지 |
 | 사람 운영자 원격 인증 부재 | 운영자 권한은 운영 환경 접근에 의존 | 원격 관리 기능을 안전하게 공개할 수 없음 | 필요 시 별도 인증·감사 설계 |
+
+## 해결한 문제
+
+| 항목 | 증거 | 영향 | 조치 |
+|---|---|---|---|
+| 관측 정렬의 UTC 시각 혼합 | 2026-10-05 ATR PostgreSQL rebuild와 `test_selector_orders_fresh_and_reloaded_observations_with_consistent_utc`에서 새 aware 관측과 DB에서 읽은 naive 관측 비교가 `TypeError`로 실패 | 같은 세션에서 관측 추가 후 EMA·Volume·ATR 선택이 실패할 수 있음 | 두 관측 정렬 경로에 기존 UTC 정규화 함수를 적용하고 단위·PostgreSQL 회귀 검증 |
+
+## 추적 중인 운영 개선
+
+| 항목 | 증거 | 영향 | 다음 조치 |
+|---|---|---|---|
+| 전체 역사 지표 계획 보고서의 긴 실행 시간 | 2026-10-05의 2013-01-02~2026-09-04 전체 범위 Volume MA50·ATR14 읽기 전용 manifest가 각각 약 22분 소요 | DB를 변경하지는 않지만 운영자가 완료 시점과 진행률을 즉시 알기 어렵다 | 대상 처리 수·경과 시간·예상 잔여를 출력하는 progress reporting과 selector/query profile을 별도 개선으로 검토 |

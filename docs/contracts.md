@@ -66,3 +66,9 @@ EMA 행 사유 코드는 아래 값만 허용한다. `warming_up`은 계산 결�
 ## 거래량 MA50 내부 저장 계약
 
 거래량 MA50은 공개 API 계약이 아니다. 내부 저장값은 `volume_sma` 종류와 period 50으로 식별한다. 각 입력 거래일에는 결과 하나만 존재한다. `available`은 Decimal 문자열로 표현 가능한 평균값과 null 사유를, `warming_up`은 null 값과 `warming_up` 사유를, `data_unavailable`은 null 값과 입력 불가 사유를 가진다. history input policy는 `validated-observation-ohlcv-v1`이며, 동일 policy·instrument·거래일의 동일 evidence는 재사용하고 달라진 evidence는 새 generation으로만 기록한다.
+
+## ATR14 내부 저장 계약
+
+ATR14 저장값은 `atr` 종류와 period 14, `high-low-close` 입력, `wilder-atr-14-v1` 계산 버전으로 식별한다. 공개 API나 백테스트 dataset에는 아직 연결하지 않는다. 입력 정책은 거래량 MA50과 같은 `validated-observation-ohlcv-v1`이며, 선택기의 불변 high·low·close와 identity·source·품질·보정 근거를 공용 evidence에 함께 보존한다.
+
+같은 순서의 evidence는 완료 결과를 재사용하고, 기존 입력의 순서와 근거를 유지한 날짜 추가는 같은 generation의 새 incremental run에 suffix만 저장한다. 과거 근거 변경·삭제는 새 generation의 rebuild이며, 완료 후에만 이전 current를 superseded로 바꾼다. 각 run은 evidence prefix hash와 해당 run의 정확한 Decimal 계산값·상태·사유·관측 수의 canonical JSON SHA-256 결과 hash를 보존한다. 실패한 시도는 출력과 입력 참조를 롤백한 뒤 예외 종류만 기록하며 이전 current를 유지한다. 호출자가 성공 또는 실패 시도를 자신의 transaction에서 commit한다.

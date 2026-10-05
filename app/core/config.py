@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # each run's reproducible source evidence.
 EMA_DAILY_OBSERVATION_BOUNDARY = datetime(9999, 12, 31, 23, 59, 59, tzinfo=UTC)
 VOLUME_DAILY_OBSERVATION_BOUNDARY = datetime(9999, 12, 31, 23, 59, 59, tzinfo=UTC)
+ATR_DAILY_OBSERVATION_BOUNDARY = datetime(9999, 12, 31, 23, 59, 59, tzinfo=UTC)
 
 
 class Settings(BaseSettings):
@@ -259,6 +260,15 @@ class Settings(BaseSettings):
     volume_sma50_adjustment_type: str = Field(default="", alias="VOLUME_SMA50_ADJUSTMENT_TYPE")
     volume_sma50_allowed_parser_versions: str = Field(
         default="", alias="VOLUME_SMA50_ALLOWED_PARSER_VERSIONS"
+    )
+
+    # ATR14 uses the same immutable OHLC policy but keeps an independent
+    # opt-in, checkpoint and series so a failure cannot alter Volume or EMA.
+    atr14_enabled: bool = Field(default=False, alias="ATR14_ENABLED")
+    atr14_source_provider: str = Field(default="", alias="ATR14_SOURCE_PROVIDER")
+    atr14_adjustment_type: str = Field(default="", alias="ATR14_ADJUSTMENT_TYPE")
+    atr14_allowed_parser_versions: str = Field(
+        default="", alias="ATR14_ALLOWED_PARSER_VERSIONS"
     )
 
 

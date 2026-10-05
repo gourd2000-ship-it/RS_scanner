@@ -179,6 +179,70 @@ def test_committed_instrument_recovers_if_checkpoint_write_is_interrupted(sessio
     assert session.scalar(select(func.count()).select_from(IndicatorCalculationRun)) == 1
 
 
+@pytest.mark.parametrize('initial_run', ['backfill', 'incremental'])
+def test_committed_run_recovers_before_rebuilding_revision_after_checkpoint_interruption(session, tmp_path, monkeypatch, initial_run):
+    from scripts import volume_sma50_operations as operations
+    from app.services.indicators.volume_calculation_service import VolumeSmaCalculationService
+    instrument, symbol, mapping, manifest = seeded_plan(session)
+    if initial_run == 'incremental':
+        VolumeSmaCalculationService(session).calculate(
+            instrument_id=instrument.id, trade_dates=(date(2024, 1, 2),), policy=_policy())
+        session.commit()
+    checkpoint = tmp_path / 'checkpoint.json'
+    original = operations._save_checkpoint
+    def interrupted(path, state):
+        if state['instruments']:
+            raise OSError('simulated checkpoint interruption after DB commit')
+        original(path, state)
+    monkeypatch.setattr(operations, '_save_checkpoint', interrupted)
+    with pytest.raises(OSError):
+        apply_manifest(session, manifest, checkpoint_path=checkpoint)
+    committed = session.scalar(select(IndicatorCalculationRun).order_by(IndicatorCalculationRun.id.desc()))
+    assert committed.status == 'completed' and committed.run_kind == initial_run
+    assert json.loads(checkpoint.read_text())['instruments'] == {}
+    _observation(session, instrument=instrument, symbol=symbol, mapping=mapping,
+                 trade_date=date(2024, 1, 2), close='101', observed_at=datetime(2024, 2, 1, tzinfo=UTC))
+    session.commit()
+    monkeypatch.setattr(operations, '_save_checkpoint', original)
+    report = apply_manifest(session, manifest, checkpoint_path=checkpoint, resume=True)
+    assert report['failed'] == 0 and report['rebuilt'] == 1
+    outcome = report['outcomes'][0]
+    assert outcome['recovered_completed_run_id'] == committed.id
+    assert outcome['previous_evidence_sequence_hash'] == manifest['targets'][0]['evidence_sequence_hash']
+    assert outcome['selection_changed'] is True
+    assert outcome['generation_id'] != committed.generation_id
+    assert session.get(IndicatorGeneration, committed.generation_id).status == 'superseded'
+    assert json.loads(checkpoint.read_text())['instruments'][str(instrument.id)]['status'] == 'completed'
+
+
+@pytest.mark.parametrize('mismatch', ['policy', 'range', 'evidence'])
+def test_database_recovery_rejects_completed_history_outside_approved_manifest(session, tmp_path, mismatch):
+    from dataclasses import replace
+    from scripts import volume_sma50_operations as operations
+    from app.services.indicators.volume_calculation_service import VolumeSmaCalculationService
+    instrument, symbol, mapping, manifest = seeded_plan(session)
+    checkpoint = tmp_path / 'checkpoint.json'
+    operations._save_checkpoint(checkpoint, {'schema_version': 1, 'run_id': 'interrupted',
+        'manifest_hash': manifest['manifest_hash'], 'instruments': {}})
+    def revise():
+        _observation(session, instrument=instrument, symbol=symbol, mapping=mapping,
+                     trade_date=date(2024, 1, 2), close='101', observed_at=datetime(2024, 2, 1, tzinfo=UTC))
+        session.commit()
+    if mismatch == 'evidence':
+        revise()
+    VolumeSmaCalculationService(session).calculate(instrument_id=instrument.id,
+        trade_dates=(date(2024, 1, 2),) if mismatch == 'range' else (date(2024, 1, 2), date(2024, 1, 3)),
+        policy=replace(_policy(), observation_cutoff=datetime(2026, 1, 1, tzinfo=UTC)) if mismatch == 'policy' else _policy())
+    session.commit()
+    if mismatch != 'evidence':
+        revise()
+    report = apply_manifest(session, manifest, checkpoint_path=checkpoint, resume=True)
+    assert report['failed'] == 1 and report['created'] == 0
+    assert report['outcomes'][0]['failure_reason'] == 'manifest_evidence_changed_without_completed_checkpoint'
+    assert 'recovered_completed_run_id' not in report['outcomes'][0]
+    assert session.scalar(select(func.count()).select_from(IndicatorCalculationRun)) == 1
+
+
 @pytest.mark.parametrize('script', ['plan_volume_sma50_storage.py', 'backfill_volume_sma50.py'])
 def test_operator_scripts_run_directly_from_checkout(script):
     root = Path(__file__).resolve().parents[2]

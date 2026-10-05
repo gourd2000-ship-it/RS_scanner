@@ -22,12 +22,18 @@ from sqlalchemy.orm import Session
 
 from app.core.market_calendar import krx_market_day_status
 from app.models.data_quality import PriceObservation
-from app.models.indicator import IndicatorCalculationRun, PriceObservationIdentitySnapshot
+from app.models.indicator import (
+    IndicatorCalculationRun, IndicatorInputEvidence, IndicatorInputPolicy,
+    IndicatorRunInput, IndicatorSeries, PriceObservationIdentitySnapshot,
+)
 from app.models.instrument import Instrument
 from app.repositories.volume_indicator_repository import (
     COMMON_INPUT_POLICY_VERSION, CORRECTION_VERSION, SELECTOR_VERSION, VALIDATION_VERSION,
 )
-from app.services.indicators.contracts import EmaSourcePolicy, canonical_json, prefix_hash
+from app.services.indicators.contracts import (
+    EmaInputRow, EmaSourcePolicy, IdentitySnapshot, ValidationCaseEvidence,
+    canonical_json, prefix_hash,
+)
 from app.services.indicators.input_selector import EmaInputSelector
 from app.services.indicators.volume_calculation_service import VolumeCalculationError, VolumeSmaCalculationService
 from app.services.indicators.volume_sma import VOLUME_SMA_FORMULA_VERSION, compute_volume_sma50
@@ -219,9 +225,7 @@ def _finite_material(value):
 
 def _target(session, instrument_id, dates, policy):
     rows = EmaInputSelector(session).select_rows(instrument_id=instrument_id, trade_dates=dates, policy=policy)
-    sequence = None
-    for row in rows:
-        sequence = prefix_hash(sequence, _hash(_finite_material(row.fingerprint_material())))
+    sequence = _sequence_hash(rows)
     result = compute_volume_sma50(rows)
     counts = Counter(value.status.value for value in result.values)
     return {'instrument_id': instrument_id, 'expected_input_rows': len(rows),
@@ -230,6 +234,92 @@ def _target(session, instrument_id, dates, policy):
             'first_available': next((value.trade_date.isoformat() for value in result.values
                                      if value.status.value == 'available'), None),
             **{f'{status}_rows': counts[status] for status in ('available', 'warming_up', 'data_unavailable')}}
+
+
+def _sequence_hash(rows):
+    sequence = None
+    for row in rows:
+        sequence = prefix_hash(sequence, _hash(_finite_material(row.fingerprint_material())))
+    return sequence
+
+
+def _utc_evidence(value):
+    if value is None:
+        return None
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
+def _completed_rows_at_run(session, run, policy):
+    """Rehydrate copied facts, including immutable unresolved identity snapshots.
+
+    A generation may have later incremental runs. The candidate's run ID bounds
+    its completed prefix; mutable observations/corrections are never consulted.
+    """
+    evidence = session.execute(select(IndicatorInputEvidence, PriceObservationIdentitySnapshot)
+        .join(IndicatorRunInput, IndicatorRunInput.evidence_id == IndicatorInputEvidence.id)
+        .join(IndicatorCalculationRun, IndicatorCalculationRun.id == IndicatorRunInput.calculation_run_id)
+        .outerjoin(PriceObservationIdentitySnapshot,
+            PriceObservationIdentitySnapshot.id == IndicatorInputEvidence.price_observation_identity_snapshot_id)
+        .where(IndicatorCalculationRun.generation_id == run.generation_id,
+               IndicatorCalculationRun.status == 'completed', IndicatorCalculationRun.id <= run.id)
+        .order_by(IndicatorInputEvidence.trade_date))
+    rows = []
+    for copied, snapshot in evidence:
+        identity = None if snapshot is None else IdentitySnapshot(
+            snapshot.id, snapshot.instrument_id, snapshot.provider, snapshot.provider_symbol,
+            snapshot.provider_symbol_mapping_id, snapshot.mapping_status, snapshot.mapping_valid_from,
+            snapshot.mapping_valid_to, snapshot.resolver_version, _utc_evidence(snapshot.resolved_at))
+        rows.append(EmaInputRow(
+            trade_date=copied.trade_date, instrument_id=copied.instrument_id,
+            symbol_id=copied.source_symbol_id, observation_id=copied.price_observation_id,
+            identity=identity, provider=copied.provider, provider_symbol=copied.provider_symbol,
+            adjustment_type=copied.adjustment_type, parser_version=copied.parser_version,
+            close=copied.close, volume=copied.volume, observed_at=_utc_evidence(copied.observed_at),
+            payload_hash=copied.payload_hash, correction_ids=tuple(copied.correction_ids),
+            validation_cases=tuple(ValidationCaseEvidence(item['case_id'], item['case_status'], item.get('decision'))
+                                   for item in copied.validation_evidence),
+            input_status=copied.input_status, reason_code=copied.reason_code, source_policy=policy))
+    return tuple(rows)
+
+
+def _recover_completed_checkpoint(session, approved, request, dates):
+    """Recover a lost file update only from the exact approved durable prefix."""
+    policy = request.policy
+    candidates = session.execute(select(IndicatorCalculationRun, IndicatorInputPolicy)
+        .join(IndicatorSeries, IndicatorSeries.id == IndicatorCalculationRun.series_id)
+        .join(IndicatorInputPolicy, IndicatorInputPolicy.id == IndicatorSeries.input_policy_id)
+        .where(IndicatorSeries.instrument_id == approved['instrument_id'],
+               IndicatorSeries.indicator_kind == DEFINITION['indicator_kind'],
+               IndicatorSeries.input_field == DEFINITION['input_field'], IndicatorSeries.periods == '50',
+               IndicatorSeries.formula_version == DEFINITION['formula_version'],
+               IndicatorInputPolicy.version == COMMON_INPUT_POLICY_VERSION,
+               IndicatorInputPolicy.provider == policy.provider,
+               IndicatorInputPolicy.adjustment_type == policy.adjustment_type,
+               IndicatorInputPolicy.observation_cutoff == policy.observation_cutoff,
+               IndicatorInputPolicy.selector_version == SELECTOR_VERSION,
+               IndicatorInputPolicy.validation_version == VALIDATION_VERSION,
+               IndicatorInputPolicy.correction_version == CORRECTION_VERSION,
+               IndicatorCalculationRun.status == 'completed',
+               IndicatorCalculationRun.input_cutoff == policy.observation_cutoff,
+               IndicatorCalculationRun.range_end == dates[-1])
+        .order_by(IndicatorCalculationRun.id.desc()).execution_options(yield_per=100))
+    for run, stored_policy in candidates:
+        if stored_policy.allowed_parser_versions != sorted(set(policy.allowed_parser_versions)):
+            continue
+        rows = _completed_rows_at_run(session, run, policy)
+        if (tuple(row.trade_date for row in rows) != dates
+                or len(rows) != approved['expected_input_rows']
+                or _sequence_hash(rows) != approved['evidence_sequence_hash']):
+            continue
+        result = compute_volume_sma50(rows)
+        if len(result.values) != approved['expected_result_rows'] or result.result_hash != approved['result_hash']:
+            continue
+        return {'instrument_id': approved['instrument_id'], 'status': 'completed',
+                'run_id': run.id, 'series_id': run.series_id, 'generation_id': run.generation_id,
+                'run_kind': run.run_kind, 'evidence_sequence_hash': approved['evidence_sequence_hash'],
+                'input_hash': run.input_hash, 'result_hash': run.result_hash,
+                'selected_result_hash': result.result_hash, 'recovered_from_database': True}
+    return None
 
 
 def build_manifest(session: Session, request: VolumeStorageRequest):
@@ -325,6 +415,12 @@ def _apply_manifest(session, manifest, checkpoint_path, resume):
                 raise VolumeApprovalDrift('target_lifecycle_changed')
             selected = _target(session, instrument_id, dates, request.policy)
             changed = selected['evidence_sequence_hash'] != approved['evidence_sequence_hash']
+            if resume and last_completed is None:
+                last_completed = _recover_completed_checkpoint(session, approved, request, dates)
+                if last_completed is not None:
+                    checkpoint['instruments'][str(instrument_id)] = last_completed
+                    _save_checkpoint(checkpoint_path, checkpoint)
+                    attempt['recovered_completed_run_id'] = last_completed['run_id']
             attempt.update({'evidence_sequence_hash': selected['evidence_sequence_hash'],
                             'approved_evidence_sequence_hash': approved['evidence_sequence_hash'],
                             'selection_changed': changed,

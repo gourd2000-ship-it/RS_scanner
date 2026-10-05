@@ -115,6 +115,7 @@ class IndicatorRepository:
             .join(IndicatorSeries, IndicatorSeries.id == IndicatorGeneration.series_id)
             .where(
                 IndicatorSeries.instrument_id == instrument_id,
+                IndicatorSeries.indicator_kind == "ema",
                 IndicatorGeneration.status == "current",
                 IndicatorCalculationRun.status == "completed",
             )
@@ -149,6 +150,7 @@ class IndicatorRepository:
         """Read an ordered page by trading day from one current generation."""
         filters = (
             IndicatorSeries.instrument_id == instrument_id,
+            IndicatorSeries.indicator_kind == "ema",
             IndicatorSeries.id == series_id,
             IndicatorGeneration.id == generation_id,
             IndicatorGeneration.status == "current",

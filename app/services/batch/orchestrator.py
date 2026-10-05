@@ -28,6 +28,14 @@ from app.services.batch.ema_adapter import (
     ema_enabled,
     record_ema_checkpoint,
 )
+from app.services.batch.volume_adapter import (
+    VOLUME_STEP_NAME,
+    VolumeBatchOutcome,
+    calculate_daily_volume_sma50,
+    completed_volume_outcome,
+    record_volume_checkpoint,
+    volume_sma50_enabled,
+)
 from app.core.config import get_settings
 from app.core.metrics import increment_metric
 from app.core.market_calendar import batch_target_date, krx_market_day_status
@@ -179,15 +187,43 @@ class BatchOrchestrator:
                     ema_result = EmaBatchOutcome.skipped("validation_gate_blocked")
                     self._record_ema_outcome(ema_result)
                 else:
-                    ema_result = self._run_step(
-                        step_name="ema",
-                        step_func=lambda ctx: calculate_daily_ema(
-                            ctx,
-                            target_date=self.target_date or batch_target_date(settings),
-                            settings=settings,
-                        ),
-                        description="EMA 계산",
+                    try:
+                        ema_result = self._run_step(
+                            step_name="ema",
+                            step_func=lambda ctx: calculate_daily_ema(
+                                ctx,
+                                target_date=self.target_date or batch_target_date(settings),
+                                settings=settings,
+                            ),
+                            description="EMA 계산",
+                        )
+                    except Exception as exc:  # noqa: BLE001 - Volume runs independently.
+                        ema_result = EmaBatchOutcome.failure(processed=0, failed=1, reason=type(exc).__name__)
+                        self._record_ema_outcome(ema_result)
+
+            volume_result: VolumeBatchOutcome | None = None
+            if volume_sma50_enabled(settings):
+                if validation_blocked or not isinstance(validation_result, ValidationResult):
+                    volume_result = VolumeBatchOutcome.skipped(
+                        "validation_gate_blocked" if validation_blocked else "validation_unavailable"
                     )
+                    self._record_volume_outcome(volume_result)
+                else:
+                    try:
+                        volume_result = self._run_step(
+                            step_name=VOLUME_STEP_NAME,
+                            step_func=lambda ctx: calculate_daily_volume_sma50(
+                                ctx,
+                                target_date=self.target_date or batch_target_date(settings),
+                                settings=settings,
+                            ),
+                            description="Volume MA50 계산",
+                        )
+                    except Exception as exc:  # noqa: BLE001 - preserve EMA and RS.
+                        volume_result = VolumeBatchOutcome.failure(processed=0, failed=1, reason=type(exc).__name__)
+                        self._record_volume_outcome(volume_result)
+
+            indicator_errors = any(result is not None and result.has_errors for result in (ema_result, volume_result))
 
             price_stats = prices if isinstance(prices, PriceSyncResult) else None
             universe_degraded = (
@@ -199,12 +235,12 @@ class BatchOrchestrator:
             symbols_failed = price_stats.unsuccessful_count if price_stats else 0
             job_status = (
                 "completed_with_errors"
-                if symbols_failed or universe_degraded or validation_blocked or (ema_result and ema_result.has_errors)
+                if symbols_failed or universe_degraded or validation_blocked or indicator_errors
                 else "completed"
             )
             job_message = (
                 "Daily batch completed with errors"
-                if symbols_failed or universe_degraded or validation_blocked or (ema_result and ema_result.has_errors)
+                if symbols_failed or universe_degraded or validation_blocked or indicator_errors
                 else "Daily batch completed successfully"
             )
 
@@ -223,7 +259,7 @@ class BatchOrchestrator:
             )
 
             duration = (datetime.utcnow() - self.started_at).total_seconds()
-            if symbols_failed or universe_degraded or (ema_result and ema_result.has_errors):
+            if symbols_failed or universe_degraded or validation_blocked or indicator_errors:
                 notification_service.send_batch_failure_sync(
                     job_type="daily_full",
                     error_message=job_message,
@@ -248,6 +284,7 @@ class BatchOrchestrator:
                 "validation": validation_result.to_dict() if isinstance(validation_result, ValidationResult) else None,
                 "validation_blocked": validation_blocked,
                 "ema": ema_result.to_dict() if ema_result is not None else None,
+                "volume_sma50": volume_result.to_dict() if volume_result is not None else None,
                 "reconciliation_report": str(reconciliation_report_path)
                 if reconciliation_report_path is not None
                 else None,
@@ -295,6 +332,8 @@ class BatchOrchestrator:
                     step_names = ["krx_shadow", "symbols", "benchmarks", "prices", "validation", "rs"]
                     if ema_enabled():
                         step_names.append("ema")
+                    if volume_sma50_enabled():
+                        step_names.append(VOLUME_STEP_NAME)
                     for step_name in step_names:
                         context.checkpoint_repository.create_checkpoint(
                             job_id=self.job_id,
@@ -404,10 +443,15 @@ class BatchOrchestrator:
             return result
 
         except Exception as e:
-            logger.error(f"step {step_name} failed: {e}", exc_info=True)
+            if step_name in {"ema", VOLUME_STEP_NAME}:
+                error_message = type(e).__name__
+                logger.error("step %s failed: %s", step_name, error_message)
+            else:
+                error_message = str(e)
+                logger.error(f"step {step_name} failed: {e}", exc_info=True)
 
             # 단계 실패 기록 (별도 트랜잭션)
-            self._fail_step_checkpoint(step_name, str(e))
+            self._fail_step_checkpoint(step_name, error_message)
 
             raise
 
@@ -419,6 +463,9 @@ class BatchOrchestrator:
         with session_scope() as session:
             context = build_db_batch_context(session)
             if context.checkpoint_repository:
+                if step_name == VOLUME_STEP_NAME:
+                    context.job_id = self.job_id
+                    return completed_volume_outcome(context, settings=get_settings()) is not None
                 return context.checkpoint_repository.is_step_completed(self.job_id, step_name)
         return False
 
@@ -437,6 +484,11 @@ class BatchOrchestrator:
                 checkpoint = context.checkpoint_repository.get_checkpoint(self.job_id, "ema")
                 if checkpoint is not None and checkpoint.status == "completed":
                     return EmaBatchOutcome.completed(processed=checkpoint.items_processed)
+        if step_name == VOLUME_STEP_NAME and self.job_id:
+            with session_scope() as session:
+                context = build_db_batch_context(session)
+                context.job_id = self.job_id
+                return completed_volume_outcome(context, settings=get_settings())
         return None
 
     def _start_step_checkpoint(self, step_name: str) -> None:
@@ -475,7 +527,7 @@ class BatchOrchestrator:
             if result.status != "completed":
                 items_failed = 1
                 checkpoint_status = "completed_with_errors"
-        elif isinstance(result, EmaBatchOutcome):
+        elif isinstance(result, (EmaBatchOutcome, VolumeBatchOutcome)):
             items_processed = result.processed
             items_failed = result.failed
             if result.has_errors:
@@ -505,7 +557,9 @@ class BatchOrchestrator:
                     metadata["universe_snapshot_status"] = self.universe_snapshot_status
                     if self.universe_snapshot_id is not None:
                         metadata["universe_snapshot_id"] = self.universe_snapshot_id
-                if isinstance(result, EmaBatchOutcome):
+                if isinstance(result, VolumeBatchOutcome):
+                    metadata.update(json.loads(result.checkpoint_metadata(settings=get_settings())))
+                elif isinstance(result, EmaBatchOutcome):
                     metadata.update(json.loads(result.checkpoint_metadata()))
 
                 context.checkpoint_repository.complete_step(
@@ -564,6 +618,15 @@ class BatchOrchestrator:
             context = build_db_batch_context(session)
             context.job_id = self.job_id
             record_ema_checkpoint(context, outcome)
+
+    def _record_volume_outcome(self, outcome: VolumeBatchOutcome) -> None:
+        """Persist Volume skip/failure without altering the EMA checkpoint."""
+        if not self.job_id:
+            return
+        with session_scope() as session:
+            context = build_db_batch_context(session)
+            context.job_id = self.job_id
+            record_volume_checkpoint(context, outcome, settings=get_settings())
 
     def _execute_step(self, step_name: str, step_func: Callable[[BatchContext], Any]) -> Any:
         """단계 실행 (별도 트랜잭션)"""

@@ -13,12 +13,9 @@ import logging
 from dataclasses import dataclass
 from datetime import date
 
-from sqlalchemy import select
-
 from app.core.config import EMA_DAILY_OBSERVATION_BOUNDARY, Settings, get_settings
-from app.models.data_quality import PriceObservation
-from app.models.indicator import PriceObservationIdentitySnapshot
 from app.services.batch.context import BatchContext
+from app.services.batch.observation_inputs import expected_trade_dates, eligible_instrument_ids
 from app.services.indicators.calculation_service import EmaCalculationService
 from app.services.indicators.contracts import EmaSourcePolicy
 
@@ -89,10 +86,10 @@ def calculate_daily_ema(
     if context.session is None:
         return EmaBatchOutcome.skipped("ema_session_unavailable")
 
-    trade_dates = _expected_trade_dates(context, target_date=target_date, policy=policy)
+    trade_dates = expected_trade_dates(context, target_date=target_date, policy=policy)
     if not trade_dates:
         return EmaBatchOutcome.skipped("no_eligible_ema_observations")
-    instrument_ids = _eligible_instrument_ids(context, target_date=target_date, policy=policy)
+    instrument_ids = eligible_instrument_ids(context, target_date=target_date, policy=policy)
     if not instrument_ids:
         return EmaBatchOutcome.skipped("no_eligible_identity_inputs")
 
@@ -169,57 +166,3 @@ def _policy_from_settings(settings: Settings) -> EmaSourcePolicy | None:
         allowed_parser_versions=versions,
         observation_cutoff=EMA_DAILY_OBSERVATION_BOUNDARY,
     )
-
-
-def _expected_trade_dates(
-    context: BatchContext,
-    *,
-    target_date: date,
-    policy: EmaSourcePolicy,
-) -> tuple[date, ...]:
-    """Use observed policy dates as the daily-run exchange calendar evidence.
-
-    Every selected instrument receives the same date set, so a missing source
-    row remains an explicit unavailable input rather than disappearing from
-    that instrument's calculation.
-    """
-    rows = context.session.scalars(
-        select(PriceObservation.trade_date)
-        .where(
-            PriceObservation.provider == policy.provider,
-            PriceObservation.adjustment_type == policy.adjustment_type,
-            PriceObservation.parser_version.in_(policy.allowed_parser_versions),
-            PriceObservation.observed_at <= policy.observation_cutoff,
-            PriceObservation.trade_date <= target_date,
-        )
-        .distinct()
-        .order_by(PriceObservation.trade_date)
-    )
-    return tuple(rows)
-
-
-def _eligible_instrument_ids(
-    context: BatchContext,
-    *,
-    target_date: date,
-    policy: EmaSourcePolicy,
-) -> tuple[int, ...]:
-    rows = context.session.scalars(
-        select(PriceObservationIdentitySnapshot.instrument_id)
-        .join(
-            PriceObservation,
-            PriceObservation.id == PriceObservationIdentitySnapshot.price_observation_id,
-        )
-        .where(
-            PriceObservationIdentitySnapshot.instrument_id.is_not(None),
-            PriceObservationIdentitySnapshot.mapping_status == "matched",
-            PriceObservation.provider == policy.provider,
-            PriceObservation.adjustment_type == policy.adjustment_type,
-            PriceObservation.parser_version.in_(policy.allowed_parser_versions),
-            PriceObservation.observed_at <= policy.observation_cutoff,
-            PriceObservation.trade_date <= target_date,
-        )
-        .distinct()
-        .order_by(PriceObservationIdentitySnapshot.instrument_id)
-    )
-    return tuple(rows)

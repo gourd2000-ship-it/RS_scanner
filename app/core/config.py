@@ -10,6 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # immutable input snapshots, rather than a moving "as of now" cutoff, preserve
 # each run's reproducible source evidence.
 EMA_DAILY_OBSERVATION_BOUNDARY = datetime(9999, 12, 31, 23, 59, 59, tzinfo=UTC)
+VOLUME_DAILY_OBSERVATION_BOUNDARY = datetime(9999, 12, 31, 23, 59, 59, tzinfo=UTC)
 
 
 class Settings(BaseSettings):
@@ -249,6 +250,15 @@ class Settings(BaseSettings):
     ema_adjustment_type: str = Field(default="1", alias="EMA_ADJUSTMENT_TYPE")
     ema_allowed_parser_versions: str = Field(
         default="kiwoom-history-v1", alias="EMA_ALLOWED_PARSER_VERSIONS"
+    )
+
+    # Volume MA50 is independently opt-in. Operators must explicitly select
+    # source evidence; a moving daily cutoff would create a different series.
+    volume_sma50_enabled: bool = Field(default=False, alias="VOLUME_SMA50_ENABLED")
+    volume_sma50_source_provider: str = Field(default="", alias="VOLUME_SMA50_SOURCE_PROVIDER")
+    volume_sma50_adjustment_type: str = Field(default="", alias="VOLUME_SMA50_ADJUSTMENT_TYPE")
+    volume_sma50_allowed_parser_versions: str = Field(
+        default="", alias="VOLUME_SMA50_ALLOWED_PARSER_VERSIONS"
     )
 
 

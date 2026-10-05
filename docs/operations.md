@@ -120,7 +120,9 @@ APP_ENV=production .venv/bin/python scripts/plan_volume_sma50_storage.py \
 ```bash
 APP_ENV=production .venv/bin/python scripts/backfill_volume_sma50.py \
   --manifest reports/volume_ma50/plan.json --manifest-hash '<계획 보고서의 manifest_hash>' \
-  --checkpoint reports/volume_ma50/checkpoint.json --apply --resume
+  --checkpoint reports/volume_ma50/checkpoint.json --apply
 ```
+
+중단된 실행은 이미 존재하는 같은 checkpoint 경로에만 `--resume`을 추가해 재개한다.
 
 일일 실행은 `VOLUME_SMA50_ENABLED=false`가 기본이다. 활성화할 때 `VOLUME_SMA50_SOURCE_PROVIDER`, `VOLUME_SMA50_ADJUSTMENT_TYPE`, `VOLUME_SMA50_ALLOWED_PARSER_VERSIONS`을 명시한다. validation이 없거나 차단되면 값을 저장하지 않고 그 사유를 기록한다.

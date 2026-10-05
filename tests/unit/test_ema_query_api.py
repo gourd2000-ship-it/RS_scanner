@@ -17,10 +17,12 @@ from app.main_api import app
 from app.models.indicator import (
     IndicatorCalculationRun,
     IndicatorGeneration,
+    IndicatorInputPolicy,
     IndicatorSeries,
     IndicatorValue,
 )
 from app.models.instrument import Instrument
+from app.repositories.indicator_repository import IndicatorRepository
 
 
 @pytest.fixture
@@ -216,3 +218,62 @@ def test_ema_query_rejects_unknown_instrument_and_invalid_range(ema_client):
 
     assert unknown.status_code == 404
     assert invalid_range.status_code == 422
+
+
+def test_newer_volume_series_does_not_change_ema_metadata_or_pages(ema_client):
+    session = ema_client.ema_session
+    instrument_id = ema_client.primary_instrument_id
+    cutoff = datetime(2024, 2, 1, tzinfo=UTC)
+    policy = IndicatorInputPolicy(
+        provider="test-provider", adjustment_type="test-adjustment",
+        allowed_parser_versions=["test-v1"], observation_cutoff=cutoff,
+        selector_version="selector-v1", validation_version="validation-v1",
+        correction_version="correction-v1", fingerprint="c" * 64,
+    )
+    session.add(policy)
+    session.flush()
+    volume_series = IndicatorSeries(
+        instrument_id=instrument_id, indicator_kind="volume_sma",
+        input_field="volume", periods="50", formula_version="volume-sma-v1",
+        input_policy_version="validated-observation-ohlcv-v1", input_policy_id=policy.id,
+        source_provider=policy.provider, adjustment_policy=policy.adjustment_type,
+        allowed_parser_versions=policy.allowed_parser_versions, observation_cutoff=cutoff,
+    )
+    session.add(volume_series)
+    session.flush()
+    generation = IndicatorGeneration(series_id=volume_series.id, generation=1, status="current")
+    session.add(generation)
+    session.flush()
+    run = IndicatorCalculationRun(
+        series_id=volume_series.id, generation_id=generation.id, run_kind="backfill",
+        status="completed", input_cutoff=cutoff, input_hash="d" * 64,
+        result_hash="e" * 64, input_count=1, result_count=1,
+        completed_at=datetime(2024, 1, 10, tzinfo=UTC),
+    )
+    session.add(run)
+    session.flush()
+    session.add(IndicatorValue(
+        calculation_run_id=run.id, generation_id=generation.id, indicator_kind="volume_sma",
+        period=50, trade_date=date(2024, 1, 9), value=Decimal("12345"),
+        status="available", reason_code=None, available_observations=50,
+        input_prefix_hash="f" * 64,
+    ))
+    session.commit()
+
+    response = ema_client.get(
+        "/api/v1/backtests/indicators/ema", params=_params(instrument_id=instrument_id),
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["as_of"] == "2024-01-03"
+    assert body["calculated_at"] == "2024-01-04T01:00:00Z"
+    assert body["total_count"] == 2
+    assert [item["trade_date"] for item in body["items"]] == ["2024-01-02", "2024-01-03"]
+    assert [value["period"] for value in body["items"][0]["values"]] == [5, 20, 50, 200]
+    assert Decimal(body["items"][0]["values"][0]["value"]) == Decimal("100.125")
+
+    # Direct repository callers cannot request Volume values through EMA paging.
+    assert IndicatorRepository(session).current_ema_page(
+        instrument_id=instrument_id, series_id=volume_series.id, generation_id=generation.id,
+        start=date(2024, 1, 1), end=date(2024, 1, 31), page=1, size=10,
+    ) == ((), 0)

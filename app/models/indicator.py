@@ -357,7 +357,7 @@ class IndicatorValue(Base):
         ),
         CheckConstraint(
             "(status = 'available' AND value IS NOT NULL AND reason_code IS NULL) "
-            "OR (status = 'warming_up' AND reason_code = 'warming_up' AND "
+            "OR (status = 'warming_up' AND reason_code IS NOT NULL AND reason_code = 'warming_up' AND "
             "((indicator_kind = 'ema' AND value IS NOT NULL) OR "
             "(indicator_kind = 'volume_sma' AND value IS NULL))) "
             "OR (status = 'data_unavailable' AND value IS NULL AND reason_code IS NOT NULL "

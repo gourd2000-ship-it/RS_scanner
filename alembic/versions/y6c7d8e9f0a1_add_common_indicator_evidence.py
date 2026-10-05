@@ -100,7 +100,7 @@ def upgrade():
     with op.batch_alter_table("indicator_values") as batch:
         batch.add_column(sa.Column("indicator_kind", sa.String(20), nullable=False, server_default="ema"))
         batch.drop_constraint("ck_indicator_values_status_shape", type_="check")
-        batch.create_check_constraint('ck_indicator_values_status_shape', "(status = 'available' AND value IS NOT NULL AND reason_code IS NULL) OR (status = 'warming_up' AND reason_code = 'warming_up' AND ((indicator_kind = 'ema' AND value IS NOT NULL) OR (indicator_kind = 'volume_sma' AND value IS NULL))) OR (status = 'data_unavailable' AND value IS NULL AND reason_code IS NOT NULL AND (indicator_kind = 'ema' OR reason_code <> 'warming_up'))")
+        batch.create_check_constraint('ck_indicator_values_status_shape', "(status = 'available' AND value IS NOT NULL AND reason_code IS NULL) OR (status = 'warming_up' AND reason_code IS NOT NULL AND reason_code = 'warming_up' AND ((indicator_kind = 'ema' AND value IS NOT NULL) OR (indicator_kind = 'volume_sma' AND value IS NULL))) OR (status = 'data_unavailable' AND value IS NULL AND reason_code IS NOT NULL AND (indicator_kind = 'ema' OR reason_code <> 'warming_up'))")
         batch.create_check_constraint('ck_indicator_values_definition', "indicator_kind = 'ema' OR (indicator_kind = 'volume_sma' AND period = 50)")
     if op.get_bind().dialect.name == "postgresql":
         _postgresql_contracts()

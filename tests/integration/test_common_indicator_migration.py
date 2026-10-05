@@ -186,6 +186,7 @@ def test_run_input_scope_order_reuse_and_volume_completion(connection):
 @pytest.mark.parametrize('kind,period,number,status,reason', [
     ('volume_sma',5,None,'warming_up','warming_up'),
     ('volume_sma',50,100,'warming_up','warming_up'),
+    ('volume_sma',50,None,'warming_up',None),
     ('volume_sma',50,None,'available',None),
     ('volume_sma',50,None,'data_unavailable','warming_up'),
     ('ema',50,None,'warming_up','warming_up'),

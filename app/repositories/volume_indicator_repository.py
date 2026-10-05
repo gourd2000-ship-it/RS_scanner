@@ -212,6 +212,7 @@ def _evidence_fields(input_policy_id: int, row: EmaInputRow) -> dict[str, object
         provider_symbol_mapping_id=identity.provider_mapping_id if identity is not None else None,
         provider=row.provider, provider_symbol=row.provider_symbol,
         adjustment_type=row.adjustment_type, parser_version=row.parser_version,
+        high=row.high, low=row.low,
         close=row.close, volume=row.volume, observed_at=row.observed_at, payload_hash=row.payload_hash,
         mapping_status=identity.mapping_status if identity is not None else None,
         mapping_valid_from=identity.valid_from if identity is not None else None,

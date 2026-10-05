@@ -10,3 +10,9 @@ def test_common_evidence_is_independent_of_runs_and_requires_nonnull_key():
     assert 'close' in columns and 'volume' in columns
     assert not inspect(IndicatorInputPolicy).columns.fingerprint.nullable
     assert not inspect(IndicatorRunInput).columns.ordinal.nullable
+
+
+def test_common_evidence_copies_high_low_without_extending_legacy_snapshot():
+    from app.models.indicator import IndicatorInputSnapshot
+    assert {'high', 'low'} <= set(inspect(IndicatorInputEvidence).columns.keys())
+    assert not {'high', 'low'} & set(inspect(IndicatorInputSnapshot).columns.keys())

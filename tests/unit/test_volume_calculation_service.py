@@ -263,3 +263,13 @@ def test_evidence_lookup_and_insert_savepoints_are_bounded_for_whole_request(ses
         assert not any(statement.startswith('INSERT INTO indicator_input_evidence') for statement in statements)
     finally:
         event.remove(session.bind, 'before_cursor_execute', capture)
+
+
+def test_fresh_volume_evidence_preserves_selected_high_and_low(session):
+    instrument, _, _, dates = seed_history(session, 1)
+    service = VolumeSmaCalculationService(session)
+    rows = service.selector.select_rows(instrument_id=instrument.id, trade_dates=dates, policy=_policy())
+    outcome = service.calculate(instrument_id=instrument.id, trade_dates=dates, policy=_policy())
+    evidence = service.repository.completed_evidence(outcome.generation_id)[0]
+    assert evidence.high == Decimal('101') and evidence.low == Decimal('99')
+    assert evidence.high == rows[0].high and evidence.low == rows[0].low

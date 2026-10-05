@@ -177,6 +177,7 @@ class EmaInputSelector:
             provider_symbol=identity.provider_symbol or "",
             adjustment_type=selected.adjustment_type,
             parser_version=selected.parser_version,
+            high=selected.high, low=selected.low,
             close=corrected_close if corrected_close is not None else selected.close,
             volume=selected.volume,
             observed_at=_utc(selected.observed_at),

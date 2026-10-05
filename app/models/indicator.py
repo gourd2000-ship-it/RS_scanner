@@ -44,7 +44,6 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
-_EMA_PERIOD_SQL = ", ".join(str(period) for period in EMA_PERIODS)
 _EMA_STATUS_SQL = ", ".join(f"'{status.value}'" for status in EmaStatus)
 _INPUT_STATUS_SQL = ", ".join(f"'{status.value}'" for status in EmaInputStatus)
 _REASON_CODE_SQL = ", ".join(f"'{reason.value}'" for reason in InputReasonCode)
@@ -130,6 +129,9 @@ class IndicatorSeries(Base):
             "(input_policy_version = 'validated-observation-ohlcv-v1' AND input_policy_id IS NOT NULL))) OR "
             "(indicator_kind = 'volume_sma' AND input_field = 'volume' AND periods = '50' "
             "AND formula_version = 'volume-sma-v1' AND input_policy_version = 'validated-observation-ohlcv-v1' "
+            "AND input_policy_id IS NOT NULL) OR "
+            "(indicator_kind = 'atr' AND input_field = 'high-low-close' AND periods = '14' "
+            "AND formula_version = 'wilder-atr-14-v1' AND input_policy_version = 'validated-observation-ohlcv-v1' "
             "AND input_policy_id IS NOT NULL)",
             name="ck_indicator_series_definition",
         ),
@@ -348,8 +350,12 @@ class IndicatorValue(Base):
             ["indicator_calculation_runs.id", "indicator_calculation_runs.generation_id"],
             name="fk_indicator_value_run_generation",
         ),
-        CheckConstraint("indicator_kind = 'ema' OR (indicator_kind = 'volume_sma' AND period = 50)", name="ck_indicator_values_definition"),
-        CheckConstraint(f"period IN ({_EMA_PERIOD_SQL})", name="ck_indicator_values_period"),
+        CheckConstraint(
+            "(indicator_kind = 'ema' AND period IN (5, 20, 50, 200)) OR "
+            "(indicator_kind = 'volume_sma' AND period = 50) OR (indicator_kind = 'atr' AND period = 14)",
+            name="ck_indicator_values_definition",
+        ),
+        CheckConstraint("period IN (5, 14, 20, 50, 200)", name="ck_indicator_values_period"),
         CheckConstraint(f"status IN ({_EMA_STATUS_SQL})", name="ck_indicator_values_status"),
         CheckConstraint(
             f"reason_code IS NULL OR reason_code IN ({_REASON_CODE_SQL})",
@@ -359,7 +365,7 @@ class IndicatorValue(Base):
             "(status = 'available' AND value IS NOT NULL AND reason_code IS NULL) "
             "OR (status = 'warming_up' AND reason_code IS NOT NULL AND reason_code = 'warming_up' AND "
             "((indicator_kind = 'ema' AND value IS NOT NULL) OR "
-            "(indicator_kind = 'volume_sma' AND value IS NULL))) "
+            "(indicator_kind IN ('volume_sma', 'atr') AND value IS NULL))) "
             "OR (status = 'data_unavailable' AND value IS NULL AND reason_code IS NOT NULL "
             "AND (indicator_kind = 'ema' OR reason_code <> 'warming_up'))",
             name="ck_indicator_values_status_shape",
@@ -448,6 +454,8 @@ class IndicatorInputEvidence(Base):
     provider_symbol: Mapped[str] = mapped_column(String(50), nullable=False)
     adjustment_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
     parser_version: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    high: Mapped[Decimal | None] = mapped_column(Numeric(), nullable=True)
+    low: Mapped[Decimal | None] = mapped_column(Numeric(), nullable=True)
     close: Mapped[Decimal | None] = mapped_column(Numeric(), nullable=True)
     volume: Mapped[int | None] = mapped_column(Integer, nullable=True)
     observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

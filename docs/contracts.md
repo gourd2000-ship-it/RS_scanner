@@ -62,3 +62,7 @@ EMA 행 사유 코드는 아래 값만 허용한다. `warming_up`은 계산 결�
 `ambiguous_identity_mapping`, `conflicting_observations`, `approved_exclusion`,
 `approved_validation_exclusion`, `open_validation_case`, `invalid_approved_correction`,
 `invalid_ohlcv`, `provider_or_adjustment_discontinuity`, `confirmed_trading_halt`.
+
+## 거래량 MA50 내부 저장 계약
+
+거래량 MA50은 공개 API 계약이 아니다. 내부 저장값은 `volume_sma` 종류와 period 50으로 식별한다. 각 입력 거래일에는 결과 하나만 존재한다. `available`은 Decimal 문자열로 표현 가능한 평균값과 null 사유를, `warming_up`은 null 값과 `warming_up` 사유를, `data_unavailable`은 null 값과 입력 불가 사유를 가진다. history input policy는 `validated-observation-ohlcv-v1`이며, 동일 policy·instrument·거래일의 동일 evidence는 재사용하고 달라진 evidence는 새 generation으로만 기록한다.

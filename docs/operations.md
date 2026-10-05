@@ -101,3 +101,26 @@ APP_ENV=production .venv/bin/python scripts/backfill_ema.py \
 ## 배포
 
 이미지는 `docker compose up -d` 또는 운영 오케스트레이터로 기동한다. 배포 전 migration 호환성, 비밀값 주입, 내부 자동화 token의 읽기 scope, health endpoint를 확인한다. 배포 후에는 최근 batch의 상태·coverage·인증 거부 로그를 확인한다. 비밀값 노출 의심 시 배포를 계속하지 말고 token/키 교체 후 연결 설정을 갱신한다.
+
+## 거래량 MA50 저장과 역사 백필
+
+거래량 MA50은 DB 저장 전 계획 명령으로 대상·제외 사유·정책/정의 fingerprint·입력 sequence hash·예상 입력/결과 행·추정 저장량을 고정한다. 계획 명령은 읽기 전용이다.
+
+```bash
+APP_ENV=production .venv/bin/python scripts/plan_volume_sma50_storage.py \
+  --start 2013-01-02 --end 2026-09-04 \
+  --provider kiwoom --adjustment-type 1 \
+  --parser-version kiwoom-history-v1 \
+  --observation-cutoff 9999-12-31T23:59:59Z \
+  --output reports/volume_ma50/plan.json
+```
+
+운영 적용은 migration 상태, 계획 보고서, 소규모 표본의 저장값·hash·상태 수량 대조와 저장량 검토가 끝난 뒤에만 한다. 적용은 manifest와 hash 및 `--apply`를 모두 요구하며, 종목별 checkpoint로 재개한다. manifest와 다른 최초 입력은 거부하고, 완료 뒤 원천 evidence가 바뀐 종목만 새 generation으로 rebuild한다. 전체 적용은 자동으로 시작하지 않는다.
+
+```bash
+APP_ENV=production .venv/bin/python scripts/backfill_volume_sma50.py \
+  --manifest reports/volume_ma50/plan.json --manifest-hash '<계획 보고서의 manifest_hash>' \
+  --checkpoint reports/volume_ma50/checkpoint.json --apply --resume
+```
+
+일일 실행은 `VOLUME_SMA50_ENABLED=false`가 기본이다. 활성화할 때 `VOLUME_SMA50_SOURCE_PROVIDER`, `VOLUME_SMA50_ADJUSTMENT_TYPE`, `VOLUME_SMA50_ALLOWED_PARSER_VERSIONS`을 명시한다. validation이 없거나 차단되면 값을 저장하지 않고 그 사유를 기록한다.

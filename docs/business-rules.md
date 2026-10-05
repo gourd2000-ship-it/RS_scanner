@@ -62,3 +62,11 @@ series를 이어 쓰지 않는다.
 hash를 불변으로 저장한다. 따라서 다음 거래일의 관측은 같은 series에 증분 추가되며, 과거
 관측의 선택 근거가 바뀌면 새 generation으로 재계산한다. 운영자는 별도의
 `EMA_OBSERVATION_CUTOFF`을 설정하거나 매일 갱신해서는 안 된다.
+
+## 거래량 MA50 저장과 계산
+
+거래량 MA50은 검증된 OHLCV의 거래량만 사용하며 기간은 50 거래일이다. 거래량 0은 정상 관측값으로 평균에 포함한다. 50개의 연속 적격 관측 전에는 `warming_up`, 결측·음수 거래량·identity 미확정·품질 검토·source 단절 뒤에는 `data_unavailable`이며 보간하거나 이전 값을 이월하지 않는다.
+
+거래량 MA50의 입력 정책은 `validated-observation-ohlcv-v1`이다. 선택된 관측, 역사 identity, source/adjustment/parser, 품질·보정 근거와 입력·결과 hash, 계산 run과 generation을 append-only로 보존한다. 원천 근거가 바뀌면 기존 결과를 갱신하지 않고 새 generation으로 재계산한다. 기존 EMA 이력은 수정하지 않는다.
+
+일일 거래량 MA50은 기본 비활성이다. 활성화하려면 source 정책을 명시해야 하며, 가격 수집과 품질 검증 결과가 확인된 뒤에만 실행한다. 값은 아직 백테스트 조건이나 화면 API에 연결하지 않는다.

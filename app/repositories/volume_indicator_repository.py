@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Sequence
 
 from sqlalchemy import select
@@ -13,7 +14,7 @@ from app.models.indicator import (
     IndicatorRunInput, IndicatorSeries, IndicatorValue,
 )
 from app.repositories.indicator_repository import IndicatorRepository, _as_utc
-from app.services.indicators.contracts import EmaInputRow, EmaSourcePolicy, canonical_json
+from app.services.indicators.contracts import EmaInputRow, EmaSourcePolicy
 from app.services.indicators.volume_sma import VOLUME_SMA_PERIOD, VolumeSmaResult
 
 
@@ -100,44 +101,55 @@ class VolumeIndicatorRepository(IndicatorRepository):
     def get_or_create_evidence(
         self, *, input_policy_id: int, row: EmaInputRow,
     ) -> IndicatorInputEvidence:
-        # Copy the same selection facts as EMA, into a run-independent row.
-        snapshot = self._input_snapshot(IndicatorCalculationRun(), row, "")
-        fields = {
-            column.name: getattr(snapshot, column.name)
+        return self.get_or_create_evidence_rows(input_policy_id=input_policy_id, rows=(row,))[0]
+
+    def get_or_create_evidence_rows(
+        self, *, input_policy_id: int, rows: Sequence[EmaInputRow],
+    ) -> tuple[IndicatorInputEvidence, ...]:
+        """Fetch a request range once and flush new facts in one savepoint.
+
+        Only PostgreSQL generates durable evidence keys. The local comparison
+        keeps nonfinite prices intact, so invalid inputs do not enter the legacy
+        EMA fingerprint serializer. A competing insert rolls back the whole
+        new batch; refetch its winners and retry only still-missing facts.
+        """
+        if not rows:
+            return ()
+        fields = tuple(_evidence_fields(input_policy_id, row) for row in rows)
+        materials = tuple(_comparison_material(item) for item in fields)
+        existing = self._find_evidence(input_policy_id=input_policy_id, rows=rows)
+        missing = {material: item for material, item in zip(materials, fields, strict=True)
+                   if material not in existing}
+        while missing:
+            try:
+                with self.session.begin_nested():
+                    new_rows = {material: IndicatorInputEvidence(**item) for material, item in missing.items()}
+                    self.session.add_all(new_rows.values())
+                    self.session.flush()  # Read each server-generated evidence key via RETURNING.
+                existing.update(new_rows)
+                break
+            except IntegrityError:
+                existing = self._find_evidence(input_policy_id=input_policy_id, rows=rows)
+                remaining = {material: item for material, item in missing.items() if material not in existing}
+                if len(remaining) == len(missing):
+                    raise  # Not a recoverable duplicate-evidence conflict.
+                missing = remaining
+        return tuple(existing[material] for material in materials)
+
+    def _find_evidence(
+        self, *, input_policy_id: int, rows: Sequence[EmaInputRow],
+    ) -> dict[tuple, IndicatorInputEvidence]:
+        candidates = self.session.scalars(select(IndicatorInputEvidence).where(
+            IndicatorInputEvidence.input_policy_id == input_policy_id,
+            IndicatorInputEvidence.instrument_id.in_({row.instrument_id for row in rows}),
+            IndicatorInputEvidence.trade_date >= min(row.trade_date for row in rows),
+            IndicatorInputEvidence.trade_date <= max(row.trade_date for row in rows),
+        ))
+        return {_comparison_material({
+            column.name: getattr(candidate, column.name)
             for column in IndicatorInputEvidence.__table__.columns
-            if column.name not in {"id", "input_policy_id", "evidence_key", "created_at"}
-        }
-        fields["input_policy_id"] = input_policy_id
-
-        def material(values):
-            return canonical_json({key: _as_utc(value) if isinstance(value, datetime) else value
-                                   for key, value in values.items()})
-
-        expected = material(fields)
-
-        def find():
-            candidates = self.session.scalars(select(IndicatorInputEvidence).where(
-                IndicatorInputEvidence.input_policy_id == input_policy_id,
-                IndicatorInputEvidence.instrument_id == row.instrument_id,
-                IndicatorInputEvidence.trade_date == row.trade_date,
-            ))
-            return next((candidate for candidate in candidates if material(
-                {key: getattr(candidate, key) for key in fields}) == expected), None)
-
-        existing = find()
-        if existing is not None:
-            return existing
-        try:
-            with self.session.begin_nested():
-                evidence = IndicatorInputEvidence(**fields)
-                self.session.add(evidence)
-                self.session.flush()  # Always read the server-generated evidence key.
-                return evidence
-        except IntegrityError:
-            existing = find()
-            if existing is None:
-                raise
-            return existing
+            if column.name not in {"id", "evidence_key", "created_at"}
+        }): candidate for candidate in candidates}
 
     def completed_evidence(self, generation_id: int) -> tuple[IndicatorInputEvidence, ...]:
         rows = tuple(self.session.scalars(
@@ -188,3 +200,40 @@ class VolumeIndicatorRepository(IndicatorRepository):
         run.completed_at = datetime.now(UTC)
         run.status = "completed"
         self.session.flush()
+
+
+def _evidence_fields(input_policy_id: int, row: EmaInputRow) -> dict[str, object]:
+    """Copy selection facts directly; invalid prices are evidence, not hashes."""
+    identity = row.identity
+    return dict(
+        input_policy_id=input_policy_id, trade_date=row.trade_date, instrument_id=row.instrument_id,
+        source_symbol_id=row.symbol_id, price_observation_id=row.observation_id,
+        price_observation_identity_snapshot_id=identity.snapshot_id if identity is not None else None,
+        provider_symbol_mapping_id=identity.provider_mapping_id if identity is not None else None,
+        provider=row.provider, provider_symbol=row.provider_symbol,
+        adjustment_type=row.adjustment_type, parser_version=row.parser_version,
+        close=row.close, volume=row.volume, observed_at=row.observed_at, payload_hash=row.payload_hash,
+        mapping_status=identity.mapping_status if identity is not None else None,
+        mapping_valid_from=identity.valid_from if identity is not None else None,
+        mapping_valid_to=identity.valid_to if identity is not None else None,
+        resolver_version=identity.resolver_version if identity is not None else None,
+        resolved_at=identity.resolved_at if identity is not None else None,
+        correction_ids=list(row.correction_ids),
+        validation_evidence=[case.fingerprint_material() for case in row.validation_cases],
+        input_status=row.input_status.value,
+        reason_code=row.reason_code.value if row.reason_code is not None else None,
+    )
+
+
+def _comparison_material(value):
+    """Hashable equality key, independent of PostgreSQL's durable fingerprint."""
+    if isinstance(value, Decimal) and not value.is_finite():
+        # Decimal NaN is unequal to itself; preserve its representation for reuse.
+        return ("nonfinite_decimal", str(value))
+    if isinstance(value, datetime):
+        return _as_utc(value)
+    if isinstance(value, dict):
+        return tuple((key, _comparison_material(item)) for key, item in sorted(value.items()))
+    if isinstance(value, (tuple, list)):
+        return tuple(_comparison_material(item) for item in value)
+    return value

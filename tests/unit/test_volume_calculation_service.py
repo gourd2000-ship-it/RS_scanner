@@ -238,3 +238,28 @@ def test_correction_and_validation_revision_copy_selection_evidence(session):
     assert (value.status, value.reason_code, value.value) == ('data_unavailable', 'open_validation_case', None)
     assert session.get(IndicatorCalculationRun, first.run_id).input_hash != session.get(
         IndicatorCalculationRun, rebuilt.run_id).input_hash
+
+
+def test_evidence_lookup_and_insert_savepoints_are_bounded_for_whole_request(session):
+    instrument, _, _, dates = seed_history(session)
+    service = VolumeSmaCalculationService(session)
+    statements = []
+
+    def capture(connection, cursor, statement, parameters, context, executemany):
+        statements.append(statement)
+
+    event.listen(session.bind, 'before_cursor_execute', capture)
+    try:
+        service.calculate(instrument_id=instrument.id, trade_dates=dates, policy=_policy())
+        lookup_count = sum(statement.startswith('SELECT') and 'FROM indicator_input_evidence' in statement
+                           and 'JOIN' not in statement for statement in statements)
+        assert lookup_count == 1
+        assert sum(statement.startswith('SAVEPOINT') for statement in statements) <= 6
+        statements.clear()
+        outcome = service.calculate(instrument_id=instrument.id, trade_dates=dates, policy=_policy())
+        assert outcome.reused
+        assert sum(statement.startswith('SELECT') and 'FROM indicator_input_evidence' in statement
+                   and 'JOIN' not in statement for statement in statements) == 1
+        assert not any(statement.startswith('INSERT INTO indicator_input_evidence') for statement in statements)
+    finally:
+        event.remove(session.bind, 'before_cursor_execute', capture)

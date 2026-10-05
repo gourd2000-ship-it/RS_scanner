@@ -63,9 +63,9 @@ class VolumeSmaCalculationService:
                 raise ValueError("indicator series already has a running calculation")
             current = self.repository.current_generation(series.id, lock=True)
             rows = self.selector.select_rows(instrument_id=instrument_id, trade_dates=dates, policy=policy)
-            evidence = tuple(self.repository.get_or_create_evidence(
-                input_policy_id=series.input_policy_id, row=row,
-            ) for row in rows)
+            evidence = self.repository.get_or_create_evidence_rows(
+                input_policy_id=series.input_policy_id, rows=rows,
+            )
             previous = self.repository.completed_evidence(current.id) if current is not None else ()
             old_keys = tuple(row.evidence_key for row in previous)
             keys = tuple(row.evidence_key for row in evidence)

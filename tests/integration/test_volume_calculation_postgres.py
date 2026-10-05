@@ -2,8 +2,10 @@
 
 import os
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import UTC, datetime
-from threading import Event
+from decimal import Decimal
+from threading import Barrier, Event
 from uuid import uuid4
 
 import pytest
@@ -13,9 +15,12 @@ from sqlalchemy.orm import Session
 
 import app.models  # noqa: F401 -- register all schema dependencies
 from app.core.base import Base
-from app.models.indicator import IndicatorCalculationRun, IndicatorInputEvidence, IndicatorValue
+from app.models.data_quality import PriceObservation
+from app.models.indicator import IndicatorCalculationRun, IndicatorGeneration, IndicatorInputEvidence, IndicatorValue
+from app.repositories.volume_indicator_repository import VolumeIndicatorRepository
 from app.services.indicators.volume_calculation_service import VolumeCalculationError, VolumeSmaCalculationService
 from app.services.indicators.volume_sma import compute_volume_sma50
+from app.services.indicators.contracts import EmaInputStatus, InputReasonCode
 from tests.integration.test_common_indicator_migration import migration
 from tests.unit.test_indicator_calculation_service import _observation, _policy
 from tests.unit.test_volume_calculation_service import seed_history
@@ -141,3 +146,89 @@ def test_concurrent_postgres_workers_produce_one_completed_run(pg_engine):
     with Session(pg_engine) as session:
         runs = tuple(session.scalars(select(IndicatorCalculationRun)))
         assert len(runs) == 1 and runs[0].status == 'completed'
+
+
+@pytest.mark.parametrize('close', ['NaN', 'Infinity', '-Infinity'])
+def test_nonfinite_close_is_preserved_and_volume_result_and_failed_attempt_match(pg_engine, monkeypatch, close):
+    with Session(pg_engine) as session:
+        instrument, _, _, dates = seed_history(session, 2)
+        observation = session.scalar(select(PriceObservation).where(PriceObservation.trade_date == dates[0]))
+        if close == 'NaN':
+            observation.close = Decimal(close)
+            session.flush()
+        service = VolumeSmaCalculationService(session)
+        if close != 'NaN':
+            # Source Numeric(18,4) cannot hold Infinity. Exercise the selected
+            # contract directly while the shared unconstrained Numeric preserves it.
+            original = service.selector.select_rows
+
+            def selected_nonfinite(**kwargs):
+                return tuple(replace(row, close=Decimal(close), input_status=EmaInputStatus.INVALID,
+                                     reason_code=InputReasonCode.INVALID_OHLCV)
+                             if row.trade_date == dates[0] else row for row in original(**kwargs))
+
+            monkeypatch.setattr(service.selector, 'select_rows', selected_nonfinite)
+        rows = service.selector.select_rows(instrument_id=instrument.id, trade_dates=dates, policy=_policy())
+        expected = compute_volume_sma50(rows)
+        assert expected.values[0].reason_code == 'invalid_ohlcv'
+        outcome = service.calculate(instrument_id=instrument.id, trade_dates=dates, policy=_policy())
+        run = session.get(IndicatorCalculationRun, outcome.run_id)
+        assert run.status == 'completed' and run.result_hash == expected.result_hash
+        copied = service.repository.completed_evidence(outcome.generation_id)[0]
+        assert str(copied.close) == close
+        values = tuple(session.scalars(select(IndicatorValue).where(
+            IndicatorValue.calculation_run_id == run.id).order_by(IndicatorValue.trade_date)))
+        assert tuple((value.value, value.status, value.reason_code) for value in values) == tuple(
+            (value.value, value.status.value, value.reason_code) for value in expected.values)
+        assert service.calculate(instrument_id=instrument.id, trade_dates=dates, policy=_policy()).reused
+
+        def fail(**kwargs):
+            raise RuntimeError('private failure')
+
+        monkeypatch.setattr(service.repository, 'complete_volume_run', fail)
+        with pytest.raises(VolumeCalculationError) as raised:
+            service.calculate(instrument_id=instrument.id, trade_dates=dates[:1], policy=_policy())
+        failed = session.get(IndicatorCalculationRun, raised.value.run_id)
+        assert failed.status == 'failed' and failed.failure_reason == 'RuntimeError'
+        assert session.get(IndicatorGeneration, failed.generation_id).status == 'failed'
+        assert session.get(IndicatorGeneration, outcome.generation_id).status == 'current'
+        session.commit()
+        assert session.get(IndicatorCalculationRun, failed.id).status == 'failed'
+
+
+def test_concurrent_evidence_batches_recover_duplicate_keys_without_duplicate_facts(pg_engine):
+    with Session(pg_engine) as session:
+        instrument, _, _, dates = seed_history(session, 3)
+        service = VolumeSmaCalculationService(session)
+        policy_id = service.repository.get_or_create_policy(_policy()).id
+        rows = service.selector.select_rows(instrument_id=instrument.id, trade_dates=dates, policy=_policy())
+        session.commit()
+    barrier = Barrier(2)
+
+    def worker():
+        with Session(pg_engine) as session:
+            repository = VolumeIndicatorRepository(session)
+            original = repository._find_evidence
+            first_lookup = True
+
+            def simultaneously_missing(**kwargs):
+                nonlocal first_lookup
+                found = original(**kwargs)
+                if first_lookup:
+                    first_lookup = False
+                    assert not found
+                    barrier.wait(timeout=10)
+                return found
+
+            repository._find_evidence = simultaneously_missing
+            evidence = repository.get_or_create_evidence_rows(input_policy_id=policy_id, rows=rows)
+            ids = tuple(row.id for row in evidence)
+            session.commit()
+            return ids
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        workers = (pool.submit(worker), pool.submit(worker))
+        results = tuple(worker.result(timeout=10) for worker in workers)
+    assert results[0] == results[1]
+    with Session(pg_engine) as session:
+        assert len(tuple(session.scalars(select(IndicatorInputEvidence)))) == len(rows)

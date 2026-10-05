@@ -205,6 +205,9 @@ class EmaInputRow:
     reason_code: InputReasonCode | None = None
     input_policy_version: str = INPUT_POLICY_VERSION
     source_policy: EmaSourcePolicy | None = None
+    # Shared OHLC evidence only: legacy close-v3 fingerprints remain unchanged.
+    high: Decimal | None = None
+    low: Decimal | None = None
 
     def __post_init__(self) -> None:
         try:

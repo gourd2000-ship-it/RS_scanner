@@ -22,6 +22,13 @@ from app.services.batch.ema_adapter import (
     ema_enabled,
     record_ema_checkpoint,
 )
+from app.services.batch.volume_adapter import (
+    VolumeBatchOutcome,
+    calculate_daily_volume_sma50,
+    completed_volume_outcome,
+    record_volume_checkpoint,
+    volume_sma50_enabled,
+)
 from app.services.validation.data_quality import validate_crawl_job
 from app.services.validation.report import write_validation_report
 from app.core.metrics import increment_metric
@@ -137,18 +144,43 @@ def run_daily_job(
         # retained as EMA evidence without discarding otherwise valid RS.
         ema_result: EmaBatchOutcome | None = None
         if ema_enabled(settings):
-            ema_result = completed_ema_outcome(context)
+            ema_result = None if validation_blocked else completed_ema_outcome(context)
             if ema_result is None:
-                ema_result = (
-                    EmaBatchOutcome.skipped("validation_gate_blocked")
-                    if validation_blocked
-                    else calculate_daily_ema(
+                try:
+                    ema_result = (
+                        EmaBatchOutcome.skipped("validation_gate_blocked")
+                        if validation_blocked
+                        else calculate_daily_ema(
+                            context,
+                            target_date=target_date or context.target_date,
+                            settings=settings,
+                        )
+                    )
+                except Exception as exc:  # noqa: BLE001 - independent optional steps.
+                    ema_result = EmaBatchOutcome.failure(processed=0, failed=1, reason=type(exc).__name__)
+                record_ema_checkpoint(context, ema_result)
+
+        volume_result: VolumeBatchOutcome | None = None
+        if volume_sma50_enabled(settings):
+            if validation_blocked or validation_result is None:
+                volume_result = VolumeBatchOutcome.skipped(
+                    "validation_gate_blocked" if validation_blocked else "validation_unavailable"
+                )
+                record_volume_checkpoint(context, volume_result, settings=settings)
+            else:
+                volume_result = completed_volume_outcome(context, settings=settings)
+            if volume_result is None:
+                try:
+                    volume_result = calculate_daily_volume_sma50(
                         context,
                         target_date=target_date or context.target_date,
                         settings=settings,
                     )
-                )
-                record_ema_checkpoint(context, ema_result)
+                except Exception as exc:  # noqa: BLE001 - preserve EMA and RS.
+                    volume_result = VolumeBatchOutcome.failure(processed=0, failed=1, reason=type(exc).__name__)
+                record_volume_checkpoint(context, volume_result, settings=settings)
+
+        indicator_errors = any(result is not None and result.has_errors for result in (ema_result, volume_result))
 
         # 가격 단계 결과에서 실제 종목별 통계를 계산한다.
         price_stats = prices if isinstance(prices, PriceSyncResult) else None
@@ -161,12 +193,12 @@ def run_daily_job(
         symbols_failed = price_stats.unsuccessful_count if price_stats else 0
         job_status = (
             "completed_with_errors"
-            if symbols_failed or universe_degraded or validation_blocked or (ema_result and ema_result.has_errors)
+            if symbols_failed or universe_degraded or validation_blocked or indicator_errors
             else "completed"
         )
         job_message = (
             "Daily batch completed with errors"
-            if symbols_failed or universe_degraded or validation_blocked or (ema_result and ema_result.has_errors)
+            if symbols_failed or universe_degraded or validation_blocked or indicator_errors
             else "Daily batch completed successfully"
         )
 
@@ -189,7 +221,7 @@ def run_daily_job(
                     logger.exception("failed to create crawl quality report for job %s", job_id)
 
         duration = (datetime.utcnow() - started_at).total_seconds()
-        if symbols_failed or universe_degraded or (ema_result and ema_result.has_errors):
+        if symbols_failed or universe_degraded or validation_blocked or indicator_errors:
             notification_service.send_batch_failure_sync(
                 job_type="daily_full",
                 error_message=job_message,
@@ -215,6 +247,7 @@ def run_daily_job(
             "validation_report": validation_report_path,
             "validation_blocked": validation_blocked,
             "ema": ema_result.to_dict() if ema_result is not None else None,
+            "volume_sma50": volume_result.to_dict() if volume_result is not None else None,
             "krx_universe_snapshot_id": context.krx_universe_snapshot_id,
             "krx_universe_snapshot_status": context.krx_universe_snapshot_status,
         }

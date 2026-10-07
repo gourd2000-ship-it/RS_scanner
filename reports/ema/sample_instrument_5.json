@@ -1,0 +1,83 @@
+{
+  "application": {
+    "attempted": 1,
+    "chunks": 1,
+    "created": 1,
+    "mode": "apply",
+    "outcomes": [
+      {
+        "generation_id": 1,
+        "input_hash": "c275d4a6995537582994b67fbbb95493590316ec7560621da8d689094e569984",
+        "instrument_id": 5,
+        "result_hash": "3d47c3e566ab7db0c08ff2ebf0626491ebecb68bc079ad66529ba09ab5b3b64b",
+        "reused": false,
+        "run_id": 1,
+        "run_kind": "backfill",
+        "series_id": 1
+      }
+    ],
+    "plan_report_hash": "5e57ab1489d6cc9da186ac756ff4dc14dc4d7513953d29c0097b93caad306e39",
+    "report_hash": "3c40eac3c714f7688a7a386be73cecf3cb6062a0a6dd21ddd12941c7af42a1f6",
+    "reused": 0,
+    "schema_version": 1
+  },
+  "plan": {
+    "counts": {
+      "available_rows": 13161,
+      "data_unavailable_rows": 0,
+      "indicator_value_rows": 13432,
+      "input_rows": 3358,
+      "rebuild_targets": 0,
+      "targets": 1,
+      "warming_up_rows": 271
+    },
+    "estimate": {
+      "estimated_seconds": 1,
+      "indicator_value_rows": 13432,
+      "input_snapshot_rows": 3358,
+      "storage_bytes": 6017536
+    },
+    "mode": "dry_run_plan",
+    "report_hash": "5e57ab1489d6cc9da186ac756ff4dc14dc4d7513953d29c0097b93caad306e39",
+    "request": {
+      "chunk_size": 1,
+      "end": "2026-09-04",
+      "instrument_ids": [
+        5
+      ],
+      "policy": {
+        "adjustment_type": "1",
+        "allowed_parser_versions": [
+          "kiwoom-history-v1"
+        ],
+        "observation_cutoff": "9999-12-31T23:59:59.000000Z",
+        "provider": "kiwoom",
+        "version": "validated-observation-close-v3"
+      },
+      "start": "2013-01-02"
+    },
+    "schema_version": 1,
+    "targets": [
+      {
+        "action": "backfill",
+        "available_rows": 13161,
+        "data_unavailable_rows": 0,
+        "expected_trade_dates": 3358,
+        "first_available": {
+          "20": "2013-01-29",
+          "200": "2013-10-23",
+          "5": "2013-01-08",
+          "50": "2013-03-14"
+        },
+        "input_hash": "c275d4a6995537582994b67fbbb95493590316ec7560621da8d689094e569984",
+        "instrument_id": 5,
+        "range": {
+          "end": "2026-09-04",
+          "start": "2013-01-02"
+        },
+        "result_hash": "3d47c3e566ab7db0c08ff2ebf0626491ebecb68bc079ad66529ba09ab5b3b64b",
+        "warming_up_rows": 271
+      }
+    ]
+  }
+}

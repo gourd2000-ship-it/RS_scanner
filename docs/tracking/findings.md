@@ -8,6 +8,7 @@
 | 상장폐지 lifecycle 데이터 없음 | 확인된 상폐 lifecycle 1,508개 제외 | 생존편향 제거 완료 주장과 상폐 청산 backtest 불가 | 비용·이용 조건이 맞는 역사 데이터 계약 전까지 범위 밖 유지 |
 | 수정 기준 차이 | canonical과 `kiwoom:1` 차이 362,887행 | 공급자 혼합 시 왜곡 가능 | 선택 정책을 고정하고 자동 보정 금지 |
 | 사람 운영자 원격 인증 부재 | 운영자 권한은 운영 환경 접근에 의존 | 원격 관리 기능을 안전하게 공개할 수 없음 | 필요 시 별도 인증·감사 설계 |
+| 2026-10-06 일일 수집 품질 gate 차단 | `reports/data_quality/job_132.json`, `job_133.json`: 4,340개 대상 중 4,140개 fetch·200개 실패, coverage 94.9539%, stale 195개, `validation_status=blocked` | 당일 RS 입력·후속 RS 계산을 검증 완료로 승격할 수 없음; health endpoint의 마지막 batch도 `completed_with_errors` | 200개 ingest 실패와 195개 stale input을 원인별로 분류·복구한 뒤 새 quality report에서 coverage 및 freshness gate를 재검증 |
 
 ## 해결한 문제
 

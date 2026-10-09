@@ -1,15 +1,33 @@
 """API 통합 테스트용 픽스처."""
 
 import os
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
+from sqlalchemy.engine import make_url
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.base import Base
+from app.core import database
 from app.core.database import get_db_session
-from app.main_api import app
+
+
+def _load_api_app():
+    """Import routes without letting app startup initialize its default database."""
+    original_init_db = database.init_db
+    database.init_db = lambda: None
+    try:
+        from app.main_api import app
+
+        return app
+    finally:
+        database.init_db = original_init_db
+
+
+app = _load_api_app()
 
 
 # 테스트용 PostgreSQL 데이터베이스 (별도 DB 사용)
@@ -21,10 +39,42 @@ TEST_DATABASE_URL = os.getenv(
 
 @pytest.fixture(scope="session")
 def test_engine():
-    """테스트용 DB 엔진 생성 (세션 스코프)."""
-    engine = create_engine(TEST_DATABASE_URL)
-    yield engine
-    engine.dispose()
+    """Create API integration tables in a disposable schema of the test DB."""
+    parsed_url = make_url(TEST_DATABASE_URL)
+    if (
+        parsed_url.database != "rs_scanner_test"
+        or parsed_url.port != 5433
+        or parsed_url.host not in {"localhost", "127.0.0.1", "::1"}
+    ):
+        pytest.skip("API integration tests require localhost:5433/rs_scanner_test")
+
+    admin_engine = create_engine(TEST_DATABASE_URL, pool_pre_ping=True)
+    schema = "api_integration_test_" + uuid4().hex
+    schema_created = False
+    try:
+        try:
+            with admin_engine.begin() as connection:
+                connection.exec_driver_sql(f'CREATE SCHEMA "{schema}"')
+            schema_created = True
+        except SQLAlchemyError as exc:
+            pytest.skip(f"isolated PostgreSQL unavailable: {type(exc).__name__}")
+
+        engine = create_engine(
+            TEST_DATABASE_URL,
+            pool_pre_ping=True,
+            connect_args={"options": f"-csearch_path={schema}"},
+        )
+        try:
+            with engine.begin() as connection:
+                Base.metadata.create_all(connection)
+            yield engine
+        finally:
+            engine.dispose()
+    finally:
+        if schema_created:
+            with admin_engine.begin() as connection:
+                connection.exec_driver_sql(f'DROP SCHEMA "{schema}" CASCADE')
+        admin_engine.dispose()
 
 
 @pytest.fixture(scope="function")
@@ -32,7 +82,12 @@ def test_session(test_engine):
     """테스트용 DB 세션 생성 (트랜잭션 사용)."""
     connection = test_engine.connect()
     transaction = connection.begin()
-    TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=connection)
+    TestSessionLocal = sessionmaker(
+        autocommit=False,
+        autoflush=False,
+        bind=connection,
+        join_transaction_mode="create_savepoint",
+    )
     session = TestSessionLocal()
 
     try:

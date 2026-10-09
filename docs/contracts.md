@@ -14,6 +14,10 @@
 | `GET /api/v1/agent/v1/stocks/{code}` 및 `/history` | `stock:read`, history limit | 종목 snapshot 또는 가격 이력 | 401, 403, 404, 503 |
 | `GET /api/v1/agent/v2/backtest/dataset` | `backtest:read`, start/end, markets, cursor, dataset_id, strict, page_size | 가격·RS·유니버스·품질·coverage가 고정된 page | 401, 403, 404, 409, 410, 422 |
 | `GET /api/v1/backtests/indicators/ema` | 현재 백테스트 운영자 session, code, start/end, 선택 instrument_id/page/size | 현재 EMA generation의 일자별 5·20·50·200, availability 근거 | 401, 404, 409, 422 |
+| `GET /api/v1/backtests/indicators/volume-sma50` | 백테스트 운영자 session, code, start/end, 선택 instrument_id/series_id/page/size | 현재 generation의 거래량 MA50과 정책·상태·사유 | 401, 404, 409, 422 |
+| `GET /api/v1/backtests/indicators/atr14` | 백테스트 운영자 session, code, start/end, 선택 instrument_id/series_id/page/size | 현재 generation의 ATR14와 정책·상태·사유 | 401, 404, 409, 422 |
+| `POST /api/v1/backtests/runs` | 운영자 session + CSRF, strategy_version_id, start/end | 사전 검증 후 queued 실행 또는 data_unavailable 사유 | 401, 403, 404, 409, 422 |
+| `GET /api/v1/backtests/runs/{run_id}` | 백테스트 운영자 session, 페이지 입력 | 실행 상태·metrics·주문·거래·자산 곡선·benchmark 결과 | 401, 404, 422 |
 
 backtest 요청의 `start`와 `end`는 포함 범위다. cursor는 요청 필터와 dataset ID에 묶이며, 데이터가 바뀌어 일관된 page를 보장할 수 없으면 409를 반환한다. `strict` 결과도 `complete` 구간 조건을 완화하지 않는다. 가격 없는 기대 행, `partial` 구간, 상장폐지 lifecycle은 현재 발행 대상이 아니다.
 
@@ -63,13 +67,17 @@ EMA 행 사유 코드는 아래 값만 허용한다. `warming_up`은 계산 결�
 `approved_validation_exclusion`, `open_validation_case`, `invalid_approved_correction`,
 `invalid_ohlcv`, `provider_or_adjustment_discontinuity`, `confirmed_trading_halt`.
 
+운영자 지표 조회는 내부 자동화 Bearer token이 아니라 백테스트 운영자 session cookie를 요구한다. 두 지표 응답은 `instrument_id`, `code`, `indicator_kind`, `period`, `formula_version`, `series_id`, `generation_id`, `generation`, `source_policy_fingerprint`, `as_of`, `calculated_at`, `page`, `size`, `total_count`, `items`와 입력 정책을 반환한다. item은 `trade_date`, `value`(Decimal 문자열 또는 null), `status`, `reason_code`, `available_observations`를 가진다. 날짜 오름차순이며 기본 page는 1·size 250, 최대 size 1,000이다. 과거 코드가 여러 instrument에 연결되거나 current series가 모호하면 409다. 날짜 범위·ID 불일치는 422, 종목 또는 계산된 current series가 없으면 404다.
+
+`POST /api/v1/backtests/runs`는 API 요청에서 시뮬레이션을 수행하지 않는다. 먼저 `complete_segments_only` dataset, 완료 RS 결과, 지표 조건에 필요한 날짜별 snapshot 값을 검증한다. 지표 snapshot/행/evidence가 빠졌거나 사용할 수 없으면 run을 `data_unavailable`로 기록하고 409 응답을 반환한다. 성공한 queued 응답과 이후 run 조회에는 dataset manifest hash, RS run/hash, 전략 버전, MA50/ATR14 snapshot ID/hash, benchmark snapshot hash가 포함된다. `GET /runs/{run_id}`는 완료 결과를 page 단위 주문·거래와 자산 곡선으로 반환한다.
+
 ## 거래량 MA50 내부 저장 계약
 
 거래량 MA50은 공개 API 계약이 아니다. 내부 저장값은 `volume_sma` 종류와 period 50으로 식별한다. 각 입력 거래일에는 결과 하나만 존재한다. `available`은 Decimal 문자열로 표현 가능한 평균값과 null 사유를, `warming_up`은 null 값과 `warming_up` 사유를, `data_unavailable`은 null 값과 입력 불가 사유를 가진다. history input policy는 `validated-observation-ohlcv-v1`이며, 동일 policy·instrument·거래일의 동일 evidence는 재사용하고 달라진 evidence는 새 generation으로만 기록한다.
 
 ## ATR14 내부 저장 계약
 
-ATR14 저장값은 `atr` 종류와 period 14, `high-low-close` 입력, `wilder-atr-14-v1` 계산 버전으로 식별한다. 공개 API나 백테스트 dataset에는 아직 연결하지 않는다. 입력 정책은 거래량 MA50과 같은 `validated-observation-ohlcv-v1`이며, 선택기의 불변 high·low·close와 identity·source·품질·보정 근거를 공용 evidence에 함께 보존한다.
+ATR14 저장값은 `atr` 종류와 period 14, `high-low-close` 입력, `wilder-atr-14-v1` 계산 버전으로 식별한다. 값은 공개 API가 아니라 운영자 session으로 보호된 현재 지표 조회와 고정 백테스트 snapshot에 연결된다. 입력 정책은 거래량 MA50과 같은 `validated-observation-ohlcv-v1`이며, 선택기의 불변 high·low·close와 identity·source·품질·보정 근거를 공용 evidence에 함께 보존한다.
 
 같은 순서의 evidence는 완료 결과를 재사용하고, 기존 입력의 순서와 근거를 유지한 날짜 추가는 같은 generation의 새 incremental run에 suffix만 저장한다. 과거 근거 변경·삭제는 새 generation의 rebuild이며, 완료 후에만 이전 current를 superseded로 바꾼다. 각 run은 evidence prefix hash와 해당 run의 정확한 Decimal 계산값·상태·사유·관측 수의 canonical JSON SHA-256 결과 hash를 보존한다. 실패한 시도는 출력과 입력 참조를 롤백한 뒤 예외 종류만 기록하며 이전 current를 유지한다. 호출자가 성공 또는 실패 시도를 자신의 transaction에서 commit한다.
 
@@ -82,3 +90,7 @@ ATR14 저장값은 `atr` 종류와 period 14, `high-low-close` 입력, `wilder-a
 생성 전에 데이터셋 manifest의 최종 hash와 발행 범위를 검증하고, 각 가격 행이 같은 instrument·날짜의 expected/valid membership과 일치하는지 확인한다. 선택 run의 indicator kind·기간·계산 버전·instrument·generation·완료 상태, 공통 policy fingerprint와 provider/조정 기준을 검사한다. 각 날짜에는 정확히 하나의 indicator value와 run input evidence가 있어야 하고, evidence의 관측 ID·identity snapshot·matched historical mapping·provider·조정 기준·parser·관측 시각·payload hash·OHLCV·승인 correction 근거가 데이터셋 가격 및 immutable source observation과 일치해야 한다. validation 근거는 원본 indicator evidence와 함께 복사하고 사용 가능 입력 판정을 확인한다. 완전한 증거를 입증할 수 없으면 snapshot을 만들지 않고 `dataset_not_complete`, `indicator_snapshot_missing`, `indicator_value_missing` 또는 `indicator_evidence_mismatch` 사유를 반환한다.
 
 content hash는 날짜·instrument 순서의 행 hash와 선택 source lineage, 데이터셋 식별 및 source policy fingerprint를 canonical JSON SHA-256으로 묶는다. 동일한 dataset·지표 정의·선택 run 집합의 재요청은 같은 snapshot을 반환한다. 새로운 generation/run은 별도 snapshot으로 저장하며 과거 snapshot은 유지한다. DB는 생성 중 header에만 source/row 추가를 허용하고, 완성 시 건수와 policy 일치를 확인한 뒤 header·source·row의 수정과 삭제를 거부한다. 운영 DB migration이나 dataset 발행은 별도 운영 판단이 필요하다.
+
+## 백테스트 워커 계약
+
+`scripts/run_backtest_worker.py`는 별도 배치 서비스 프로세스에서 명시적으로 호출한다. 기본 1건만 처리하고 `--max-runs N`은 한 프로세스의 최대 처리 수를 제한한다. API 기동과 자동 시작에 연결하지 않는다. 워커는 queued run을 단일 writer로 claim해 `running`을 commit하고 결과와 terminal status를 저장한다. 실행 실패는 partial output을 rollback하고 `failed`를 남긴다. 완료·실패 run은 자동 재시도하지 않는다. worker가 중단되어 남은 `running` run은 프로세스 종료와 결과 미저장을 확인한 뒤 `--fail-stale-run RUN_ID --confirm-worker-stopped`로 실패 기록만 할 수 있다.

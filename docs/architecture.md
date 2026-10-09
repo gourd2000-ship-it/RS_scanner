@@ -12,11 +12,16 @@
 4. 클린 데이터셋 생성기는 `complete` 종목·연도 구간만 고정된 dataset으로 물질화한다.
 5. 읽기 API와 프런트엔드는 dataset/RS의 상태·coverage와 함께 결과를 반환한다.
 
-백테스트 경로에는 전략·버전 저장과 실행 요청 API, 고정 dataset·RS 입력 선택,
-종가 신호를 다음 거래일 시가 체결로 계산하는 시뮬레이터, 결과 저장·조회 API가
-구현돼 있다. `/backtests` 화면은 전략 입력·실행 요청·상태 조회를 제공한다.
-별도 실행 워커의 운영 진입점과 화면의 결과 상세 조회, 발행 dataset을 이용한
-종단 간 운영 검증은 남아 있다.
+백테스트 경로에는 전략·버전 저장과 실행 요청 API, 고정 dataset·RS 및 MA50·ATR14
+입력 선택, 종가 신호를 다음 거래일 시가 체결로 계산하는 시뮬레이터, 결과 저장·조회
+API가 구현돼 있다. `/backtests` 화면은 전략 조건, 현재 지표 조회, 실행 상태와 실행 때
+고정된 지표 snapshot 식별자를 보여 준다. 결과 상세 API는 주문·거래·자산 곡선과 지표
+snapshot 식별자를 반환한다.
+
+계산은 `scripts/run_backtest_worker.py`의 별도 명령으로만 시작한다. API 시작 시 자동
+기동하지 않는다. 워커 코드와 격리 DB 검증은 준비됐지만, 운영 배포·실제 발행 dataset을
+사용한 운영 검증은 끝나지 않았다. 현재 보관 품질 보고서 `job_137`이 `blocked`이므로
+운영 활성화와 dataset 발행은 보류 상태다.
 
 백엔드 의존 방향은 API → services → repositories/models/core다. crawler는 service가 호출하며, crawler가 API·프런트엔드에 의존해서는 안 된다. `alembic`은 모델 변경에 맞춘 스키마 이력만 관리한다. `frontend`는 API 계약과 환경 변수만 의존하고 Python 모듈이나 DB에 의존하지 않는다.
 

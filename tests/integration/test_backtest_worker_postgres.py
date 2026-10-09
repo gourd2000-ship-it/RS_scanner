@@ -198,3 +198,124 @@ def test_postgres_worker_exposes_running_and_serializes_claims(postgres_sessions
         )
         assert first_equity_count == 4
         assert second_equity_count == 0
+
+
+def test_complete_dataset_request_worker_and_result_api_flow(postgres_sessions, monkeypatch):
+    """Exercise the registered API and explicit worker against an isolated complete dataset."""
+    import importlib
+    from hashlib import sha256
+
+    from fastapi.testclient import TestClient
+
+    from app.api.v1.endpoints.backtest_auth import require_backtest_csrf, require_backtest_operator
+    from app.core import database
+    from app.core.database import get_db_session
+    from app.models.backtest_dataset import BacktestDatasetMembership
+    from app.models.benchmark import Benchmark
+    from app.models.benchmark_daily_price import BenchmarkDailyPrice
+
+    monkeypatch.setattr(database, "init_db", lambda: None)
+    main_api = importlib.import_module("app.main_api")
+    app = main_api.app
+    dates = [date(2024, 1, 2) + timedelta(days=offset) for offset in range(4)]
+    manifest = {"publication_scope": "complete_segments_only", "fixture": "backtest-api-worker"}
+    final_manifest_hash = sha256(
+        json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+    with postgres_sessions.begin() as session:
+        dataset = BacktestDataset(
+            dataset_id="complete-flow-" + uuid4().hex,
+            manifest_hash=sha256(uuid4().hex.encode()).hexdigest(),
+            final_manifest_hash=final_manifest_hash,
+            range_start=dates[0], range_end=dates[-1], markets=["KOSPI", "KOSDAQ"],
+            reconstruction_mode="integration_fixture", adjustment_policy="fixture:1",
+            policy_version="v1", manifest=manifest, status="active",
+        )
+        session.add(dataset)
+        session.flush()
+        rs_run = BacktestDatasetRsRun(
+            backtest_dataset_id=dataset.id, formula_version="complete-flow-rs-v1",
+            policy_version="v1", input_hash="a" * 64, result_hash="b" * 64,
+            status="completed", manifest={},
+        )
+        session.add(rs_run)
+        session.flush()
+
+        for market, instrument_id, code in (("KOSPI", 1, "000001"), ("KOSDAQ", 2, "000002")):
+            for offset, trade_date in enumerate(dates):
+                close = Decimal(100 + offset)
+                session.add(BacktestDatasetMembership(
+                    backtest_dataset_id=dataset.id, instrument_id=instrument_id,
+                    trade_date=trade_date, market=market, security_type="stock",
+                    membership_evidence_state="observed", trading_status="trading",
+                    price_expectation="expected", event_revision_hashes=[],
+                    code=code, name="integration fixture", quality_status="complete",
+                ))
+                session.add(BacktestDatasetPrice(
+                    backtest_dataset_id=dataset.id, instrument_id=instrument_id,
+                    source_symbol_id=instrument_id, code=code, name="integration fixture",
+                    market=market, trade_date=trade_date, open=close, high=close + 1,
+                    low=close - 1, close=close, volume=1_000 + offset,
+                    change_rate=Decimal("0"), provider="fixture", adjustment_type="1",
+                ))
+                session.add(BacktestDatasetRs(
+                    backtest_dataset_rs_run_id=rs_run.id, backtest_dataset_id=dataset.id,
+                    instrument_id=instrument_id, code=code, market=market,
+                    trade_date=trade_date, status="available", required_observations=1,
+                    available_observations=1, rs_rating=90, rank_in_market=1,
+                    input_hash="c" * 64,
+                ))
+
+        for market in ("KOSPI", "KOSDAQ"):
+            benchmark = Benchmark(benchmark_code=market, name=market, market=market)
+            session.add(benchmark)
+            session.flush()
+            for offset, trade_date in enumerate(dates):
+                close = Decimal(2_000 + offset)
+                session.add(BenchmarkDailyPrice(
+                    benchmark_id=benchmark.id, trade_date=trade_date,
+                    open=close, high=close + 1, low=close - 1, close=close,
+                    volume=100_000, change_rate=Decimal("0"),
+                ))
+
+        version = BacktestRepository(session).create_strategy(
+            name="Complete dataset API flow", config=_strategy_config()
+        ).versions[0]
+
+    original_overrides = app.dependency_overrides.copy()
+
+    def override_db():
+        with postgres_sessions() as session:
+            yield session
+
+    app.dependency_overrides[get_db_session] = override_db
+    app.dependency_overrides[require_backtest_csrf] = lambda: object()
+    app.dependency_overrides[require_backtest_operator] = lambda: object()
+    try:
+        with TestClient(app) as client:
+            create_response = client.post(
+                "/api/v1/backtests/runs",
+                json={"strategy_version_id": version.id, "start": dates[0].isoformat(), "end": dates[-1].isoformat()},
+            )
+            assert create_response.status_code == 201, create_response.text
+            queued = create_response.json()
+            assert queued["status"] == "queued"
+            assert queued["dataset_manifest_hash"] == final_manifest_hash
+            assert queued["rs_run_id"] is not None
+
+            outcome = BacktestExecutionWorker(postgres_sessions).run_once()
+            assert outcome.run_id == queued["run_id"]
+            assert outcome.status == "completed"
+
+            result_response = client.get(f"/api/v1/backtests/runs/{queued['run_id']}")
+            assert result_response.status_code == 200, result_response.text
+            result = result_response.json()
+            assert result["run"]["status"] == "completed"
+            assert result["metrics"] is not None
+            assert result["orders"]["total_count"] > 0
+            assert result["equity_curve"]
+            assert set(result["benchmarks"]) == {"kospi", "kosdaq"}
+    finally:
+        app.dependency_overrides.clear()
+        app.dependency_overrides.update(original_overrides)

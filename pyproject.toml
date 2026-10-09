@@ -41,5 +41,7 @@ include = ["app*", "tests*"]
 testpaths = ["tests"]
 pythonpath = ["."]
 markers = [
+    "integration: tests that require a database or exercise multiple application layers",
+    "api: tests that exercise HTTP API contracts",
     "e2e: End-to-end integration tests with PostgreSQL (run with docker-compose.test.yml)",
 ]

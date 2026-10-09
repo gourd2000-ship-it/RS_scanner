@@ -18,13 +18,14 @@ uvicorn app.main_api:app --reload
 ## 검증
 
 ```bash
-pytest -m "not integration and not api"
-pytest tests/integration/api -q
+DATABASE_URL=sqlite:// APP_ENV=production .venv/bin/pytest -m "not integration and not api"
+DATABASE_URL=sqlite:// APP_ENV=development .venv/bin/pytest tests/integration/api -q
+DATABASE_URL=sqlite:// APP_ENV=production .venv/bin/pytest tests/integration/test_backtest_worker_postgres.py -q
 python -m compileall app scripts
 git diff --check
 ```
 
-schema 변경은 위 검증과 별도로 격리 PostgreSQL에서 `alembic upgrade head`를 적용하고 downgrade 또는 재구성 절차를 확인한다. 프런트엔드 변경은 `cd frontend && npm run lint && npm run build`를 실행한다.
+테스트 marker는 `tests/integration`·`tests/e2e` 경로와 API 테스트 이름에서 자동 적용한다. PostgreSQL 테스트는 기본 DB 설정을 사용하지 않고 `TEST_DATABASE_URL`의 전용 `localhost:5433/rs_scanner_test`만 허용하며, 임시 schema를 만들고 실행 후 삭제한다. API 통합 suite도 해당 테스트 DB에 임시 schema를 만들어 테스트 테이블을 준비한다. schema 변경은 위 검증과 별도로 빈 schema 및 기존 표본이 있는 격리 PostgreSQL에서 migration upgrade와 재구성을 확인한다. 프런트엔드 변경은 `cd frontend && npm run lint && npm run build`를 실행한다.
 
 ## 백테스트 조건 입력 화면
 
@@ -32,7 +33,7 @@ schema 변경은 위 검증과 별도로 격리 PostgreSQL에서 `alembic upgrad
 
 비율 입력은 모두 % 단위다. 예를 들어 슬리피지 `0.1`은 0.1%, 손절 `5`는 5% 손실 기준이다. 손절·익절·최대 보유 기간은 빈칸이면 적용하지 않는다.
 
-`전략 저장` 후 시작일·종료일을 선택해 실행 요청한다. 저장된 전략과 버전을 불러올 수 있으며, 조건을 수정하면 `새 버전으로 저장`해야 실행할 수 있다. 실행 기록에서 상태와 데이터 부족 사유를 확인한다. 실행 요청 화면의 제공이 워커 가동이나 결과 상세 화면의 완료를 뜻하지는 않는다.
+`전략 저장` 후 시작일·종료일을 선택해 실행 요청한다. 저장된 전략과 버전을 불러올 수 있으며, 조건을 수정하면 `새 버전으로 저장`해야 실행할 수 있다. 실행 기록에서 상태·데이터 부족 사유·사용한 MA50/ATR14 snapshot ID/hash를 확인한다. 실행 요청이 `queued`가 되어도 별도 워커를 명시적으로 실행하기 전까지 계산은 시작하지 않는다. 주문·거래·자산 곡선 상세는 `GET /api/v1/backtests/runs/{run_id}` API로 조회한다.
 
 입력 변환 회귀 테스트: `cd frontend && node --experimental-strip-types --test tests/backtest-form.test.mjs` (Node 22.6 이상).
 
@@ -64,6 +65,19 @@ APP_ENV=production .venv/bin/python scripts/run_backtest_worker.py \
 EMA 결과는 브라우저에서 백테스트 운영자 로그인 세션을 가진 경우에만 조회한다. `GET /api/v1/backtests/indicators/ema`에 `code`, `start`, `end`를 넣고, 코드가 과거 여러 `Instrument`에 연결될 수 있으면 응답의 409 사유를 확인한 뒤 `instrument_id`를 함께 넣는다. 코드만으로 역사 identity를 임의 선택하지 않는다.
 
 응답은 현재 generation의 거래일 오름차순 page이며, 매 거래일마다 EMA 5·20·50·200을 모두 반환한다. `value`는 Decimal 정밀도를 보존하는 문자열이고, `status`와 `reason_code`를 함께 확인해야 한다. `warming_up`과 `data_unavailable` 값은 조건 또는 백테스트 입력으로 사용하면 안 된다. `as_of`는 현재 generation의 최신 거래일, `calculated_at`은 그 generation의 마지막 완료 계산 시각이다.
+
+## 거래량 MA50·ATR14 운영자 조회
+
+백테스트 운영자 session으로 다음 읽기 전용 경로를 호출한다.
+
+```text
+GET /api/v1/backtests/indicators/volume-sma50?code=005930&start=2026-01-01&end=2026-03-31
+GET /api/v1/backtests/indicators/atr14?code=005930&start=2026-01-01&end=2026-03-31
+```
+
+필요한 경우 `instrument_id`와 `series_id`를 지정한다. 코드가 여러 역사 instrument에 연결되거나 current series가 모호하면 409 사유를 확인하고 올바른 ID를 넣는다. 결과는 현재 generation 기준의 오름차순 페이지이며 값은 Decimal 문자열이다. `status`와 `reason_code`를 같이 확인하고 `warming_up` 또는 `data_unavailable`을 조건값으로 해석하지 않는다. 현재 조회는 과거 run에 영향을 주지 않는다.
+
+전략 조건에서 MA50·ATR14를 사용하려면 데이터셋에 고정된 snapshot이 필요하다. 요청 사전 점검은 매수 검토일과 매도 검토 거래일에 필요한 모든 값이 `available`인지 확인한다. snapshot·행·근거가 없거나 사용할 수 없는 경우 run은 queue에 들어가지 않고 `data_unavailable` 사유를 반환한다. 실행 기록의 snapshot ID/hash는 과거 실행 입력의 식별자다.
 
 ## 일상 배치와 감사
 

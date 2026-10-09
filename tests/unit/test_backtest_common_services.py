@@ -271,6 +271,61 @@ def test_indicator_execution_reads_only_the_run_pinned_decimal_snapshot():
     assert serialized.volume_sma50_snapshot_hash == snapshot.content_hash
 
 
+@pytest.mark.api
+def test_indicator_snapshot_preflight_worker_and_result_api_flow():
+    from sqlalchemy.orm import sessionmaker
+
+    from app.api.v1.endpoints.backtest_auth import require_backtest_csrf, require_backtest_operator
+    from app.api.v1.endpoints.backtest_execution import router
+    from app.core.database import get_db_session
+    from app.services.backtest.worker import BacktestExecutionWorker
+
+    session = _session()
+    dataset, _ = _complete_inputs(session)
+    snapshot = _attach_indicator_snapshot(session, dataset)
+    strategy = BacktestRepository(session).create_strategy(name="MA50 API flow", config=_indicator_config())
+    app = FastAPI()
+    app.include_router(router, prefix="/api/v1/backtests")
+
+    def override_get_db():
+        yield session
+
+    app.dependency_overrides[get_db_session] = override_get_db
+    app.dependency_overrides[require_backtest_csrf] = lambda: object()
+    app.dependency_overrides[require_backtest_operator] = lambda: object()
+    factory = sessionmaker(bind=session.get_bind(), autoflush=False, expire_on_commit=False)
+    try:
+        with TestClient(app) as client:
+            queued_response = client.post(
+                "/api/v1/backtests/runs",
+                json={
+                    "strategy_version_id": strategy.versions[0].id,
+                    "start": "2024-01-02",
+                    "end": "2024-01-05",
+                },
+            )
+            assert queued_response.status_code == 201, queued_response.text
+            queued = queued_response.json()
+            assert queued["status"] == "queued"
+            assert queued["volume_sma50_snapshot_id"] == snapshot.id
+            assert queued["volume_sma50_snapshot_hash"] == snapshot.content_hash
+
+            outcome = BacktestExecutionWorker(factory).run_once()
+            assert outcome.run_id == queued["run_id"]
+            assert outcome.status == "completed"
+
+            result_response = client.get(f"/api/v1/backtests/runs/{queued['run_id']}")
+            assert result_response.status_code == 200, result_response.text
+            result = result_response.json()
+            assert result["run"]["status"] == "completed"
+            assert result["run"]["volume_sma50_snapshot_id"] == snapshot.id
+            assert result["metrics"] is not None
+            assert result["orders"]["total_count"] > 0
+    finally:
+        app.dependency_overrides.clear()
+        session.close()
+
+
 def test_indicator_preparation_checks_actual_first_rebalance_date_before_queue():
     session = _session()
     dataset, rs_run = _complete_inputs(session)

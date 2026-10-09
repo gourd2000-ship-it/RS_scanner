@@ -1,8 +1,4 @@
-"""Unregistered support router for the protected browser backtest feature.
-
-The application router is deliberately not changed here; the feature API task
-registers this router once it owns the complete protected route surface.
-"""
+"""Authentication endpoints and dependencies for the protected backtest API."""
 
 from __future__ import annotations
 

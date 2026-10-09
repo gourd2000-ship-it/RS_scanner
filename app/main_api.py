@@ -8,6 +8,7 @@ from app.api.v1.endpoints.analysis import router as analysis_router
 from app.api.v1.endpoints.backtest import router as backtest_router
 from app.api.v1.endpoints.backtest_auth import router as backtest_auth_router
 from app.api.v1.endpoints.backtest_execution import router as backtest_execution_router
+from app.api.v1.endpoints.backtest_indicators import router as backtest_indicators_router
 from app.api.v1.endpoints.crawl import router as crawl_router
 from app.api.v1.endpoints.codex import router as codex_router
 from app.api.v1.endpoints.health import router as health_router
@@ -134,6 +135,7 @@ app.include_router(agent_router, prefix="/api/v1/agent/v1", tags=["agent"])
 app.include_router(backtest_router, prefix="/api/v1/agent/v2", tags=["agent"])
 app.include_router(backtest_auth_router, prefix="/api/v1/backtests", tags=["backtests"])
 app.include_router(backtest_execution_router, prefix="/api/v1/backtests", tags=["backtests"])
+app.include_router(backtest_indicators_router, prefix="/api/v1/backtests", tags=["backtests"])
 app.include_router(repair_router, prefix="/internal/v1/repair", tags=["repair"])
 app.include_router(analysis_router, prefix="/internal/v1/crawl-analysis", tags=["crawl-analysis"])
 app.include_router(codex_router, prefix="/internal/v1/codex-change-requests", tags=["crawl-analysis"])

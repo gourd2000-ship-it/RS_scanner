@@ -44,7 +44,8 @@ def pg_engine():
         with engine.begin() as connection:
             Base.metadata.create_all(connection, tables=[
                 table for table in Base.metadata.sorted_tables
-                if not table.name.startswith('indicator_') and table.name != 'price_observation_identity_snapshots'
+                if not table.name.startswith(('indicator_', 'backtest_dataset_indicator_snapshot'))
+                and table.name != 'price_observation_identity_snapshots'
             ])
             for revision in ('w4a5b6c7d8e9', 'x5b6c7d8e9f0', 'y6c7d8e9f0a1', 'z7d8e9f0a1b2'):
                 migration(revision, connection).upgrade()

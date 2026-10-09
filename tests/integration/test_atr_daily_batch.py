@@ -39,6 +39,17 @@ def test_daily_atr_commits_incremental_failure_retry_and_rebuild(pg_engine, monk
         first = calculate_daily_atr14(context, target_date=dates[0], settings=settings)
         record_atr_checkpoint(context, first, settings=settings)
         assert first.outcome == "completed"
+        first_run = session.scalar(select(IndicatorCalculationRun))
+        assert first_run is not None and first_run.status == "completed"
+        first_hashes = first_run.input_hash, first_run.result_hash
+        assert completed_atr_outcome(context, settings=settings) == first
+        mismatched_policy = settings.model_copy(update={"atr14_adjustment_type": "2"})
+        assert completed_atr_outcome(context, settings=mismatched_policy) is None
+        repeated = calculate_daily_atr14(context, target_date=dates[0], settings=settings)
+        assert repeated.outcome == "completed"
+        assert session.scalar(select(func.count()).select_from(IndicatorCalculationRun)) == 1
+        metadata = json.loads(context.checkpoint_repository.get_checkpoint(job_id, "atr14").step_metadata)
+        assert metadata["source_policy_hash"] and len(metadata["source_policy_hash"]) == 64
         session.commit()
 
     def fail(*_args, **_kwargs):
@@ -65,6 +76,16 @@ def test_daily_atr_commits_incremental_failure_retry_and_rebuild(pg_engine, monk
         retried = calculate_daily_atr14(context, target_date=dates[1], settings=settings)
         record_atr_checkpoint(context, retried, settings=settings)
         assert completed_atr_outcome(context, settings=settings) == retried
+        incremental_run = session.scalar(select(IndicatorCalculationRun).where(
+            IndicatorCalculationRun.run_kind == "incremental",
+            IndicatorCalculationRun.status == "completed",
+        ))
+        assert incremental_run is not None
+        incremental_hashes = incremental_run.input_hash, incremental_run.result_hash
+        repeated_retry = calculate_daily_atr14(context, target_date=dates[1], settings=settings)
+        assert repeated_retry.outcome == "completed"
+        assert session.scalar(select(func.count()).select_from(IndicatorCalculationRun)) == 3
+        assert (incremental_run.input_hash, incremental_run.result_hash) == incremental_hashes
         session.commit()
 
     with Session(pg_engine) as session:
@@ -82,6 +103,10 @@ def test_daily_atr_commits_incremental_failure_retry_and_rebuild(pg_engine, monk
             ("backfill", "completed"), ("incremental", "failed"),
             ("incremental", "completed"), ("rebuild", "completed"),
         ]
+        assert (runs[0].input_hash, runs[0].result_hash) == first_hashes
+        assert (runs[2].input_hash, runs[2].result_hash) == incremental_hashes
+        assert runs[3].input_hash != runs[2].input_hash
+        assert runs[0].result_hash is not None and runs[2].result_hash is not None
         assert runs[0].generation_id == runs[1].generation_id == runs[2].generation_id
         assert runs[3].generation_id != runs[2].generation_id
         assert session.scalars(select(IndicatorSeries.indicator_kind)).all() == ["atr"]

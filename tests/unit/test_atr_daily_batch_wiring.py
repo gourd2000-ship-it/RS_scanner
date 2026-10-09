@@ -15,6 +15,7 @@ from app.services.batch.orchestrator import BatchOrchestrator
 from app.services.batch.run_daily_job import run_daily_job
 from app.services.batch.sync_prices import PriceSyncResult
 from app.services.batch.atr_adapter import AtrBatchOutcome, record_atr_checkpoint
+from app.services.batch.volume_adapter import VolumeBatchOutcome
 from app.services.validation.data_quality import ValidationResult
 
 
@@ -178,7 +179,7 @@ def patch_orchestrator(monkeypatch, *, blocked=False):
             return PriceSyncResult()
         if step_name == "symbols":
             return []
-        if step_name in {"ema", "atr14"}:
+        if step_name in {"ema", "volume_sma50", "atr14"}:
             return step_func(context)
         return {"KOSPI": [object()]} if step_name == "rs" else {}
 
@@ -217,6 +218,45 @@ def test_orchestrator_persists_and_resumes_independent_indicators(monkeypatch, f
         resumed = batch.run_daily_job()
         assert "ema" not in events and "atr14" not in events
         assert resumed["atr14"] == result["atr14"]
+
+
+@pytest.mark.parametrize("failed_indicator", ["volume_sma50", "atr14"])
+def test_orchestrator_volume_and_atr_steps_fail_independently(monkeypatch, failed_indicator):
+    batch, context, events, finished = patch_orchestrator(monkeypatch)
+    effective_settings = settings(volume_sma50_enabled=True, volume_sma50_source_provider="kiwoom",
+                                  volume_sma50_adjustment_type="1",
+                                  volume_sma50_allowed_parser_versions="kiwoom-v2")
+    monkeypatch.setattr("app.services.batch.orchestrator.get_settings", lambda: effective_settings)
+    monkeypatch.setattr("app.services.batch.orchestrator.calculate_daily_ema",
+                        lambda *_args, **_kwargs: EmaBatchOutcome.completed(processed=2))
+
+    def volume(*_args, **_kwargs):
+        if failed_indicator == "volume_sma50":
+            raise RuntimeError("private detail")
+        return VolumeBatchOutcome.completed(processed=1)
+
+    def atr(*_args, **_kwargs):
+        if failed_indicator == "atr14":
+            raise RuntimeError("private detail")
+        return AtrBatchOutcome.completed(processed=1)
+
+    monkeypatch.setattr("app.services.batch.orchestrator.calculate_daily_volume_sma50", volume)
+    monkeypatch.setattr("app.services.batch.orchestrator.calculate_daily_atr14", atr)
+
+    result = batch.run_daily_job()
+
+    assert events[-3:] == ["ema", "volume_sma50", "atr14"]
+    assert result["volume_sma50"]["outcome"] == (
+        "failed" if failed_indicator == "volume_sma50" else "completed"
+    )
+    assert result["atr14"]["outcome"] == ("failed" if failed_indicator == "atr14" else "completed")
+    assert context.checkpoint_repository.get_checkpoint(41, "volume_sma50").status == (
+        "completed_with_errors" if failed_indicator == "volume_sma50" else "completed"
+    )
+    assert context.checkpoint_repository.get_checkpoint(41, "atr14").status == (
+        "completed_with_errors" if failed_indicator == "atr14" else "completed"
+    )
+    assert finished[-1]["status"] == "completed_with_errors"
 
 
 def test_orchestrator_validation_block_keeps_atr_skip_evidence(monkeypatch):

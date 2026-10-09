@@ -14,6 +14,7 @@ from app.services.batch.ema_adapter import EmaBatchOutcome
 from app.services.batch.orchestrator import BatchOrchestrator
 from app.services.batch.run_daily_job import run_daily_job
 from app.services.batch.sync_prices import PriceSyncResult
+from app.services.batch.atr_adapter import AtrBatchOutcome
 from app.services.batch.volume_adapter import VolumeBatchOutcome, record_volume_checkpoint
 from app.services.validation.data_quality import ValidationResult
 
@@ -84,6 +85,45 @@ def test_direct_batch_collects_independent_indicator_results(monkeypatch, failed
         checkpoint = context.checkpoint_repository.get_checkpoint(result["job_id"], name)
         assert checkpoint.status == ("completed_with_errors" if name == failed_indicator else "completed")
     assert context.crawl_job_repository.get_latest().status == ("completed_with_errors" if failed_indicator else "completed")
+
+
+@pytest.mark.parametrize("failed_indicator", ["volume_sma50", "atr14"])
+def test_direct_volume_and_atr_steps_fail_independently(monkeypatch, failed_indicator):
+    events = []
+    effective_settings = settings(atr14_enabled=True, atr14_source_provider="kiwoom",
+                                  atr14_adjustment_type="1", atr14_allowed_parser_versions="kiwoom-v2")
+    context = patch_direct(monkeypatch, effective_settings, events)
+    monkeypatch.setattr("app.services.batch.run_daily_job.calculate_daily_ema",
+                        lambda *_args, **_kwargs: EmaBatchOutcome.completed(processed=2))
+
+    def volume(*_args, **_kwargs):
+        events.append("volume_sma50")
+        if failed_indicator == "volume_sma50":
+            raise RuntimeError("private detail")
+        return VolumeBatchOutcome.completed(processed=1)
+
+    def atr(*_args, **_kwargs):
+        events.append("atr14")
+        if failed_indicator == "atr14":
+            raise RuntimeError("private detail")
+        return AtrBatchOutcome.completed(processed=1)
+
+    monkeypatch.setattr("app.services.batch.run_daily_job.calculate_daily_volume_sma50", volume)
+    monkeypatch.setattr("app.services.batch.run_daily_job.calculate_daily_atr14", atr)
+
+    result = run_daily_job(context, source=object())
+
+    assert events[-2:] == ["volume_sma50", "atr14"]
+    assert result["volume_sma50"]["outcome"] == (
+        "failed" if failed_indicator == "volume_sma50" else "completed"
+    )
+    assert result["atr14"]["outcome"] == ("failed" if failed_indicator == "atr14" else "completed")
+    assert context.checkpoint_repository.get_checkpoint(
+        result["job_id"], "volume_sma50"
+    ).status == ("completed_with_errors" if failed_indicator == "volume_sma50" else "completed")
+    assert context.checkpoint_repository.get_checkpoint(
+        result["job_id"], "atr14"
+    ).status == ("completed_with_errors" if failed_indicator == "atr14" else "completed")
 
 
 def test_direct_validation_block_overrides_completed_volume_checkpoint(monkeypatch):

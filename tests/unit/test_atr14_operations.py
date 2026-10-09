@@ -250,3 +250,47 @@ def test_operator_scripts_run_directly_from_checkout(script):
                                cwd=root, capture_output=True, text=True)
     assert completed.returncode == 0, completed.stderr
     assert '--output' in completed.stdout
+
+
+def test_reconcile_checkpoint_recovers_only_manifest_matching_completed_run(session, tmp_path):
+    from scripts import atr14_operations as operations
+    from scripts.reconcile_atr14_checkpoint import reconcile_checkpoint
+    instrument, _, _, manifest = seeded_plan(session)
+    checkpoint = tmp_path / 'checkpoint.json'
+    apply_report = tmp_path / 'apply.json'
+    original = apply_manifest(session, manifest, checkpoint_path=checkpoint)
+    write_document(apply_report, original)
+    state = json.loads(checkpoint.read_text())
+    state['instruments'][str(instrument.id)] = {
+        'instrument_id': instrument.id, 'status': 'failed',
+        'failure_reason': 'IntegrityError', 'attempt': 1,
+    }
+    operations._save_checkpoint(checkpoint, state)
+    before = checkpoint.read_bytes()
+    audit = reconcile_checkpoint(session, manifest, checkpoint, apply_report, apply=False)
+    assert audit['verified_targets'] == 1
+    assert audit['recovered_failures'] == [instrument.id]
+    assert checkpoint.read_bytes() == before
+    result = reconcile_checkpoint(session, manifest, checkpoint, apply_report, apply=True)
+    assert result['verified_targets'] == 1
+    recovered = json.loads(checkpoint.read_text())['instruments'][str(instrument.id)]
+    assert recovered['status'] == 'completed'
+    assert recovered['recovered_from_database'] is True
+    assert recovered['result_hash'] == manifest['targets'][0]['result_hash']
+    assert session.scalar(select(func.count()).select_from(IndicatorCalculationRun)) == 1
+
+
+def test_reconcile_checkpoint_rejects_mismatched_persisted_result(session, tmp_path):
+    from scripts.reconcile_atr14_checkpoint import reconcile_checkpoint
+    _, _, _, manifest = seeded_plan(session)
+    checkpoint = tmp_path / 'checkpoint.json'
+    apply_report = tmp_path / 'apply.json'
+    report = apply_manifest(session, manifest, checkpoint_path=checkpoint)
+    write_document(apply_report, report)
+    run = session.get(IndicatorCalculationRun, report['outcomes'][0]['run_id'])
+    run.result_hash = '0' * 64
+    session.commit()
+    before = checkpoint.read_bytes()
+    with pytest.raises(ValueError, match='result hash'):
+        reconcile_checkpoint(session, manifest, checkpoint, apply_report, apply=True)
+    assert checkpoint.read_bytes() == before

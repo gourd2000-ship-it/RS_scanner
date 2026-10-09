@@ -149,3 +149,10 @@ APP_ENV=production .venv/bin/python scripts/backfill_atr14.py \
 ```
 
 일일 ATR14는 `ATR14_ENABLED=false`가 기본이다. 활성화하려면 `ATR14_SOURCE_PROVIDER`, `ATR14_ADJUSTMENT_TYPE`, `ATR14_ALLOWED_PARSER_VERSIONS`을 명시한다. validation이 없거나 차단되면 값을 저장하지 않고 checkpoint에 사유만 남긴다.
+
+중단·재개 시에는 격리 셸의 `ps` 결과만으로 기존 writer의 종료를 판단하지 않는다.
+호스트 PID namespace와 PostgreSQL 연결을 함께 확인하고, 같은 manifest·checkpoint
+writer가 한 개일 때만 재개한다. 완료 후에는 원래 apply report와 checkpoint를
+보존한 채 `scripts/reconcile_atr14_checkpoint.py`로 2,175개 대상의 승인 입력,
+완료 run, 저장된 ATR 값 hash와 상태별 수량을 대조한다. `--apply`는 DB가 아닌
+checkpoint의 검증된 실패 표기만 복구하며 별도 reconciliation report를 쓴다.

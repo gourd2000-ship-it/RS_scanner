@@ -20,4 +20,5 @@
 역사 상폐 데이터와 기업행위 근거의 비용·이용 조건·coverage가 확정되지 않았다. 따라서 현재 결과는 상폐 제외 개인 연구 범위의 검증 완료 구간에 한정된다.
 
 - 거래량 MA50: 공용 불변 input evidence, 저장 service, 계획·재개 백필 도구, 기본 비활성 일일 증분을 구현했다. 승인 manifest `957cac…b0b70`의 2,175개 대상 역사 백필은 2026-10-07 완료됐으며 apply report는 신규 1,623개·재사용 552개·실패 0건을 기록한다. DB의 completed run 2,175개와 series 2,175개, value 7,303,650개를 대조했다. 일일 증분·공개 활성화는 최신 quality gate 통과 후 별도 운영 결정이 필요하다.
-- ATR14: 공용 OHLC evidence와 별도 series를 사용하는 영속 계산 service, 계획·재개 백필 도구, 기본 비활성 일일 증분을 구현했다. PostgreSQL에서 Decimal 값·hash·동시 worker·실패 롤백을 검증했다. 운영 migration·백필·일일 배치 활성화는 아직 실행하지 않았다.
+- ATR14: 공용 OHLC evidence와 별도 series를 사용하는 영속 계산 service, 계획·재개 백필 도구, 기본 비활성 일일 증분을 구현했다. 운영 migration과 승인 manifest `191847c…7e68cdb15`의 역사 DB 백필은 2026-10-08 완료됐다. 원래 apply report의 동시 writer 충돌 17건은 DB의 승인된 완료 run과 저장값을 전수 검증한 뒤 checkpoint에서만 복구했다. 최종 reconciliation report는 2,175개 대상과 input/result 각 7,303,650행, 상태별 수량·result hash의 일치를 확인했으며 DB의 ATR series·completed run도 각각 2,175개다. 감시 컨테이너는 정상 종료했다. 일일 증분·공개 활성화는 최신 quality gate 통과 후 별도 운영 결정이 필요하다.
+- 최신 일일 품질 보고서 `reports/data_quality/job_137.json`(2026-10-08)은 coverage 94.8169%, stale 201개로 `blocked`다. RS·ATR14·거래량 MA50의 후속 활성화는 보류한다.

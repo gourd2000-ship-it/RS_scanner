@@ -72,3 +72,13 @@ EMA 행 사유 코드는 아래 값만 허용한다. `warming_up`은 계산 결�
 ATR14 저장값은 `atr` 종류와 period 14, `high-low-close` 입력, `wilder-atr-14-v1` 계산 버전으로 식별한다. 공개 API나 백테스트 dataset에는 아직 연결하지 않는다. 입력 정책은 거래량 MA50과 같은 `validated-observation-ohlcv-v1`이며, 선택기의 불변 high·low·close와 identity·source·품질·보정 근거를 공용 evidence에 함께 보존한다.
 
 같은 순서의 evidence는 완료 결과를 재사용하고, 기존 입력의 순서와 근거를 유지한 날짜 추가는 같은 generation의 새 incremental run에 suffix만 저장한다. 과거 근거 변경·삭제는 새 generation의 rebuild이며, 완료 후에만 이전 current를 superseded로 바꾼다. 각 run은 evidence prefix hash와 해당 run의 정확한 Decimal 계산값·상태·사유·관측 수의 canonical JSON SHA-256 결과 hash를 보존한다. 실패한 시도는 출력과 입력 참조를 롤백한 뒤 예외 종류만 기록하며 이전 current를 유지한다. 호출자가 성공 또는 실패 시도를 자신의 transaction에서 commit한다.
+
+## 백테스트용 지표 입력 snapshot 계약
+
+백테스트 지표 입력은 `volume_sma`/50/`volume-sma-v1` 또는 `atr`/14/`wilder-atr-14-v1` 중 하나로 고정한다. snapshot header는 활성 상태이고 최종 manifest hash가 검증되는 `complete_segments_only` 데이터셋의 내부 ID·공개 dataset ID·최종 manifest hash, 지표 종류·기간·계산 버전, 공통 source policy fingerprint, 포함 날짜 범위, 선택 run 집합의 input/result hash와 전체 content hash를 보존한다. header에 속한 source 행은 instrument마다 정확히 선택된 series·generation·completed run·input policy ID와 각 run hash를 고정한다. 현재 generation을 나중에 다시 찾아 실행에 연결하지 않는다.
+
+각 `(instrument_id, trade_date, indicator_kind)` 행은 원본 `IndicatorValue` ID, 그 run의 `IndicatorRunInput` ID·prefix hash, 원본 evidence ID·evidence key를 보존한다. Decimal 값 또는 null, `available`/`warming_up`/`data_unavailable` 상태, 사유, 관측 수와 함께 source symbol, `PriceObservation`·identity snapshot·provider mapping ID, provider symbol, 조정 기준, parser, 관측 시각·payload hash, OHLCV, 승인 correction ID 목록, validation evidence와 resolver 근거를 복사한다. 상태 행은 값/사유 형태 제약을 지키며, 이 snapshot 자체의 고정은 해당 값이 실행 조건에 사용 가능하다는 뜻이 아니다.
+
+생성 전에 데이터셋 manifest의 최종 hash와 발행 범위를 검증하고, 각 가격 행이 같은 instrument·날짜의 expected/valid membership과 일치하는지 확인한다. 선택 run의 indicator kind·기간·계산 버전·instrument·generation·완료 상태, 공통 policy fingerprint와 provider/조정 기준을 검사한다. 각 날짜에는 정확히 하나의 indicator value와 run input evidence가 있어야 하고, evidence의 관측 ID·identity snapshot·matched historical mapping·provider·조정 기준·parser·관측 시각·payload hash·OHLCV·승인 correction 근거가 데이터셋 가격 및 immutable source observation과 일치해야 한다. validation 근거는 원본 indicator evidence와 함께 복사하고 사용 가능 입력 판정을 확인한다. 완전한 증거를 입증할 수 없으면 snapshot을 만들지 않고 `dataset_not_complete`, `indicator_snapshot_missing`, `indicator_value_missing` 또는 `indicator_evidence_mismatch` 사유를 반환한다.
+
+content hash는 날짜·instrument 순서의 행 hash와 선택 source lineage, 데이터셋 식별 및 source policy fingerprint를 canonical JSON SHA-256으로 묶는다. 동일한 dataset·지표 정의·선택 run 집합의 재요청은 같은 snapshot을 반환한다. 새로운 generation/run은 별도 snapshot으로 저장하며 과거 snapshot은 유지한다. DB는 생성 중 header에만 source/row 추가를 허용하고, 완성 시 건수와 policy 일치를 확인한 뒤 header·source·row의 수정과 삭제를 거부한다. 운영 DB migration이나 dataset 발행은 별도 운영 판단이 필요하다.

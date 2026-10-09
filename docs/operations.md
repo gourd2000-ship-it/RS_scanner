@@ -175,6 +175,10 @@ version)을 명시한 계산을 시작한다. validation이 없거나 `blocked`�
 판정 상태가 `blocked`이면 지표를 계산하지 않는다. 한 지표의 실패는 다른 지표, RS,
 EMA 결과를 취소하지 않는다.
 
+validation이 통과해도 지표 source policy에 맞는 `target_date` 관측이 하나도 없으면
+이전 거래일 입력만 계산해 성공 처리하지 않는다. `target_date_observations_missing`으로
+건너뛰고 해당 지표 checkpoint에 오류 상태를 기록한다.
+
 같은 source evidence와 정책으로 다시 계산하면 기존 완료 run과 hash를 재사용한다.
 새 거래일만 추가되면 현재 generation에 증분 run을 붙인다. 과거 evidence가 달라지면
 새 rebuild generation을 완성한 뒤 current로 전환하고 이전 run·값·hash는 보존한다.

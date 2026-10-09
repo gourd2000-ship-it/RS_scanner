@@ -1,7 +1,7 @@
 """Daily adapter commits Volume lifecycle and separate checkpoint evidence."""
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -110,6 +110,32 @@ def test_daily_volume_commits_incremental_failure_retry_and_rebuild(pg_engine, m
         assert runs[0].generation_id == runs[1].generation_id == runs[2].generation_id
         assert runs[3].generation_id != runs[2].generation_id
         assert session.scalars(select(IndicatorSeries.indicator_kind)).all() == ["volume_sma"]
+
+
+def test_daily_volume_skips_when_policy_has_no_target_date_observation(pg_engine):
+    settings = Settings(_env_file=None, volume_sma50_enabled=True,
+                        volume_sma50_source_provider="kiwoom", volume_sma50_adjustment_type="1",
+                        volume_sma50_allowed_parser_versions="kiwoom-v2")
+    with Session(pg_engine) as session:
+        _, _, _, dates = seed_history(session, 1)
+        context = build_db_batch_context(session)
+        job = context.crawl_job_repository.create_job("daily_full")
+        context.job_id = job.id
+
+        outcome = calculate_daily_volume_sma50(
+            context, target_date=dates[0] + timedelta(days=1), settings=settings,
+        )
+        record_volume_checkpoint(context, outcome, settings=settings)
+        session.commit()
+
+        assert outcome.outcome == "skipped"
+        assert outcome.reason == "target_date_observations_missing"
+        checkpoint = context.checkpoint_repository.get_checkpoint(job.id, "volume_sma50")
+        assert checkpoint.status == "completed_with_errors"
+        assert json.loads(checkpoint.step_metadata)["reason"] == "target_date_observations_missing"
+        assert session.scalar(select(func.count()).select_from(IndicatorSeries)) == 0
+        assert session.scalar(select(func.count()).select_from(IndicatorCalculationRun)) == 0
+        assert session.scalar(select(func.count()).select_from(IndicatorValue)) == 0
 
 
 @pytest.mark.parametrize("selection_step", ["expected_trade_dates", "eligible_instrument_ids"])

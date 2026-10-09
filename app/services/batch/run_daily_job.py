@@ -10,6 +10,7 @@ from app.crawler.sources.eod import EodCanaryPolicy
 from app.crawler.sources.krx import KrxUniverseSource
 from app.services.batch.calculate_rs import calculate_rs
 from app.services.batch.context import BatchContext
+from app.services.batch.indicator_validation import indicator_validation_skip_reason
 from app.services.batch.sync_benchmarks import sync_benchmarks
 from app.services.batch.sync_eod import sync_eod_prices
 from app.services.batch.sync_prices import PriceSyncResult, sync_prices
@@ -139,6 +140,7 @@ def run_daily_job(
             validation_blocked = (
                 settings.validation_mode == "enforce" and validation_result.would_block
             )
+        indicator_validation_reason = indicator_validation_skip_reason(validation_result)
 
         rs_results = (
             {}
@@ -169,10 +171,8 @@ def run_daily_job(
 
         volume_result: VolumeBatchOutcome | None = None
         if volume_sma50_enabled(settings):
-            if validation_blocked or validation_result is None:
-                volume_result = VolumeBatchOutcome.skipped(
-                    "validation_gate_blocked" if validation_blocked else "validation_unavailable"
-                )
+            if indicator_validation_reason is not None:
+                volume_result = VolumeBatchOutcome.skipped(indicator_validation_reason)
                 record_volume_checkpoint(context, volume_result, settings=settings)
             else:
                 volume_result = completed_volume_outcome(context, settings=settings)
@@ -189,10 +189,8 @@ def run_daily_job(
 
         atr_result: AtrBatchOutcome | None = None
         if atr14_enabled(settings):
-            if validation_blocked or validation_result is None:
-                atr_result = AtrBatchOutcome.skipped(
-                    "validation_gate_blocked" if validation_blocked else "validation_unavailable"
-                )
+            if indicator_validation_reason is not None:
+                atr_result = AtrBatchOutcome.skipped(indicator_validation_reason)
                 record_atr_checkpoint(context, atr_result, settings=settings)
             else:
                 atr_result = completed_atr_outcome(context, settings=settings)

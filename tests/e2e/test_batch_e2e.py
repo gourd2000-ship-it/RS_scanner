@@ -178,8 +178,8 @@ def test_incremental_sync_e2e(e2e_batch_context: BatchContext, e2e_session: Sess
     second_result = run_daily_job(e2e_batch_context, source)
 
     # Then: 증분 크롤링으로 중복 데이터 스킵
-    # 새로운 데이터가 없으므로 0개 추가됨
-    assert second_result["prices"]["005930"] == 260  # 전체 개수는 동일
+    # 가격 단계 결과는 저장된 전체 이력이 아니라 이번에 받은 행만 센다.
+    assert second_result["prices"]["005930"] == 0  # 신규 가격 행 없음
     assert second_result["benchmarks"]["KOSPI"] == 260
 
     # DB에 저장된 가격 데이터 개수 확인 (중복 저장 방지)

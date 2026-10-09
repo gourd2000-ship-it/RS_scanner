@@ -17,6 +17,7 @@ from app.crawler.sources.eod import EodCanaryPolicy
 from app.crawler.sources.krx import KrxUniverseSource
 from app.services.batch.calculate_rs import calculate_rs
 from app.services.batch.context import build_db_batch_context, BatchContext
+from app.services.batch.indicator_validation import indicator_validation_skip_reason
 from app.services.batch.sync_benchmarks import sync_benchmarks
 from app.services.batch.sync_eod import sync_eod_prices
 from app.services.batch.sync_prices import PriceSyncResult, sync_prices
@@ -174,6 +175,7 @@ class BatchOrchestrator:
                 and get_settings().validation_mode == "enforce"
                 and validation_result.would_block
             )
+            indicator_validation_reason = indicator_validation_skip_reason(validation_result)
 
             # Step 5: RS 계산
             if validation_blocked:
@@ -211,10 +213,8 @@ class BatchOrchestrator:
 
             volume_result: VolumeBatchOutcome | None = None
             if volume_sma50_enabled(settings):
-                if validation_blocked or not isinstance(validation_result, ValidationResult):
-                    volume_result = VolumeBatchOutcome.skipped(
-                        "validation_gate_blocked" if validation_blocked else "validation_unavailable"
-                    )
+                if indicator_validation_reason is not None:
+                    volume_result = VolumeBatchOutcome.skipped(indicator_validation_reason)
                     self._record_volume_outcome(volume_result)
                 else:
                     try:
@@ -233,10 +233,8 @@ class BatchOrchestrator:
 
             atr_result: AtrBatchOutcome | None = None
             if atr14_enabled(settings):
-                if validation_blocked or not isinstance(validation_result, ValidationResult):
-                    atr_result = AtrBatchOutcome.skipped(
-                        "validation_gate_blocked" if validation_blocked else "validation_unavailable"
-                    )
+                if indicator_validation_reason is not None:
+                    atr_result = AtrBatchOutcome.skipped(indicator_validation_reason)
                     self._record_atr_outcome(atr_result)
                 else:
                     try:

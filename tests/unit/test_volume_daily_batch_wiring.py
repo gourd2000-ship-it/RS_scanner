@@ -22,10 +22,17 @@ DAY = date(2025, 9, 17)
 
 
 def settings(**kwargs):
-    return Settings(_env_file=None, volume_sma50_enabled=True, ema_enabled=True,
-                    volume_sma50_source_provider="kiwoom", volume_sma50_adjustment_type="1",
-                    volume_sma50_allowed_parser_versions="kiwoom-v2",
-                    validation_enabled=True, validation_mode="enforce", **kwargs)
+    values = {
+        "volume_sma50_enabled": True,
+        "ema_enabled": True,
+        "volume_sma50_source_provider": "kiwoom",
+        "volume_sma50_adjustment_type": "1",
+        "volume_sma50_allowed_parser_versions": "kiwoom-v2",
+        "validation_enabled": True,
+        "validation_mode": "enforce",
+    }
+    values.update(kwargs)
+    return Settings(_env_file=None, **values)
 
 
 def patch_direct(monkeypatch, effective_settings, events, *, blocked=False):
@@ -98,6 +105,32 @@ def test_direct_validation_block_overrides_completed_volume_checkpoint(monkeypat
     assert json.loads(checkpoint.step_metadata)["reason"] == "validation_gate_blocked"
 
 
+def test_direct_indicators_skip_report_only_blocked_validation(monkeypatch):
+    events = []
+    effective_settings = settings(validation_mode="report_only", atr14_enabled=True,
+                                  atr14_source_provider="kiwoom", atr14_adjustment_type="1",
+                                  atr14_allowed_parser_versions="kiwoom-v2")
+    context = patch_direct(monkeypatch, effective_settings, events, blocked=True)
+
+    def fail(*_args, **_kwargs):
+        raise AssertionError("blocked validation must skip daily indicators")
+
+    monkeypatch.setattr("app.services.batch.run_daily_job.calculate_daily_ema",
+                        lambda *_args, **_kwargs: events.append("ema") or EmaBatchOutcome.completed(processed=2))
+    monkeypatch.setattr("app.services.batch.run_daily_job.calculate_daily_volume_sma50", fail)
+    monkeypatch.setattr("app.services.batch.run_daily_job.calculate_daily_atr14", fail)
+
+    result = run_daily_job(context, source=object())
+
+    assert events == ["prices", "validation", "rs", "ema"]
+    for name in ("volume_sma50", "atr14"):
+        assert result[name]["outcome"] == "skipped"
+        checkpoint = context.checkpoint_repository.get_checkpoint(result["job_id"], name)
+        assert checkpoint.status == "completed_with_errors"
+        assert json.loads(checkpoint.step_metadata)["reason"] == "validation_gate_blocked"
+    assert context.crawl_job_repository.get_latest().status == "completed_with_errors"
+
+
 def test_direct_resume_reuses_volume_completion_and_retries_failure(monkeypatch):
     events = []
     context = patch_direct(monkeypatch, settings(), events)
@@ -141,8 +174,8 @@ def test_default_daily_batch_does_not_execute_or_checkpoint_volume(monkeypatch):
     assert context.checkpoint_repository.get_checkpoint(result["job_id"], "volume_sma50") is None
 
 
-def patch_orchestrator(monkeypatch, *, blocked=False):
-    effective_settings = settings()
+def patch_orchestrator(monkeypatch, *, blocked=False, validation_mode="enforce"):
+    effective_settings = settings(validation_mode=validation_mode)
     monkeypatch.setattr("app.services.batch.orchestrator.get_settings", lambda: effective_settings)
     monkeypatch.setattr("app.services.batch.orchestrator.batch_target_date", lambda _: DAY)
     for method in ("send_batch_success_sync", "send_batch_failure_sync", "send_step_completed_sync"):
@@ -161,7 +194,7 @@ def patch_orchestrator(monkeypatch, *, blocked=False):
     monkeypatch.setattr("app.services.batch.orchestrator.build_db_batch_context", lambda _: context)
     monkeypatch.setattr("app.services.batch.orchestrator.write_validation_report", lambda _: "report.json")
     monkeypatch.setattr("app.services.batch.orchestrator.DataQualityRepository", lambda _: SimpleNamespace(
-        latest_validation_run=lambda **_kwargs: ValidationRun(validator_version="test", mode="enforce",
+        latest_validation_run=lambda **_kwargs: ValidationRun(validator_version="test", mode=validation_mode,
             validation_status="blocked" if blocked else "passed", expected_symbols=0,
             error_count=0, critical_count=0, warning_count=0)))
     finished = []
@@ -171,14 +204,14 @@ def patch_orchestrator(monkeypatch, *, blocked=False):
     def execute(step_name, step_func):
         events.append(step_name)
         if step_name == "validation":
-            return ValidationResult(run=ValidationRun(validator_version="test", mode="enforce",
+            return ValidationResult(run=ValidationRun(validator_version="test", mode=validation_mode,
                 validation_status="blocked" if blocked else "passed", expected_symbols=0,
-                error_count=0, critical_count=0, warning_count=0), cases=[], metrics={})
+                error_count=1 if blocked else 0, critical_count=0, warning_count=0), cases=[], metrics={})
         if step_name == "prices":
             return PriceSyncResult()
         if step_name == "symbols":
             return []
-        if step_name in {"ema", "volume_sma50"}:
+        if step_name in {"ema", "volume_sma50", "atr14"}:
             return step_func(context)
         return {"KOSPI": [object()]} if step_name == "rs" else {}
 
@@ -227,6 +260,34 @@ def test_orchestrator_validation_block_keeps_volume_skip_evidence(monkeypatch):
     checkpoint = context.checkpoint_repository.get_checkpoint(41, "volume_sma50")
     assert checkpoint.status == "completed_with_errors"
     assert json.loads(checkpoint.step_metadata)["reason"] == "validation_gate_blocked"
+
+
+def test_orchestrator_skips_daily_indicators_for_report_only_block(monkeypatch):
+    batch, context, events, finished = patch_orchestrator(
+        monkeypatch, blocked=True, validation_mode="report_only"
+    )
+    effective_settings = settings(validation_mode="report_only", atr14_enabled=True,
+                                  atr14_source_provider="kiwoom", atr14_adjustment_type="1",
+                                  atr14_allowed_parser_versions="kiwoom-v2")
+    monkeypatch.setattr("app.services.batch.orchestrator.get_settings", lambda: effective_settings)
+
+    def fail(*_args, **_kwargs):
+        raise AssertionError("blocked validation must skip daily indicators")
+
+    monkeypatch.setattr("app.services.batch.orchestrator.calculate_daily_ema",
+                        lambda *_args, **_kwargs: EmaBatchOutcome.completed(processed=2))
+    monkeypatch.setattr("app.services.batch.orchestrator.calculate_daily_volume_sma50", fail)
+    monkeypatch.setattr("app.services.batch.orchestrator.calculate_daily_atr14", fail)
+
+    result = batch.run_daily_job()
+
+    assert events[-3:] == ["validation", "rs", "ema"]
+    for name in ("volume_sma50", "atr14"):
+        assert result[name]["outcome"] == "skipped"
+        checkpoint = context.checkpoint_repository.get_checkpoint(41, name)
+        assert checkpoint.status == "completed_with_errors"
+        assert json.loads(checkpoint.step_metadata)["reason"] == "validation_gate_blocked"
+    assert finished[-1]["status"] == "completed_with_errors"
 
 
 def test_orchestrator_skips_volume_when_validation_is_disabled(monkeypatch):

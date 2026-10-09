@@ -17,7 +17,6 @@ class IndicatorInputPolicyResponse(BaseModel):
     selector_version: str
     validation_version: str
     correction_version: str
-    fingerprint: str
 
 
 class BacktestIndicatorDailyResponse(BaseModel):
@@ -35,11 +34,12 @@ class BacktestIndicatorQueryResponse(BaseModel):
     series_id: int
     generation_id: int
     generation: int
+    period: int
     input_field: str
-    periods: str
     formula_version: str
     source_provider: str
     adjustment_policy: str
+    source_policy_fingerprint: str
     input_policy: IndicatorInputPolicyResponse
     as_of: date
     calculated_at: datetime

@@ -170,13 +170,15 @@ def _params(**overrides):
 
 
 @pytest.mark.parametrize(
-    ("path", "series_field", "kind"),
+    ("path", "series_field", "kind", "period"),
     [
-        ("volume-sma50", "volume_series_id", "volume_sma"),
-        ("atr14", "atr_series_id", "atr"),
+        ("volume-sma50", "volume_series_id", "volume_sma", 50),
+        ("atr14", "atr_series_id", "atr", 14),
     ],
 )
-def test_indicator_query_serializes_decimal_status_and_policy_generation(indicator_client, path, series_field, kind):
+def test_indicator_query_serializes_decimal_status_and_policy_generation(
+    indicator_client, path, series_field, kind, period
+):
     response = indicator_client.get(
         f"/api/v1/backtests/indicators/{path}",
         params=_params(instrument_id=indicator_client.instrument_id),
@@ -188,6 +190,13 @@ def test_indicator_query_serializes_decimal_status_and_policy_generation(indicat
     assert body["instrument_id"] == indicator_client.instrument_id
     assert body["series_id"] == getattr(indicator_client, series_field)
     assert body["generation_id"] > 0
+    assert body["period"] == period
+    assert "periods" not in body
+    policy_fingerprint = indicator_client.session.query(IndicatorInputPolicy).filter_by(
+        provider="test-provider"
+    ).one().fingerprint
+    assert body["source_policy_fingerprint"] == policy_fingerprint
+    assert "fingerprint" not in body["input_policy"]
     assert body["input_policy"]["version"] == "validated-observation-ohlcv-v1"
     assert body["input_policy"]["source_provider"] == "test-provider"
     assert body["input_policy"]["observation_cutoff"] == "2024-01-05T00:00:00Z"

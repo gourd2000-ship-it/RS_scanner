@@ -36,6 +36,29 @@ schema 변경은 위 검증과 별도로 격리 PostgreSQL에서 `alembic upgrad
 
 입력 변환 회귀 테스트: `cd frontend && node --experimental-strip-types --test tests/backtest-form.test.mjs` (Node 22.6 이상).
 
+## 백테스트 실행 워커
+
+백테스트 HTTP 요청은 실행을 queue에 넣고 결과만 읽는다. 계산은 승인된 배치 서비스 환경에서 명시적으로 별도 프로세스를 실행할 때만 시작한다. 기본 명령은 큐에서 최대 한 건을 처리하고 종료한다.
+
+```bash
+APP_ENV=production .venv/bin/python scripts/run_backtest_worker.py
+```
+
+검토된 실행 묶음에 한해 `--max-runs N`으로 한 번의 프로세스가 처리할 최대 건수를 지정할 수 있다. 큐가 비면 더 일찍 종료한다. 이 명령은 API 시작 시 자동 실행되지 않으며 cron·systemd·컨테이너 자동 시작 설정도 이 단계에서 추가하지 않는다.
+
+워커는 DB의 기존 단일 실행 claim을 커밋해 `running` 상태를 표시한 다음, 고정된 전략 버전·complete 데이터셋·RS 결과·필요한 지표 snapshot을 사용해 시뮬레이션한다. 결과 행과 완료 상태는 한 트랜잭션에 둔다. 계산 예외가 나면 savepoint에서 부분 결과만 롤백하고 `failed`와 `simulation_failed`를 저장한다. 프로세스가 강제 종료되거나 DB 연결을 잃으면 계산 트랜잭션의 부분 결과는 롤백되지만 앞서 커밋한 claim은 `running`으로 남는다. 이 상태는 자동으로 다시 실행되지 않으며, unique running 제약 때문에 다음 run도 claim되지 않는다.
+
+중단된 run을 정리하기 전에는 실행 호스트에서 해당 워커 프로세스가 종료된 것을 확인한다. 그 다음 아래 명령으로 run 상태가 여전히 `running`이고 저장된 결과 행이 없을 때만 `failed/worker_interrupted`로 바꿀 수 있다. 이 명령은 재실행하지 않는다. 원인을 확인한 뒤 필요하면 운영자가 새 실행 요청을 만든다.
+
+```bash
+APP_ENV=production .venv/bin/python scripts/run_backtest_worker.py \
+  --fail-stale-run '<run-id>' --confirm-worker-stopped
+```
+
+`cancelled` 상태의 queued run은 claim 대상이 아니며, 완료·실패 run은 자동 재시도하지 않는다.
+
+현재 운영 품질 보고서 `job_137`은 `blocked`이므로 이 구현만으로 운영 워커를 가동하거나 백테스트 입력 데이터셋을 발행할 수 없다. 실행 전 품질 gate, migration 상태, 격리 DB 검증과 별도 운영 결정을 확인한다.
+
 ## EMA 운영자 조회
 
 EMA 결과는 브라우저에서 백테스트 운영자 로그인 세션을 가진 경우에만 조회한다. `GET /api/v1/backtests/indicators/ema`에 `code`, `start`, `end`를 넣고, 코드가 과거 여러 `Instrument`에 연결될 수 있으면 응답의 409 사유를 확인한 뒤 `instrument_id`를 함께 넣는다. 코드만으로 역사 identity를 임의 선택하지 않는다.

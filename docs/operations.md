@@ -156,3 +156,33 @@ writer가 한 개일 때만 재개한다. 완료 후에는 원래 apply report�
 보존한 채 `scripts/reconcile_atr14_checkpoint.py`로 2,175개 대상의 승인 입력,
 완료 run, 저장된 ATR 값 hash와 상태별 수량을 대조한다. `--apply`는 DB가 아닌
 checkpoint의 검증된 실패 표기만 복구하며 별도 reconciliation report를 쓴다.
+
+## 일일 Volume MA50·ATR14 실행
+
+일일 지표는 `VOLUME_SMA50_ENABLED=false`, `ATR14_ENABLED=false`가 기본이다.
+운영에서 켜기 전에는 별도 운영 결정, 현재 품질 보고서의 통과 판정, 격리 PostgreSQL의
+계산·재시도·rebuild 검증이 모두 필요하다. 2026-10-08 보관 보고서 `job_137`은
+`blocked`다. 대상 206건이 입력 validation에서 실패했고, 그 안에 양수 OHLC 위반
+188건과 OHLC 순서 모순 18건이 있다. 보고서에는 원문 payload와 공급자 귀속 근거가
+없으므로 공급자 오류로 단정하거나 가격을 보정하지 않는다. 이 보관 보고서는 운영
+DB를 실시간 조회한 결과가 아니다.
+
+두 지표는 일일 가격 단계 다음의 독립 단계다. `passed` 또는
+`passed_with_warnings` validation에서만 해당 정책(provider, adjustment type, parser
+version)을 명시한 계산을 시작한다. validation이 없거나 `blocked`이면 각 지표는
+`validation_unavailable` 또는 `validation_gate_blocked` 사유로 건너뛰고 자신의
+`volume_sma50` 또는 `atr14` checkpoint에 오류 상태를 남긴다. `report_only` 모드라도
+판정 상태가 `blocked`이면 지표를 계산하지 않는다. 한 지표의 실패는 다른 지표, RS,
+EMA 결과를 취소하지 않는다.
+
+validation이 통과해도 지표 source policy에 맞는 `target_date` 관측이 하나도 없으면
+이전 거래일 입력만 계산해 성공 처리하지 않는다. `target_date_observations_missing`으로
+건너뛰고 해당 지표 checkpoint에 오류 상태를 기록한다.
+
+같은 source evidence와 정책으로 다시 계산하면 기존 완료 run과 hash를 재사용한다.
+새 거래일만 추가되면 현재 generation에 증분 run을 붙인다. 과거 evidence가 달라지면
+새 rebuild generation을 완성한 뒤 current로 전환하고 이전 run·값·hash는 보존한다.
+같은 series에는 DB lock으로 writer가 직렬화되므로 동일 종목·정책 범위의 추가 writer를
+수동 기동하지 않는다. 실패 후 재개할 때는 실패 원인과 validation 결과를 먼저 확인하고,
+같은 job checkpoint 상태와 해당 indicator series의 run ID·input/result hash를 대조한다.
+과거 원본이나 lineage를 수정해 재개하지 않는다.

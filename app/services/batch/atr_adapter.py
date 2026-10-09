@@ -92,8 +92,8 @@ def calculate_daily_atr14(
         # the optional ATR failure checkpoint.
         with context.session.begin_nested():
             trade_dates = expected_trade_dates(context, target_date=target_date, policy=policy)
-            if not trade_dates:
-                return AtrBatchOutcome.skipped("no_eligible_atr_observations")
+            if target_date not in trade_dates:
+                return AtrBatchOutcome.skipped("target_date_observations_missing")
             instrument_ids = eligible_instrument_ids(context, target_date=target_date, policy=policy)
             if not instrument_ids:
                 return AtrBatchOutcome.skipped("no_eligible_identity_inputs")

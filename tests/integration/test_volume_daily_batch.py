@@ -1,7 +1,7 @@
 """Daily adapter commits Volume lifecycle and separate checkpoint evidence."""
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -39,6 +39,17 @@ def test_daily_volume_commits_incremental_failure_retry_and_rebuild(pg_engine, m
         first = calculate_daily_volume_sma50(context, target_date=dates[0], settings=settings)
         record_volume_checkpoint(context, first, settings=settings)
         assert first.outcome == "completed"
+        first_run = session.scalar(select(IndicatorCalculationRun))
+        assert first_run is not None and first_run.status == "completed"
+        first_hashes = first_run.input_hash, first_run.result_hash
+        assert completed_volume_outcome(context, settings=settings) == first
+        mismatched_policy = settings.model_copy(update={"volume_sma50_adjustment_type": "2"})
+        assert completed_volume_outcome(context, settings=mismatched_policy) is None
+        repeated = calculate_daily_volume_sma50(context, target_date=dates[0], settings=settings)
+        assert repeated.outcome == "completed"
+        assert session.scalar(select(func.count()).select_from(IndicatorCalculationRun)) == 1
+        metadata = json.loads(context.checkpoint_repository.get_checkpoint(job_id, "volume_sma50").step_metadata)
+        assert metadata["source_policy_hash"] and len(metadata["source_policy_hash"]) == 64
         session.commit()
 
     def fail(*_args, **_kwargs):
@@ -65,6 +76,16 @@ def test_daily_volume_commits_incremental_failure_retry_and_rebuild(pg_engine, m
         retried = calculate_daily_volume_sma50(context, target_date=dates[1], settings=settings)
         record_volume_checkpoint(context, retried, settings=settings)
         assert completed_volume_outcome(context, settings=settings) == retried
+        incremental_run = session.scalar(select(IndicatorCalculationRun).where(
+            IndicatorCalculationRun.run_kind == "incremental",
+            IndicatorCalculationRun.status == "completed",
+        ))
+        assert incremental_run is not None
+        incremental_hashes = incremental_run.input_hash, incremental_run.result_hash
+        repeated_retry = calculate_daily_volume_sma50(context, target_date=dates[1], settings=settings)
+        assert repeated_retry.outcome == "completed"
+        assert session.scalar(select(func.count()).select_from(IndicatorCalculationRun)) == 3
+        assert (incremental_run.input_hash, incremental_run.result_hash) == incremental_hashes
         session.commit()
 
     with Session(pg_engine) as session:
@@ -82,9 +103,39 @@ def test_daily_volume_commits_incremental_failure_retry_and_rebuild(pg_engine, m
             ("backfill", "completed"), ("incremental", "failed"),
             ("incremental", "completed"), ("rebuild", "completed"),
         ]
+        assert (runs[0].input_hash, runs[0].result_hash) == first_hashes
+        assert (runs[2].input_hash, runs[2].result_hash) == incremental_hashes
+        assert runs[3].input_hash != runs[2].input_hash
+        assert runs[0].result_hash is not None and runs[2].result_hash is not None
         assert runs[0].generation_id == runs[1].generation_id == runs[2].generation_id
         assert runs[3].generation_id != runs[2].generation_id
         assert session.scalars(select(IndicatorSeries.indicator_kind)).all() == ["volume_sma"]
+
+
+def test_daily_volume_skips_when_policy_has_no_target_date_observation(pg_engine):
+    settings = Settings(_env_file=None, volume_sma50_enabled=True,
+                        volume_sma50_source_provider="kiwoom", volume_sma50_adjustment_type="1",
+                        volume_sma50_allowed_parser_versions="kiwoom-v2")
+    with Session(pg_engine) as session:
+        _, _, _, dates = seed_history(session, 1)
+        context = build_db_batch_context(session)
+        job = context.crawl_job_repository.create_job("daily_full")
+        context.job_id = job.id
+
+        outcome = calculate_daily_volume_sma50(
+            context, target_date=dates[0] + timedelta(days=1), settings=settings,
+        )
+        record_volume_checkpoint(context, outcome, settings=settings)
+        session.commit()
+
+        assert outcome.outcome == "skipped"
+        assert outcome.reason == "target_date_observations_missing"
+        checkpoint = context.checkpoint_repository.get_checkpoint(job.id, "volume_sma50")
+        assert checkpoint.status == "completed_with_errors"
+        assert json.loads(checkpoint.step_metadata)["reason"] == "target_date_observations_missing"
+        assert session.scalar(select(func.count()).select_from(IndicatorSeries)) == 0
+        assert session.scalar(select(func.count()).select_from(IndicatorCalculationRun)) == 0
+        assert session.scalar(select(func.count()).select_from(IndicatorValue)) == 0
 
 
 @pytest.mark.parametrize("selection_step", ["expected_trade_dates", "eligible_instrument_ids"])

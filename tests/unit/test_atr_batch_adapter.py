@@ -149,11 +149,11 @@ def test_daily_adapter_continues_other_series_after_failure(monkeypatch):
     assert result == AtrBatchOutcome.failure(processed=1, failed=1, reason="RuntimeError")
 
 
-@pytest.mark.parametrize("reason", ["atr_session_unavailable", "no_eligible_atr_observations", "no_eligible_identity_inputs"])
+@pytest.mark.parametrize("reason", ["atr_session_unavailable", "target_date_observations_missing", "no_eligible_identity_inputs"])
 def test_daily_adapter_records_missing_input_evidence(monkeypatch, reason):
     day = datetime.now(UTC).date()
     monkeypatch.setattr("app.services.batch.atr_adapter.expected_trade_dates",
-                        lambda *_args, **_kwargs: () if reason == "no_eligible_atr_observations" else (day,))
+                        lambda *_args, **_kwargs: () if reason == "target_date_observations_missing" else (day,))
     monkeypatch.setattr("app.services.batch.atr_adapter.eligible_instrument_ids", lambda *_args, **_kwargs: ())
     context = SimpleNamespace(session=None if reason == "atr_session_unavailable" else SimpleNamespace(begin_nested=nullcontext))
     assert calculate_daily_atr14(context, target_date=day, settings=atr_settings()) == AtrBatchOutcome.skipped(reason)

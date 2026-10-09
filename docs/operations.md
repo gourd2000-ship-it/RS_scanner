@@ -46,7 +46,7 @@ APP_ENV=production .venv/bin/python scripts/run_backtest_worker.py
 
 검토된 실행 묶음에 한해 `--max-runs N`으로 한 번의 프로세스가 처리할 최대 건수를 지정할 수 있다. 큐가 비면 더 일찍 종료한다. 이 명령은 API 시작 시 자동 실행되지 않으며 cron·systemd·컨테이너 자동 시작 설정도 이 단계에서 추가하지 않는다.
 
-워커는 DB의 기존 단일 실행 claim을 커밋해 `running` 상태를 표시한 다음, 고정된 전략 버전·complete 데이터셋·RS 결과·필요한 지표 snapshot을 사용해 시뮬레이션한다. 결과 행과 완료 상태는 한 트랜잭션에 둔다. 계산 예외가 나면 savepoint에서 부분 결과만 롤백하고 `failed`와 `simulation_failed`를 저장한다. 프로세스가 강제 종료되거나 DB 연결을 잃으면 계산 트랜잭션의 부분 결과는 롤백되지만 앞서 커밋한 claim은 `running`으로 남는다. 이 상태는 자동으로 다시 실행되지 않으며, unique running 제약 때문에 다음 run도 claim되지 않는다.
+워커는 DB의 기존 단일 실행 claim을 커밋해 `running` 상태를 표시한 다음, 고정된 전략 버전·complete 데이터셋·RS 결과·필요한 지표 snapshot을 사용해 시뮬레이션한다. 결과 행과 완료 상태는 한 트랜잭션에 둔다. 계산 예외가 나면 savepoint에서 부분 결과를 롤백하고 `failed`와 `simulation_failed`를 기록한다. 실행 트랜잭션에서 실패 상태를 기록할 수 없는 예외는 새 세션에서 저장을 시도한다. 실패 처리가 끝나기 전에 워커가 강제 종료되거나 실패 상태 저장 자체가 실패하면, 부분 결과는 롤백되고 앞서 커밋한 claim은 `running`으로 남는다. 이 상태는 자동으로 다시 실행되지 않으며, unique running 제약 때문에 다음 run도 claim되지 않는다.
 
 중단된 run을 정리하기 전에는 실행 호스트에서 해당 워커 프로세스가 종료된 것을 확인한다. 그 다음 아래 명령으로 run 상태가 여전히 `running`이고 저장된 결과 행이 없을 때만 `failed/worker_interrupted`로 바꿀 수 있다. 이 명령은 재실행하지 않는다. 원인을 확인한 뒤 필요하면 운영자가 새 실행 요청을 만든다.
 

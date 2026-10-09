@@ -7,7 +7,15 @@ from datetime import date
 from decimal import Decimal, ROUND_DOWN
 from typing import Any
 
-from app.services.backtest.strategy import ConditionContext, INITIAL_CAPITAL, evaluate_condition, validate_config
+from app.services.backtest.strategy import (
+    INDICATOR_FIELDS,
+    ConditionContext,
+    INITIAL_CAPITAL,
+    condition_fields_by_side,
+    evaluate_condition,
+    validate_config,
+)
+from app.services.backtest.schedule import rebalance_dates_for_trading_days
 
 
 ZERO = Decimal("0")
@@ -24,6 +32,8 @@ class MarketBar:
     volume: int
     rs_rating: int | None
     rank_in_market: int | None
+    volume_sma50: Decimal | None = None
+    atr14: Decimal | None = None
 
 
 @dataclass
@@ -136,6 +146,8 @@ def simulate(
     dates = sorted(day for day in by_date if (start_date is None or day >= start_date) and (end_date is None or day <= end_date))
     if not dates:
         return SimulationResult([], [], [], _metrics([], []))
+    buy_review_dates = set(rebalance_dates_for_trading_days(dates, config["rebalance_interval_days"]))
+    _validate_indicator_inputs(config, by_date, dates, buy_review_dates)
     history: dict[int, list[MarketBar]] = {}
     cash, positions = INITIAL_CAPITAL, {}
     orders: list[SimOrder] = []
@@ -243,7 +255,7 @@ def simulate(
                 reasons.append("max_holding_days")
             if reasons:
                 pending.setdefault(next_date, []).append(("sell", position, reasons, today))
-        if day_index % config["rebalance_interval_days"] == 0:
+        if today in buy_review_dates:
             pending_exit_ids = {
                 candidate.instrument_id for action, candidate, _, _ in pending.get(next_date, [])
                 if action == "sell" and isinstance(candidate, _Position)
@@ -269,4 +281,35 @@ def _context(bar: MarketBar, history: list[MarketBar]) -> ConditionContext:
         Decimal(bar.rs_rating) if bar.rs_rating is not None else None,
         Decimal(bar.rank_in_market) if bar.rank_in_market is not None else None,
         bar.close, Decimal(bar.volume), returns,
+        Decimal(str(bar.volume_sma50)) if bar.volume_sma50 is not None else None,
+        Decimal(str(bar.atr14)) if bar.atr14 is not None else None,
     )
+
+
+def _validate_indicator_inputs(
+    config: dict[str, Any], by_date: dict[date, list[MarketBar]], dates: list[date],
+    buy_review_dates: set[date],
+) -> None:
+    side_fields = condition_fields_by_side(config)
+    buy_fields = set(side_fields["buy"]) & INDICATOR_FIELDS
+    sell_fields = set(side_fields["sell"]) & INDICATOR_FIELDS
+    if not buy_fields and not sell_fields:
+        return
+    for trade_date in dates:
+        required_fields = set(sell_fields)
+        if trade_date in buy_review_dates:
+            required_fields.update(buy_fields)
+        if not required_fields:
+            continue
+        for bar in by_date[trade_date]:
+            for field in sorted(required_fields):
+                raw_value = getattr(bar, field)
+                if raw_value is None:
+                    raise ValueError(
+                        f"indicator_value_missing: {field} for instrument {bar.instrument_id} on {trade_date}"
+                    )
+                value = Decimal(str(raw_value))
+                if not value.is_finite() or value < ZERO:
+                    raise ValueError(
+                        f"indicator_evidence_mismatch: {field} for instrument {bar.instrument_id} on {trade_date}"
+                    )

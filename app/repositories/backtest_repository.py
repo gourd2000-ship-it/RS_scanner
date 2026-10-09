@@ -15,7 +15,11 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import get_settings
 from app.core.market_calendar import krx_market_day_status
-from app.models.backtest_dataset import BacktestDataset, BacktestDatasetRsRun
+from app.models.backtest_dataset import (
+    BacktestDataset,
+    BacktestDatasetIndicatorSnapshot,
+    BacktestDatasetRsRun,
+)
 from app.models.backtest_run import (
     BACKTEST_TERMINAL_STATUSES,
     BacktestBenchmarkSnapshot,
@@ -31,6 +35,7 @@ from app.models.backtest_run import (
     BacktestStrategyVersion,
     BacktestTrade,
 )
+from app.services.backtest.strategy import indicator_kinds_for_config
 
 
 @dataclass(frozen=True)
@@ -102,6 +107,7 @@ class BacktestRepository:
         range_end: date,
         markets: list[str],
         benchmark_snapshots: tuple[BenchmarkSnapshotInput, BenchmarkSnapshotInput],
+        indicator_snapshots: dict[str, tuple[int, str]] | None = None,
         candidate_exclusions: list[dict[str, object]] | None = None,
         run_id: str | None = None,
     ) -> BacktestRun:
@@ -128,6 +134,32 @@ class BacktestRepository:
             raise ValueError("RS run does not belong to the selected dataset")
         if rs_run.status != "completed" or rs_result_hash != rs_run.result_hash:
             raise ValueError("RS result hash does not match a completed dataset RS run")
+        expected_indicator_kinds = indicator_kinds_for_config(version.config)
+        indicator_snapshots = indicator_snapshots or {}
+        if set(indicator_snapshots) != set(expected_indicator_kinds):
+            raise ValueError("indicator snapshot pins must exactly match strategy indicator conditions")
+        pinned_snapshots: dict[str, tuple[int, str]] = {}
+        definitions = {"volume_sma": (50, "volume-sma-v1"), "atr": (14, "wilder-atr-14-v1")}
+        for kind in sorted(expected_indicator_kinds):
+            snapshot_id, content_hash = indicator_snapshots[kind]
+            snapshot = self.session.get(BacktestDatasetIndicatorSnapshot, snapshot_id)
+            period, formula_version = definitions[kind]
+            if (
+                snapshot is None
+                or snapshot.status != "complete"
+                or snapshot.backtest_dataset_id != dataset.id
+                or snapshot.dataset_id != dataset.dataset_id
+                or snapshot.dataset_manifest_hash != dataset.final_manifest_hash
+                or snapshot.range_start != dataset.range_start
+                or snapshot.range_end != dataset.range_end
+                or snapshot.indicator_kind != kind
+                or snapshot.period != period
+                or snapshot.formula_version != formula_version
+                or snapshot.content_hash != content_hash
+                or not self._is_sha256(content_hash)
+            ):
+                raise ValueError(f"{kind} indicator snapshot does not match the frozen dataset and content hash")
+            pinned_snapshots[kind] = (snapshot.id, snapshot.content_hash)
         snapshot_by_market = {snapshot.market: snapshot for snapshot in benchmark_snapshots}
         if set(snapshot_by_market) != {"KOSPI", "KOSDAQ"}:
             raise ValueError("both KOSPI and KOSDAQ benchmark snapshots are required")
@@ -152,6 +184,10 @@ class BacktestRepository:
             range_end=range_end,
             markets=sorted(set(markets)),
             candidate_exclusions=candidate_exclusions or [],
+            volume_sma50_snapshot_id=(pinned_snapshots["volume_sma"][0] if "volume_sma" in pinned_snapshots else None),
+            volume_sma50_snapshot_hash=(pinned_snapshots["volume_sma"][1] if "volume_sma" in pinned_snapshots else None),
+            atr14_snapshot_id=(pinned_snapshots["atr"][0] if "atr" in pinned_snapshots else None),
+            atr14_snapshot_hash=(pinned_snapshots["atr"][1] if "atr" in pinned_snapshots else None),
             status="queued",
         )
         for snapshot in canonical_snapshots:
@@ -424,6 +460,16 @@ class BacktestRepository:
             manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str
         )
         return sha256(serialized.encode()).hexdigest()
+
+    @staticmethod
+    def _is_sha256(value: str | None) -> bool:
+        if not isinstance(value, str) or len(value) != 64:
+            return False
+        try:
+            int(value, 16)
+        except ValueError:
+            return False
+        return True
 
     @staticmethod
     def _krx_dates(range_start: date, range_end: date, *, configured_closed_dates: str) -> set[date]:

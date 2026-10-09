@@ -8,7 +8,8 @@ from typing import Any
 
 
 INITIAL_CAPITAL = Decimal("10000000")
-FIELDS = frozenset({"rs_rating", "rank_in_market", "close", "volume", "return_n_days"})
+INDICATOR_FIELDS = frozenset({"volume_sma50", "atr14"})
+FIELDS = frozenset({"rs_rating", "rank_in_market", "close", "volume", "return_n_days", *INDICATOR_FIELDS})
 OPERATORS = frozenset({"gt", "gte", "lt", "lte", "eq"})
 MARKETS = frozenset({"KOSPI", "KOSDAQ"})
 
@@ -47,7 +48,9 @@ def validate_condition(node: Any) -> None:
             raise StrategyValidationError("unsupported condition field")
         if node.get("operator") not in OPERATORS:
             raise StrategyValidationError("unsupported condition operator")
-        _number(node.get("value"), "condition value")
+        condition_value = _number(node.get("value"), "condition value")
+        if node["field"] in INDICATOR_FIELDS and condition_value < 0:
+            raise StrategyValidationError("indicator condition value must be non-negative")
         n_days = node.get("n_days")
         if node["field"] == "return_n_days":
             if isinstance(n_days, dict):
@@ -74,6 +77,38 @@ def return_lookback_days(config: dict[str, Any]) -> int:
     visit(config.get("buy_conditions"))
     visit(config.get("sell_conditions"))
     return maximum
+
+
+def condition_fields(node: Any) -> frozenset[str]:
+    """Return the rule fields contained in a validated or stored condition tree."""
+    found: set[str] = set()
+
+    def visit(current: Any) -> None:
+        if not isinstance(current, dict):
+            return
+        if current.get("type") == "rule" and isinstance(current.get("field"), str):
+            found.add(current["field"])
+        for child in current.get("children", []):
+            visit(child)
+
+    visit(node)
+    return frozenset(found)
+
+
+def condition_fields_by_side(config: dict[str, Any]) -> dict[str, frozenset[str]]:
+    """Return buy/sell condition fields while accepting the persisted API aliases."""
+    return {
+        "buy": condition_fields(config.get("buy_conditions", config.get("entry_conditions"))),
+        "sell": condition_fields(config.get("sell_conditions", config.get("exit_conditions"))),
+    }
+
+
+def indicator_kinds_for_config(config: dict[str, Any]) -> frozenset[str]:
+    fields = set().union(*condition_fields_by_side(config).values())
+    return frozenset(
+        kind for field, kind in (("volume_sma50", "volume_sma"), ("atr14", "atr"))
+        if field in fields
+    )
 
 
 def validate_config(config: Any) -> dict[str, Any]:
@@ -142,6 +177,8 @@ class ConditionContext:
     close: Decimal
     volume: Decimal
     return_n_days: dict[int, Decimal]
+    volume_sma50: Decimal | None = None
+    atr14: Decimal | None = None
 
 
 def evaluate_condition(node: dict[str, Any], context: ConditionContext) -> bool:

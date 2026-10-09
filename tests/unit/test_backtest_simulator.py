@@ -77,6 +77,10 @@ def test_invalid_condition_or_rate_is_rejected_before_persistence():
         validate_config(_config(buy_fee_rate="NaN"))
     with pytest.raises(StrategyValidationError, match="finite"):
         validate_config(_config(max_position_weight="Infinity"))
+    with pytest.raises(StrategyValidationError, match="non-negative"):
+        validate_config(_config(buy_conditions={"type": "rule", "field": "volume_sma50", "operator": "gte", "value": -1}))
+    with pytest.raises(StrategyValidationError, match="non-negative"):
+        validate_config(_config(sell_conditions={"type": "rule", "field": "atr14", "operator": "eq", "value": "-0.01"}))
 
 
 def test_browser_configuration_aliases_are_canonicalized_and_return_lookback_is_accepted():
@@ -123,6 +127,34 @@ def test_rebalance_replaces_pending_full_exit_and_freezes_equal_weight_batch_bud
     assert abs((buys[0].quantity * buys[0].execution_price) - (buys[1].quantity * buys[1].execution_price)) <= Decimal("200")
     assert equal.metrics["mdd"]["value"] >= 0
     assert "average_profit_loss_ratio" in equal.metrics
+
+
+def test_simulator_compares_indicator_conditions_as_decimal_and_requires_values_on_signal_days():
+    bars = [
+        MarketBar(
+            bar.trade_date, bar.instrument_id, bar.code, bar.market, bar.open, bar.close,
+            bar.volume, bar.rs_rating, bar.rank_in_market,
+            volume_sma50=Decimal("1000.125"), atr14=Decimal("2.50"),
+        )
+        for bar in _bars()
+    ]
+    config = _config(
+        buy_conditions={"type": "rule", "field": "volume_sma50", "operator": "eq", "value": "1000.125"},
+        sell_conditions={"type": "rule", "field": "rs_rating", "operator": "gt", "value": "1000"},
+    )
+    result = simulate(config, bars)
+    assert result.orders[0].side == "buy"
+    assert result.trades[0].exit_reason_codes == ["forced_close"]
+
+    missing = [
+        MarketBar(
+            bar.trade_date, bar.instrument_id, bar.code, bar.market, bar.open, bar.close,
+            bar.volume, bar.rs_rating, bar.rank_in_market,
+        )
+        for bar in _bars()
+    ]
+    with pytest.raises(ValueError, match="indicator_value_missing: volume_sma50"):
+        simulate(config, missing)
 
 
 def test_claimed_run_persists_daily_holdings_metrics_orders_and_trades():

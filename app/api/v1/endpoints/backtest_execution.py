@@ -137,6 +137,10 @@ def _run(row: BacktestRun) -> BacktestRunResponse:
         error_code=row.error_code, error_detail=row.error_detail,
         dataset_final_manifest_hash=row.dataset_manifest_hash,
         rs_run_id=row.backtest_dataset_rs_run_id,
+        volume_sma50_snapshot_id=row.volume_sma50_snapshot_id,
+        volume_sma50_snapshot_hash=row.volume_sma50_snapshot_hash,
+        atr14_snapshot_id=row.atr14_snapshot_id,
+        atr14_snapshot_hash=row.atr14_snapshot_hash,
         benchmark_snapshot_hash=hashes, reason=reason,
     )
 

@@ -68,6 +68,10 @@ class BacktestRunResponse(BaseModel):
     error_detail: str | None = None
     dataset_final_manifest_hash: str | None
     rs_run_id: int | None
+    volume_sma50_snapshot_id: int | None = None
+    volume_sma50_snapshot_hash: str | None = None
+    atr14_snapshot_id: int | None = None
+    atr14_snapshot_hash: str | None = None
     benchmark_snapshot_hash: dict[str, str]
     reason: object | None = None
 

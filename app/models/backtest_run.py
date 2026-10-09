@@ -74,6 +74,18 @@ class BacktestRun(Base):
             "status IN ('queued', 'running', 'cancelled', 'failed', 'data_unavailable', 'completed')",
             name="ck_backtest_runs_status",
         ),
+        CheckConstraint(
+            "(volume_sma50_snapshot_id IS NULL AND volume_sma50_snapshot_hash IS NULL) OR "
+            "(volume_sma50_snapshot_id IS NOT NULL AND volume_sma50_snapshot_hash IS NOT NULL "
+            "AND length(volume_sma50_snapshot_hash) = 64)",
+            name="ck_backtest_runs_volume_sma50_snapshot_pin",
+        ),
+        CheckConstraint(
+            "(atr14_snapshot_id IS NULL AND atr14_snapshot_hash IS NULL) OR "
+            "(atr14_snapshot_id IS NOT NULL AND atr14_snapshot_hash IS NOT NULL "
+            "AND length(atr14_snapshot_hash) = 64)",
+            name="ck_backtest_runs_atr14_snapshot_pin",
+        ),
         Index("ix_backtest_runs_queue", "status", "queued_at", "id"),
         Index(
             "uq_backtest_runs_only_one_running", "status", unique=True,
@@ -98,6 +110,14 @@ class BacktestRun(Base):
     dataset_manifest_hash: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     rs_formula_version: Mapped[str | None] = mapped_column(String(100), nullable=True)
     rs_result_hash: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    volume_sma50_snapshot_id: Mapped[int | None] = mapped_column(
+        ForeignKey("backtest_dataset_indicator_snapshots.id"), nullable=True
+    )
+    volume_sma50_snapshot_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    atr14_snapshot_id: Mapped[int | None] = mapped_column(
+        ForeignKey("backtest_dataset_indicator_snapshots.id"), nullable=True
+    )
+    atr14_snapshot_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     range_start: Mapped[date] = mapped_column(Date)
     range_end: Mapped[date] = mapped_column(Date)
     markets: Mapped[list[str]] = mapped_column(JSON)

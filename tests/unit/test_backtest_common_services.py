@@ -4,7 +4,7 @@ from hashlib import sha256
 import json
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 from fastapi import FastAPI
@@ -15,19 +15,30 @@ from app.core.base import Base
 from app.core.database import get_db_session
 from app.models.backtest_dataset import (
     BacktestDataset,
+    BacktestDatasetIndicatorSnapshot,
+    BacktestDatasetIndicatorSnapshotRow,
+    BacktestDatasetIndicatorSnapshotSource,
     BacktestDatasetMembership,
     BacktestDatasetPrice,
     BacktestDatasetRs,
     BacktestDatasetRsRun,
 )
 from app.models.backtest_run import BacktestStrategyVersion
+from app.models.indicator import (
+    IndicatorCalculationRun,
+    IndicatorGeneration,
+    IndicatorInputPolicy,
+    IndicatorSeries,
+)
 from app.models.benchmark import Benchmark
 from app.models.benchmark_daily_price import BenchmarkDailyPrice
 from app.repositories.backtest_repository import BacktestRepository
 from app.services.backtest.auth import BacktestOperatorAuthService, InvalidCsrfToken
 from app.services.backtest.input_selection import BacktestInputUnavailable, select_backtest_inputs
+from app.services.backtest.execution import BacktestExecutionService
 from app.services.backtest.run_preparation import BacktestRunPreparationService
 from app.api.v1.endpoints import backtest_auth
+from app.api.v1.endpoints.backtest_execution import _run as serialize_run
 
 
 def _session() -> Session:
@@ -88,6 +99,118 @@ def _complete_inputs(session: Session) -> tuple[BacktestDataset, BacktestDataset
     return dataset, run
 
 
+def _indicator_config(
+    *, buy_field: str = "volume_sma50", sell_field: str = "rs_rating", rebalance_interval_days: int = 1,
+) -> dict:
+    return {
+        "markets": ["KOSPI"], "rebalance_interval_days": rebalance_interval_days, "max_holdings": 1,
+        "max_position_weight": "1", "cash_reserve_ratio": "0", "buy_fee_rate": "0",
+        "sell_fee_rate": "0", "buy_slippage_rate": "0", "sell_slippage_rate": "0",
+        "buy_conditions": {"type": "rule", "field": buy_field, "operator": "gte", "value": "1"},
+        "sell_conditions": {"type": "rule", "field": sell_field, "operator": "lt", "value": "50"},
+    }
+
+
+def _attach_indicator_snapshot(
+    session: Session,
+    dataset: BacktestDataset,
+    *,
+    kind: str = "volume_sma",
+    missing_date: date | None = None,
+    unavailable: tuple[date, str, str] | None = None,
+    wrong_manifest_hash: bool = False,
+    wrong_source_provider: bool = False,
+) -> BacktestDatasetIndicatorSnapshot:
+    fingerprint = "c" * 64
+    policy = IndicatorInputPolicy(
+        provider="fixture", adjustment_type="1", allowed_parser_versions=["fixture-v1"],
+        observation_cutoff=datetime(2024, 1, 10), selector_version="selector-v1",
+        validation_version="validation-v1", correction_version="correction-v1", fingerprint=fingerprint,
+    )
+    session.add(policy)
+    session.flush()
+    period, formula, input_field = (50, "volume-sma-v1", "volume") if kind == "volume_sma" else (14, "wilder-atr-14-v1", "high-low-close")
+    instruments = sorted({price.instrument_id for price in dataset.prices})
+    source_models = []
+    for instrument_id in instruments:
+        series = IndicatorSeries(
+            instrument_id=instrument_id, indicator_kind=kind, input_field=input_field, periods=str(period),
+            input_policy_version="validated-observation-ohlcv-v1", formula_version=formula,
+            source_provider="wrong-provider" if wrong_source_provider else "fixture",
+            adjustment_policy="1", allowed_parser_versions=["fixture-v1"],
+            observation_cutoff=datetime(2024, 1, 10), input_policy_id=policy.id,
+        )
+        session.add(series)
+        session.flush()
+        generation = IndicatorGeneration(series_id=series.id, generation=1, status="current")
+        session.add(generation)
+        session.flush()
+        run = IndicatorCalculationRun(
+            generation_id=generation.id, series_id=series.id, run_kind="backfill", status="completed",
+            input_cutoff=datetime(2024, 1, 10), range_start=dataset.range_start, range_end=dataset.range_end,
+            input_hash="b" * 64, result_hash="d" * 64, input_count=4, result_count=4,
+            completed_at=datetime(2024, 1, 10),
+        )
+        session.add(run)
+        session.flush()
+        source_models.append(BacktestDatasetIndicatorSnapshotSource(
+            snapshot_id=0, instrument_id=instrument_id, indicator_series_id=series.id,
+            generation_id=generation.id, calculation_run_id=run.id, input_policy_id=policy.id,
+            source_policy_fingerprint=fingerprint, input_hash=run.input_hash, result_hash=run.result_hash,
+        ))
+
+    prices = list(session.scalars(select(BacktestDatasetPrice).where(
+        BacktestDatasetPrice.backtest_dataset_id == dataset.id,
+    )))
+    snapshot = BacktestDatasetIndicatorSnapshot(
+        snapshot_key=("a" if kind == "volume_sma" else "b") * 64,
+        backtest_dataset_id=dataset.id, dataset_id=dataset.dataset_id,
+        dataset_manifest_hash=("f" * 64 if wrong_manifest_hash else dataset.final_manifest_hash),
+        indicator_kind=kind, period=period, formula_version=formula,
+        source_policy_fingerprint=fingerprint, range_start=dataset.range_start, range_end=dataset.range_end,
+        source_count=len(instruments),
+        row_count=len(prices) - sum(price.trade_date == missing_date for price in prices),
+        input_hash="1" * 64,
+        result_hash="2" * 64, content_hash="3" * 64, status="complete",
+        completed_at=datetime(2024, 1, 10),
+    )
+    session.add(snapshot)
+    session.flush()
+    source_id_by_instrument = {}
+    for source in source_models:
+        source.snapshot_id = snapshot.id
+        session.add(source)
+        session.flush()
+        source_id_by_instrument[source.instrument_id] = source.id
+
+    for index, price in enumerate(prices, start=1):
+        if price.trade_date == missing_date:
+            continue
+        unavailable_state = unavailable if unavailable and unavailable[0] == price.trade_date else None
+        row_status = unavailable_state[1] if unavailable_state else "available"
+        reason_code = unavailable_state[2] if unavailable_state else None
+        session.add(BacktestDatasetIndicatorSnapshotRow(
+            snapshot_id=snapshot.id, source_id=source_id_by_instrument[price.instrument_id],
+            instrument_id=price.instrument_id, trade_date=price.trade_date,
+            source_value_id=index, source_run_input_id=index, source_evidence_id=index,
+            value=(Decimal("120") if kind == "volume_sma" else Decimal("2")) if row_status == "available" else None,
+            status=row_status, reason_code=reason_code,
+            available_observations=period if row_status == "available" else (period - 1 if row_status == "warming_up" else 0),
+            input_prefix_hash="4" * 64, source_evidence_key="5" * 64,
+            source_symbol_id=price.source_symbol_id, price_observation_id=index,
+            identity_snapshot_id=index, provider_symbol_mapping_id=index,
+            mapping_status="matched", mapping_valid_from=date(2000, 1, 1), mapping_valid_to=None,
+            resolver_version="resolver-v1", resolved_at=datetime(2024, 1, 10),
+            provider="fixture", provider_symbol=price.code, adjustment_type="1", parser_version="fixture-v1",
+            observed_at=datetime(2024, 1, 10), payload_hash="6" * 64,
+            open=price.open, high=max(price.high, price.open, price.close),
+            low=min(price.low, price.open, price.close), close=price.close, volume=price.volume,
+            correction_ids=[], validation_evidence=[], row_hash="7" * 64,
+        ))
+    session.flush()
+    return snapshot
+
+
 def test_input_selection_pins_latest_complete_dataset_rs_and_benchmark_closes():
     session = _session()
     dataset, rs_run = _complete_inputs(session)
@@ -103,6 +226,162 @@ def test_input_selection_pins_latest_complete_dataset_rs_and_benchmark_closes():
     assert selected.rs_run.formula_version == "rs-v1"
     assert {item.market for item in selected.benchmark_snapshots} == {"KOSPI", "KOSDAQ"}
     assert all(len(item.snapshot_hash) == 64 for item in selected.benchmark_snapshots)
+
+
+def test_indicator_condition_preparation_pins_snapshot_and_preserves_dataset_rs_lineage():
+    session = _session()
+    dataset, rs_run = _complete_inputs(session)
+    snapshot = _attach_indicator_snapshot(session, dataset)
+    strategy = BacktestRepository(session).create_strategy(name="MA50 조건", config=_indicator_config())
+
+    run = BacktestRunPreparationService(session).prepare(
+        strategy_version_id=strategy.versions[0].id, range_start=date(2024, 1, 2), range_end=date(2024, 1, 5),
+        markets=["KOSPI"], rebalance_dates=[date(2024, 1, 3)],
+    )
+
+    assert run.status == "queued"
+    assert run.backtest_dataset_id == dataset.id
+    assert run.backtest_dataset_rs_run_id == rs_run.id
+    assert run.rs_result_hash == rs_run.result_hash
+    assert run.volume_sma50_snapshot_id == snapshot.id
+    assert run.volume_sma50_snapshot_hash == snapshot.content_hash
+    assert run.atr14_snapshot_id is None
+
+
+def test_indicator_execution_reads_only_the_run_pinned_decimal_snapshot():
+    session = _session()
+    dataset, _ = _complete_inputs(session)
+    snapshot = _attach_indicator_snapshot(session, dataset)
+    strategy = BacktestRepository(session).create_strategy(name="MA50 실행", config=_indicator_config())
+    prepared = BacktestRunPreparationService(session).prepare(
+        strategy_version_id=strategy.versions[0].id, range_start=date(2024, 1, 2), range_end=date(2024, 1, 5),
+        markets=["KOSPI"], rebalance_dates=[date(2024, 1, 3)],
+    )
+    claimed = BacktestRepository(session).claim_next_run()
+    assert claimed is not None and claimed.volume_sma50_snapshot_id == snapshot.id
+
+    result = BacktestExecutionService(session).execute(claimed)
+
+    assert prepared.status == "completed"
+    assert result.orders[0].side == "buy"
+    assert result.orders[0].signal_date == date(2024, 1, 2)
+    assert result.orders[0].execution_date == date(2024, 1, 3)
+    serialized = serialize_run(prepared)
+    assert serialized.volume_sma50_snapshot_id == snapshot.id
+    assert serialized.volume_sma50_snapshot_hash == snapshot.content_hash
+
+
+def test_indicator_preparation_checks_actual_first_rebalance_date_before_queue():
+    session = _session()
+    dataset, rs_run = _complete_inputs(session)
+    # The worker's schedule starts on Jan 2 and then every other dataset trade
+    # day.  Jan 3 here deliberately differs from the request's supplied date.
+    _attach_indicator_snapshot(session, dataset, missing_date=date(2024, 1, 2))
+    strategy = BacktestRepository(session).create_strategy(
+        name="첫 매수일 누락 지표", config=_indicator_config(rebalance_interval_days=2),
+    )
+
+    run = BacktestRunPreparationService(session).prepare(
+        strategy_version_id=strategy.versions[0].id, range_start=date(2024, 1, 2), range_end=date(2024, 1, 5),
+        markets=["KOSPI"], rebalance_dates=[date(2024, 1, 3)],
+    )
+
+    reason = next(item for item in json.loads(run.error_detail) if item["code"] == "indicator_value_missing")
+    assert run.status == "data_unavailable"
+    assert run.backtest_dataset_id == dataset.id
+    assert run.backtest_dataset_rs_run_id == rs_run.id
+    assert reason["indicator_kind"] == "volume_sma"
+    assert reason["instrument_id"] == 1
+    assert reason["trade_date"] == "2024-01-02"
+
+
+def test_indicator_preparation_keeps_original_unavailable_status_and_reason():
+    session = _session()
+    dataset, _ = _complete_inputs(session)
+    _attach_indicator_snapshot(
+        session, dataset, unavailable=(date(2024, 1, 3), "warming_up", "warming_up"),
+    )
+    strategy = BacktestRepository(session).create_strategy(name="워밍업 지표", config=_indicator_config())
+
+    run = BacktestRunPreparationService(session).prepare(
+        strategy_version_id=strategy.versions[0].id, range_start=date(2024, 1, 2), range_end=date(2024, 1, 5),
+        markets=["KOSPI"], rebalance_dates=[date(2024, 1, 3)],
+    )
+
+    reasons = json.loads(run.error_detail)
+    reason = next(item for item in reasons if item["code"] == "indicator_value_unavailable")
+    assert run.status == "data_unavailable"
+    assert reason["original_status"] == "warming_up"
+    assert reason["original_reason_code"] == "warming_up"
+    assert run.backtest_dataset_id is not None
+
+
+def test_indicator_preparation_checks_sell_conditions_each_market_day():
+    session = _session()
+    dataset, _ = _complete_inputs(session)
+    _attach_indicator_snapshot(session, dataset, kind="atr", missing_date=date(2024, 1, 4))
+    strategy = BacktestRepository(session).create_strategy(
+        name="ATR 매도 조건", config=_indicator_config(buy_field="rs_rating", sell_field="atr14"),
+    )
+
+    run = BacktestRunPreparationService(session).prepare(
+        strategy_version_id=strategy.versions[0].id, range_start=date(2024, 1, 2), range_end=date(2024, 1, 5),
+        markets=["KOSPI"], rebalance_dates=[date(2024, 1, 3)],
+    )
+
+    reason = json.loads(run.error_detail)[0]
+    assert run.status == "data_unavailable"
+    assert reason["code"] == "indicator_value_missing"
+    assert reason["field"] == "atr14"
+    assert reason["trade_date"] == "2024-01-04"
+
+
+def test_indicator_preparation_rejects_snapshot_from_a_different_dataset_manifest():
+    session = _session()
+    dataset, _ = _complete_inputs(session)
+    _attach_indicator_snapshot(session, dataset, wrong_manifest_hash=True)
+    strategy = BacktestRepository(session).create_strategy(name="잘못된 snapshot", config=_indicator_config())
+
+    run = BacktestRunPreparationService(session).prepare(
+        strategy_version_id=strategy.versions[0].id, range_start=date(2024, 1, 2), range_end=date(2024, 1, 5),
+        markets=["KOSPI"], rebalance_dates=[date(2024, 1, 3)],
+    )
+
+    assert run.status == "data_unavailable"
+    assert json.loads(run.error_detail)[0]["code"] == "indicator_evidence_mismatch"
+
+
+def test_indicator_preparation_reports_missing_bundle_without_queuing():
+    session = _session()
+    dataset, rs_run = _complete_inputs(session)
+    strategy = BacktestRepository(session).create_strategy(name="묶음 없음", config=_indicator_config())
+
+    run = BacktestRunPreparationService(session).prepare(
+        strategy_version_id=strategy.versions[0].id, range_start=date(2024, 1, 2), range_end=date(2024, 1, 5),
+        markets=["KOSPI"], rebalance_dates=[date(2024, 1, 3)],
+    )
+
+    reason = json.loads(run.error_detail)[0]
+    assert run.status == "data_unavailable"
+    assert run.backtest_dataset_id == dataset.id
+    assert run.backtest_dataset_rs_run_id == rs_run.id
+    assert reason["code"] == "indicator_snapshot_missing"
+    assert reason["indicator_kind"] == "volume_sma"
+
+
+def test_indicator_preparation_rejects_snapshot_source_policy_mismatch():
+    session = _session()
+    dataset, _ = _complete_inputs(session)
+    _attach_indicator_snapshot(session, dataset, wrong_source_provider=True)
+    strategy = BacktestRepository(session).create_strategy(name="source 불일치", config=_indicator_config())
+
+    run = BacktestRunPreparationService(session).prepare(
+        strategy_version_id=strategy.versions[0].id, range_start=date(2024, 1, 2), range_end=date(2024, 1, 5),
+        markets=["KOSPI"], rebalance_dates=[date(2024, 1, 3)],
+    )
+
+    assert run.status == "data_unavailable"
+    assert json.loads(run.error_detail)[0]["code"] == "indicator_evidence_mismatch"
 
 
 def test_input_selection_rejects_missing_benchmark_or_required_rs():

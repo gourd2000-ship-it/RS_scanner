@@ -57,8 +57,9 @@ def test_clean_snapshot_on_postgres_is_reproducible_and_rolls_back():
                     first = create_clean_backtest_dataset(session, selection=selection, adjustment_policy="kiwoom:1")
                     second = create_clean_backtest_dataset(session, selection=selection, adjustment_policy="kiwoom:1")
                     assert second.id == first.id
-                    assert first.manifest["coverage"] == {"missing": 1, "valid": 1}
-                    assert first.prices[0].close == Decimal("100")
+                    assert first.manifest["audited_coverage"] == {"missing": 1, "valid": 1}
+                    assert first.manifest["coverage"] == {"valid": 0, "complete_segments": 0}
+                    assert first.prices == []
             finally:
                 transaction.rollback()
     finally:

@@ -115,3 +115,39 @@ def test_clean_dataset_freezes_selected_observation_and_keeps_missing_day():
         second = create_clean_backtest_dataset(session, selection=selection, adjustment_policy="kiwoom:1")
         assert second.dataset_id != first.dataset_id
         assert first.prices[0].close == Decimal("100")
+
+
+def test_clean_dataset_audits_but_does_not_publish_incomplete_year_segment():
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        instrument = Instrument(krx_short_code="000002", name="부분 구간", market="KOSPI",
+                                security_type="stock", listing_status="listed")
+        session.add(instrument)
+        session.flush()
+        symbol = Symbol(code="000002", name="부분 구간", market="KOSPI", instrument_id=instrument.id)
+        session.add(symbol)
+        session.flush()
+        ListingHistoryRepository(session).ingest(ListingEventInput(
+            instrument_id=instrument.id, source="fixture", source_contract_version="v1",
+            source_record_key="partial-listed", event_type="listed", effective_from=date(2010, 1, 1),
+            market="KOSPI", evidence_state="observed", payload={},
+        ), source_file_hash="c" * 64, observed_at=datetime(2020, 1, 1, tzinfo=timezone.utc))
+        session.add(PriceObservation(
+            symbol_id=symbol.id, trade_date=date(2020, 1, 2), open=Decimal("100"), high=Decimal("101"),
+            low=Decimal("99"), close=Decimal("100"), volume=10, change_rate=Decimal("0"),
+            provider="kiwoom", adjustment_type="1", payload_hash="d" * 64,
+            observed_at=datetime(2020, 1, 3, tzinfo=timezone.utc),
+        ))
+        session.flush()
+        selection = CleansingSelection(
+            start=date(2020, 1, 2), end=date(2020, 1, 3), selection_as_of=date(2020, 1, 3),
+            observation_cutoff=datetime(2020, 1, 4, tzinfo=timezone.utc),
+        )
+
+        dataset = create_clean_backtest_dataset(session, selection=selection, adjustment_policy="kiwoom:1")
+
+        assert dataset.manifest["audited_coverage"] == {"missing": 1, "valid": 1}
+        assert dataset.manifest["coverage"] == {"valid": 0, "complete_segments": 0}
+        assert dataset.memberships == []
+        assert dataset.prices == []

@@ -138,17 +138,6 @@ class BacktestExecutionService:
                 values.setdefault(key, {})[field] = value
         return values
 
-    def execute_next(self) -> SimulationResult | None:
-        run = self.repository.claim_next_run()
-        if run is None:
-            return None
-        try:
-            return self.execute(run)
-        except Exception as exc:
-            self.repository.transition_run(run.run_id, "failed", error_code="simulation_failed", error_detail=str(exc))
-            raise
-
-
 def _json_metrics(metrics: dict) -> dict:
     """Decimal values need a stable JSON representation for immutable results."""
     return {

@@ -87,6 +87,50 @@ export interface SectorData {
   count: number;
 }
 
+export type BacktestIndicatorKind = 'volume_sma' | 'atr';
+
+export interface BacktestIndicatorDailyItem {
+  trade_date: string;
+  value: string | null;
+  status: string;
+  reason_code: string | null;
+  available_observations: number;
+}
+
+export interface BacktestIndicatorInputPolicy {
+  id: number;
+  version: string;
+  source_provider: string;
+  adjustment_policy: string;
+  allowed_parser_versions: string[];
+  observation_cutoff: string;
+  selector_version: string;
+  validation_version: string;
+  correction_version: string;
+}
+
+export interface BacktestIndicatorQueryResponse {
+  indicator_kind: BacktestIndicatorKind;
+  code: string;
+  instrument_id: number;
+  series_id: number;
+  generation_id: number;
+  generation: number;
+  period: number;
+  input_field: string;
+  formula_version: string;
+  source_provider: string;
+  adjustment_policy: string;
+  source_policy_fingerprint: string;
+  input_policy: BacktestIndicatorInputPolicy;
+  as_of: string;
+  calculated_at: string;
+  page: number;
+  size: number;
+  total_count: number;
+  items: BacktestIndicatorDailyItem[];
+}
+
 // 종목 상세 페이지 관련 타입
 export interface DailyPriceItem {
   trade_date: string;

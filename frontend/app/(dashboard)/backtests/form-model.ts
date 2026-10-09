@@ -2,8 +2,16 @@ import { z } from 'zod';
 
 export const fields = {
   rs_rating: 'RS 점수', rank_in_market: '시장 내 RS 순위', close: '종가',
-  volume: '거래량', return_n_days: '기간 수익률',
+  volume: '거래량', volume_sma50: '거래량 MA50', atr14: 'ATR14', return_n_days: '기간 수익률',
 } as const;
+export const fieldUnits: Record<keyof typeof fields, string> = {
+  rs_rating: '점', rank_in_market: '위', close: '원', volume: '주',
+  volume_sma50: '주', atr14: '원', return_n_days: '%',
+};
+export const defaultThresholds: Record<keyof typeof fields, string> = {
+  rs_rating: '80', rank_in_market: '80', close: '80', volume: '80',
+  volume_sma50: '100000', atr14: '1000', return_n_days: '5',
+};
 export const operators = { gte: '이상 (≥)', gt: '초과 (>)', lte: '이하 (≤)', lt: '미만 (<)', eq: '같음 (=)' } as const;
 export type Rule = { type: 'rule'; field: keyof typeof fields; operator: keyof typeof operators; value: string; days: string };
 export type Condition = Rule | { type: 'group'; operator: 'AND' | 'OR'; children: Condition[] };
@@ -66,7 +74,7 @@ export function encodeDraft(draft: Draft) {
 
 const conditionSchema: z.ZodType<WireCondition> = z.lazy(() => z.union([
   z.object({ type: z.literal('group'), operator: z.enum(['AND', 'OR']), children: z.array(conditionSchema).min(1) }),
-  z.object({ type: z.literal('rule'), field: z.enum(['rs_rating', 'rank_in_market', 'close', 'volume', 'return_n_days']),
+  z.object({ type: z.literal('rule'), field: z.enum(['rs_rating', 'rank_in_market', 'close', 'volume', 'volume_sma50', 'atr14', 'return_n_days']),
     operator: z.enum(['gt', 'gte', 'lt', 'lte', 'eq']), value: z.union([z.string(), z.number()]), n_days: z.number().optional() }),
 ]));
 const numberLike = z.union([z.string(), z.number()]);

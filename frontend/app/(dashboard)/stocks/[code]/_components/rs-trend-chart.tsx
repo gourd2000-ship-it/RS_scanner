@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
+import type { CallbackDataParams } from 'echarts/types/dist/shared';
 import type { RsScoreItem } from '@/types/api';
 
 interface RsTrendChartProps {
@@ -36,9 +37,12 @@ export function RsTrendChart({ data, loading }: RsTrendChartProps) {
         axisPointer: {
           type: 'cross',
         },
-        formatter: (params: any) => {
-          const dataIndex = params[0].dataIndex;
+        formatter: (params: CallbackDataParams | CallbackDataParams[]) => {
+          const firstParam = Array.isArray(params) ? params[0] : params;
+          if (!firstParam) return '';
+          const dataIndex = firstParam.dataIndex;
           const item = sortedData[dataIndex];
+          if (!item) return '';
 
           return `
             <div style="font-weight: bold; margin-bottom: 4px;">${item.trade_date}</div>

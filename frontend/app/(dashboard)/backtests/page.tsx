@@ -3,11 +3,16 @@
 import { FormEvent, useState } from 'react';
 import ConditionEditor, { buttonClass, inputClass } from './condition-editor';
 import { decodeDraft, Draft, encodeDraft, initialDraft } from './form-model';
+import IndicatorBrowser from './indicator-browser';
 
 type Page<T> = { page: number; size: number; total_count: number; items: T[] };
 type Version = { version_id: number; version_number: number; configuration: unknown };
 type Strategy = { strategy_id: string; name: string; current_version_id: number; versions: Version[] };
-type Run = { run_id: string; status: string; start: string; end: string; reason?: unknown };
+type Run = {
+  run_id: string; status: string; start: string; end: string; reason?: unknown;
+  volume_sma50_snapshot_id?: number | null; volume_sma50_snapshot_hash?: string | null;
+  atr14_snapshot_id?: number | null; atr14_snapshot_hash?: string | null;
+};
 const base = '/api/v1/backtests';
 const primary = 'rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50';
 const statusNames: Record<string, string> = { queued: '대기 중', running: '실행 중', completed: '완료', data_unavailable: '검증 데이터 부족', failed: '실패', cancelled: '취소됨' };
@@ -195,9 +200,16 @@ export default function BacktestsPage() {
       <form onSubmit={run} className="space-y-4 rounded-xl border border-blue-200 bg-blue-50/50 p-5">
         <h2 className="text-lg font-semibold">4. 기간 선택과 실행</h2><div className="grid gap-4 sm:grid-cols-3"><label className="text-sm font-medium">시작일<input className={`${inputClass} mt-1`} type="date" required value={start} onChange={e => setStart(e.target.value)} /></label><label className="text-sm font-medium">종료일<input className={`${inputClass} mt-1`} type="date" required value={end} min={start || undefined} onChange={e => setEnd(e.target.value)} /></label><button type="submit" className={`${primary} self-end`} disabled={!savedVersion || !start || !end || start >= end}>백테스트 실행</button></div><p className="text-xs text-slate-600">양쪽 날짜 모두 거래일이어야 합니다. 검증 완료 구간만 사용하며 결과에는 KOSPI·KOSDAQ을 모두 비교합니다.</p>
       </form>
+      <IndicatorBrowser onAuthExpired={() => { setAuthed(false); setCsrf(''); }} />
       <div className="rounded-xl border border-slate-200 bg-white p-5"><div className="mb-3 flex justify-between"><h2 className="text-lg font-semibold">실행 기록</h2><button className={buttonClass} onClick={() => void action(() => refresh())}>새로고침</button></div>
         {!runs.items.length && <p className="py-4 text-sm text-slate-500">아직 실행 기록이 없습니다.</p>}
-        <ul className="divide-y divide-slate-100">{runs.items.map(item => <li key={item.run_id} className="space-y-1 py-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><strong>{statusNames[item.status] ?? item.status}</strong><span>{item.start} ~ {item.end}</span></div>{item.reason != null && <p className="break-words text-rose-700">{reasonText(item.reason)}</p>}<p className="break-all text-xs text-slate-400">실행 번호: {item.run_id}</p></li>)}</ul>
+        <ul className="divide-y divide-slate-100">{runs.items.map(item => {
+          const indicatorPins = [
+            { label: '거래량 MA50', id: item.volume_sma50_snapshot_id, hash: item.volume_sma50_snapshot_hash },
+            { label: 'ATR14', id: item.atr14_snapshot_id, hash: item.atr14_snapshot_hash },
+          ].filter(pin => pin.id != null || pin.hash != null);
+          return <li key={item.run_id} className="space-y-1 py-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><strong>{statusNames[item.status] ?? item.status}</strong><span>{item.start} ~ {item.end}</span></div>{item.reason != null && <p className="break-words text-rose-700">{reasonText(item.reason)}</p>}{indicatorPins.length > 0 && <div className="space-y-1 rounded-lg bg-slate-50 p-3 text-xs text-slate-600"><p className="font-semibold">실행 당시 고정된 지표 입력</p>{indicatorPins.map(pin => <p key={pin.label}>{pin.label} snapshot ID {pin.id ?? '없음'} · hash <code className="break-all">{pin.hash ?? '없음'}</code></p>)}</div>}<p className="break-all text-xs text-slate-400">실행 번호: {item.run_id}</p></li>;
+        })}</ul>
         {runs.total_count > 10 && <div className="mt-3 flex items-center gap-3 text-sm"><button className={buttonClass} disabled={runs.page === 1} onClick={() => void action(() => refresh(strategies.page, runs.page - 1))}>이전 기록</button><span>{runs.page} / {Math.ceil(runs.total_count / 10)}</span><button className={buttonClass} disabled={runs.page * 10 >= runs.total_count} onClick={() => void action(() => refresh(strategies.page, runs.page + 1))}>다음 기록</button></div>}
       </div>
     </fieldset>

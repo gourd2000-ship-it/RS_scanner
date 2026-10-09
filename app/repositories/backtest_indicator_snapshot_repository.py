@@ -390,17 +390,24 @@ class BacktestIndicatorSnapshotRepository:
                 raise BacktestIndicatorSnapshotError(
                     "indicator_value_missing",
                     f"indicator value is missing for instrument {instrument_id} on {trade_date}",
-                    details={"indicator_kind": indicator_kind, "instrument_id": instrument_id,
-                             "trade_date": trade_date.isoformat()},
+                    details=_value_error_details(
+                        indicator_kind=indicator_kind, instrument_id=instrument_id,
+                        trade_date=trade_date, value=None,
+                    ),
                 )
+            error_details = _value_error_details(
+                indicator_kind=indicator_kind, instrument_id=instrument_id,
+                trade_date=trade_date, value=value,
+            )
             linked_evidence = evidence_by_date.get(trade_date, [])
             if len(linked_evidence) != 1:
                 self._mismatch(
-                    f"expected one exact input evidence row for instrument {instrument_id} on {trade_date}"
+                    f"expected one exact input evidence row for instrument {instrument_id} on {trade_date}",
+                    details=error_details,
                 )
             run_input, evidence = linked_evidence[0]
             if value.input_prefix_hash != run_input.prefix_hash:
-                self._mismatch("indicator value prefix does not match its selected run input")
+                self._mismatch("indicator value prefix does not match its selected run input", details=error_details)
             price = prices[(instrument_id, trade_date)]
             membership = memberships[(instrument_id, trade_date)]
             self._validate_price_evidence(
@@ -410,10 +417,16 @@ class BacktestIndicatorSnapshotRepository:
                 membership=membership,
                 evidence=evidence,
                 policy=policy,
+                error_details=error_details,
             )
             if not self._valid_value_shape(value):
-                self._mismatch("indicator value has an invalid status/value/reason combination")
-            row = self._row_material(value=value, run_input=run_input, evidence=evidence, price=price)
+                self._mismatch(
+                    "indicator value has an invalid status/value/reason combination", details=error_details
+                )
+            row = self._row_material(
+                value=value, run_input=run_input, evidence=evidence, price=price,
+                error_details=error_details,
+            )
             rows.append(row)
         return source, rows
 
@@ -426,6 +439,7 @@ class BacktestIndicatorSnapshotRepository:
         membership: BacktestDatasetMembership,
         evidence: IndicatorInputEvidence,
         policy: IndicatorInputPolicy,
+        error_details: dict[str, object],
     ) -> None:
         key = (instrument_id, trade_date)
         instrument = self.session.get(Instrument, instrument_id)
@@ -490,7 +504,7 @@ class BacktestIndicatorSnapshotRepository:
             or (identity.mapping_valid_from is not None and trade_date < identity.mapping_valid_from)
             or (identity.mapping_valid_to is not None and trade_date >= identity.mapping_valid_to)
         ):
-            self._mismatch(f"dataset price and indicator evidence disagree for {key}")
+            self._mismatch(f"dataset price and indicator evidence disagree for {key}", details=error_details)
 
         corrections = tuple(self.session.scalars(
             select(OhlcCorrection)
@@ -506,7 +520,9 @@ class BacktestIndicatorSnapshotRepository:
             latest_by_field[correction.field_name] = correction
         expected_correction_ids = [latest_by_field[field].id for field in sorted(latest_by_field)]
         if expected_correction_ids != list(price.correction_ids or []):
-            self._mismatch(f"dataset correction evidence is not the latest approved set for {key}")
+            self._mismatch(
+                f"dataset correction evidence is not the latest approved set for {key}", details=error_details
+            )
 
         corrected = {
             "open": observation.open,
@@ -524,9 +540,11 @@ class BacktestIndicatorSnapshotRepository:
             try:
                 number = Decimal(str(raw))
             except (InvalidOperation, TypeError, ValueError):
-                self._mismatch(f"approved correction cannot be reproduced for {key}")
+                self._mismatch(f"approved correction cannot be reproduced for {key}", details=error_details)
             if not number.is_finite() or (field == "volume" and number != number.to_integral_value()):
-                self._mismatch(f"approved correction is not a finite OHLCV value for {key}")
+                self._mismatch(
+                    f"approved correction is not a finite OHLCV value for {key}", details=error_details
+                )
             corrected[field] = int(number) if field == "volume" else number
 
         if (
@@ -535,7 +553,7 @@ class BacktestIndicatorSnapshotRepository:
             or evidence.high != price.high or evidence.low != price.low
             or evidence.close != price.close or evidence.volume != price.volume
         ):
-            self._mismatch(f"dataset OHLCV and indicator evidence disagree for {key}")
+            self._mismatch(f"dataset OHLCV and indicator evidence disagree for {key}", details=error_details)
 
         quality = membership.quality_evidence if isinstance(membership.quality_evidence, dict) else {}
         if (
@@ -543,7 +561,9 @@ class BacktestIndicatorSnapshotRepository:
             or quality.get("source_payload_hash") != price.source_payload_hash
             or list(quality.get("correction_ids") or []) != list(price.correction_ids or [])
         ):
-            self._mismatch(f"dataset membership evidence does not corroborate the price for {key}")
+            self._mismatch(
+                f"dataset membership evidence does not corroborate the price for {key}", details=error_details
+            )
 
     @staticmethod
     def _valid_value_shape(value: IndicatorValue) -> bool:
@@ -560,7 +580,7 @@ class BacktestIndicatorSnapshotRepository:
     @staticmethod
     def _row_material(
         *, value: IndicatorValue, run_input: IndicatorRunInput, evidence: IndicatorInputEvidence,
-        price: BacktestDatasetPrice,
+        price: BacktestDatasetPrice, error_details: dict[str, object],
     ) -> dict[str, object]:
         if (
             evidence.source_symbol_id is None
@@ -578,7 +598,9 @@ class BacktestIndicatorSnapshotRepository:
             or evidence.volume is None
         ):
             raise BacktestIndicatorSnapshotError(
-                "indicator_evidence_mismatch", "selected evidence is missing required identity or OHLCV facts"
+                "indicator_evidence_mismatch",
+                "selected evidence is missing required identity or OHLCV facts",
+                details=error_details,
             )
         fields: dict[str, object] = {
             "instrument_id": evidence.instrument_id,
@@ -619,12 +641,28 @@ class BacktestIndicatorSnapshotRepository:
         return fields
 
     @staticmethod
-    def _mismatch(message: str) -> None:
-        raise BacktestIndicatorSnapshotError("indicator_evidence_mismatch", message)
+    def _mismatch(message: str, *, details: dict[str, object] | None = None) -> None:
+        raise BacktestIndicatorSnapshotError("indicator_evidence_mismatch", message, details=details)
 
 
 def _hash(value: object) -> str:
     return sha256(canonical_json(value).encode("utf-8")).hexdigest()
+
+
+def _value_error_details(
+    *, indicator_kind: str, instrument_id: int, trade_date: date, value: IndicatorValue | None,
+) -> dict[str, object]:
+    status = value.status if value is not None else None
+    reason_code = value.reason_code if value is not None else None
+    return {
+        "indicator_kind": indicator_kind,
+        "instrument_id": instrument_id,
+        "trade_date": trade_date.isoformat(),
+        "status": status,
+        "reason_code": reason_code,
+        "original_status": status,
+        "original_reason_code": reason_code,
+    }
 
 
 def _is_hash(value: str | None) -> bool:

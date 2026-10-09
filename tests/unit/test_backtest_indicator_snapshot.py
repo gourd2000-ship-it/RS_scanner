@@ -322,3 +322,40 @@ def test_snapshot_preserves_nonavailable_value_status_and_reason(status, value, 
     assert row.value is None
     assert row.status == status
     assert row.reason_code == reason
+
+
+@pytest.mark.parametrize(
+    "change", ["missing_evidence", "mismatched_ohlcv", "unproven_input_status"]
+)
+def test_nonavailable_value_requires_exact_input_evidence_and_keeps_error_context(change):
+    session = _session()
+    dataset, run_id = _seed(session)
+    source_value = session.scalar(select(IndicatorValue))
+    source_value.value = None
+    source_value.status = "data_unavailable"
+    source_value.reason_code = "missing_selected_source"
+    evidence = session.scalar(select(IndicatorInputEvidence))
+    if change == "missing_evidence":
+        session.query(IndicatorRunInput).delete()
+    else:
+        if change == "mismatched_ohlcv":
+            evidence.high = Decimal("111")
+        else:
+            evidence.input_status = "review_required"
+            evidence.reason_code = "open_validation_case"
+    session.flush()
+
+    with pytest.raises(BacktestIndicatorSnapshotError) as error:
+        _create(session, dataset, run_id)
+
+    assert error.value.reason_code == "indicator_evidence_mismatch"
+    assert error.value.details == {
+        "indicator_kind": "volume_sma",
+        "instrument_id": 1,
+        "trade_date": TRADE_DATE.isoformat(),
+        "status": "data_unavailable",
+        "reason_code": "missing_selected_source",
+        "original_status": "data_unavailable",
+        "original_reason_code": "missing_selected_source",
+    }
+    assert session.scalar(select(BacktestDatasetIndicatorSnapshot.id)) is None

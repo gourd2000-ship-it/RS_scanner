@@ -2,8 +2,11 @@
 
 import importlib.util
 import os
-from pathlib import Path
+import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
+from pathlib import Path
+from threading import Event
 from uuid import uuid4
 
 import pytest
@@ -15,11 +18,20 @@ from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 
 VERSIONS = Path(__file__).parents[2] / "alembic" / "versions"
 REVISION = "a8b9c0d1e2f3"
+LOCK_REVISION = "b9c0d1e2f3a4"
 
 
 def migration(connection):
-    path = next(VERSIONS.glob(REVISION + "_*.py"))
-    spec = importlib.util.spec_from_file_location(REVISION, path)
+    return _migration(connection, REVISION)
+
+
+def lock_migration(connection):
+    return _migration(connection, LOCK_REVISION)
+
+
+def _migration(connection, revision):
+    path = next(VERSIONS.glob(revision + "_*.py"))
+    spec = importlib.util.spec_from_file_location(revision, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.op = Operations(MigrationContext.configure(connection))
@@ -174,3 +186,189 @@ def test_postgres_rejects_mutation_of_completed_snapshot_and_members(connection)
     assert connection.execute(text(
         "SELECT content_hash FROM backtest_dataset_indicator_snapshots WHERE id=:id"
     ), {"id": snapshot_id}).scalar_one() == "e" * 64
+
+
+def test_postgres_serializes_completion_with_child_insert_and_rejects_late_members():
+    database_url = os.getenv(
+        "TEST_DATABASE_URL",
+        "postgresql+psycopg://rs_scanner_test:rs_scanner_test_pass@localhost:5433/rs_scanner_test",
+    )
+    engine = create_engine(database_url)
+    schema = "backtest_indicator_race_" + uuid4().hex
+    schema_created = False
+    try:
+        try:
+            with engine.connect() as admin:
+                admin.exec_driver_sql("SELECT 1")
+                admin.exec_driver_sql(f"CREATE SCHEMA {schema}")
+                admin.commit()
+                schema_created = True
+        except SQLAlchemyError as exc:
+            pytest.skip(f"isolated PostgreSQL unavailable: {type(exc).__name__}")
+
+        with engine.connect() as conn:
+            transaction = conn.begin()
+            conn.exec_driver_sql(f"SET LOCAL search_path TO {schema}")
+            _create_base_tables(conn)
+            migration(conn).upgrade()
+            lock_migration(conn).upgrade()
+            _seed_race_snapshot(conn)
+            transaction.commit()
+
+        inserted = Event()
+        release_child = Event()
+        completion_started = Event()
+        completion_app_name = "bt_snapshot_completion_" + uuid4().hex[:12]
+
+        def insert_child_row():
+            with engine.connect() as conn:
+                transaction = conn.begin()
+                conn.exec_driver_sql(f"SET LOCAL search_path TO {schema}")
+                _insert_snapshot_row(conn, trade_date="2024-01-03")
+                inserted.set()
+                if not release_child.wait(timeout=5):
+                    transaction.rollback()
+                    raise TimeoutError("test did not release child transaction")
+                transaction.commit()
+
+        def complete_snapshot():
+            with engine.connect() as conn:
+                transaction = conn.begin()
+                conn.exec_driver_sql(f"SET LOCAL search_path TO {schema}")
+                conn.exec_driver_sql(f"SET LOCAL application_name TO '{completion_app_name}'")
+                completion_started.set()
+                conn.execute(text("""
+                    UPDATE backtest_dataset_indicator_snapshots
+                    SET status='complete', completed_at=now() WHERE id=1
+                """))
+                transaction.commit()
+
+        with ThreadPoolExecutor(max_workers=2) as workers:
+            child_future = workers.submit(insert_child_row)
+            assert inserted.wait(timeout=5), "child insert did not reach the parent lock"
+            completion_future = workers.submit(complete_snapshot)
+            try:
+                assert completion_started.wait(timeout=5)
+                lock_wait_observed = False
+                deadline = time.monotonic() + 3
+                while time.monotonic() < deadline and not completion_future.done():
+                    with engine.connect() as probe:
+                        wait_event = probe.execute(text("""
+                            SELECT wait_event_type FROM pg_stat_activity
+                            WHERE application_name=:application_name
+                        """), {"application_name": completion_app_name}).scalar_one_or_none()
+                    if wait_event == "Lock":
+                        lock_wait_observed = True
+                        break
+                    time.sleep(0.02)
+                assert lock_wait_observed, "completion did not wait on the in-flight child insert"
+            finally:
+                release_child.set()
+            child_future.result(timeout=5)
+            completion_future.result(timeout=5)
+
+        with engine.connect() as conn:
+            transaction = conn.begin()
+            conn.exec_driver_sql(f"SET LOCAL search_path TO {schema}")
+            assert conn.execute(text(
+                "SELECT status FROM backtest_dataset_indicator_snapshots WHERE id=1"
+            )).scalar_one() == "complete"
+            assert conn.execute(text(
+                "SELECT count(*) FROM backtest_dataset_indicator_snapshot_rows WHERE snapshot_id=1"
+            )).scalar_one() == 2
+            _assert_member_guard_rejects(conn, """
+                INSERT INTO backtest_dataset_indicator_snapshot_sources
+                    (snapshot_id, instrument_id, indicator_series_id, generation_id, calculation_run_id,
+                     input_policy_id, source_policy_fingerprint, input_hash, result_hash)
+                VALUES (1, 1, 1, 1, 1, 1, :policy_hash, :input_hash, :result_hash)
+            """)
+            _assert_member_guard_rejects(conn, """
+                INSERT INTO backtest_dataset_indicator_snapshot_rows
+                    (snapshot_id, source_id, instrument_id, trade_date, source_value_id, source_run_input_id,
+                     source_evidence_id, value, status, available_observations, input_prefix_hash,
+                     source_evidence_key, source_symbol_id, price_observation_id, identity_snapshot_id,
+                     provider_symbol_mapping_id, mapping_status, resolver_version, resolved_at, provider,
+                     provider_symbol, adjustment_type, parser_version, observed_at, payload_hash,
+                     open, high, low, close, volume, correction_ids, validation_evidence, row_hash)
+                VALUES (1, 1, 1, '2024-01-04', 1, 1, 1, 1000, 'available', 50,
+                        :prefix_hash, :evidence_hash, 1, 1, 1, 1, 'matched', 'resolver-v1', now(),
+                        'kiwoom', 'A005930', '1', 'parser-v1', now(), :payload_hash,
+                        100, 110, 90, 105, 1000, '[]', '[]', :row_hash)
+            """)
+            transaction.rollback()
+    finally:
+        try:
+            if schema_created:
+                with engine.begin() as admin:
+                    admin.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
+        finally:
+            engine.dispose()
+
+
+def _seed_race_snapshot(conn):
+    for statement in (
+        "INSERT INTO instruments VALUES (1)",
+        "INSERT INTO indicator_series VALUES (1)",
+        "INSERT INTO indicator_generations VALUES (1,1)",
+        "INSERT INTO indicator_calculation_runs VALUES (1,1)",
+        "INSERT INTO indicator_input_policies VALUES (1)",
+        "INSERT INTO indicator_values VALUES (1)",
+        "INSERT INTO indicator_run_inputs VALUES (1)",
+        "INSERT INTO indicator_input_evidence VALUES (1)",
+        "INSERT INTO symbols VALUES (1)",
+        "INSERT INTO price_observations VALUES (1)",
+        "INSERT INTO price_observation_identity_snapshots VALUES (1)",
+        "INSERT INTO provider_symbols VALUES (1)",
+    ):
+        conn.exec_driver_sql(statement)
+    conn.execute(text("""
+        INSERT INTO backtest_dataset_indicator_snapshots
+            (id, snapshot_key, backtest_dataset_id, dataset_id, dataset_manifest_hash,
+             indicator_kind, period, formula_version, source_policy_fingerprint,
+             range_start, range_end, source_count, row_count, input_hash, result_hash, content_hash)
+        VALUES (1, 's1', 1, 'old-dataset', :dataset_hash, 'volume_sma', 50, 'volume-sma-v1',
+                :policy_hash, '2024-01-02', '2024-01-03', 1, 2, :input_hash, :result_hash, :content_hash)
+    """), {
+        "dataset_hash": "a" * 64, "policy_hash": "b" * 64,
+        "input_hash": "c" * 64, "result_hash": "d" * 64, "content_hash": "e" * 64,
+    })
+    conn.execute(text("""
+        INSERT INTO backtest_dataset_indicator_snapshot_sources
+            (id, snapshot_id, instrument_id, indicator_series_id, generation_id, calculation_run_id,
+             input_policy_id, source_policy_fingerprint, input_hash, result_hash)
+        VALUES (1, 1, 1, 1, 1, 1, 1, :policy_hash, :input_hash, :result_hash)
+    """), {"policy_hash": "b" * 64, "input_hash": "c" * 64, "result_hash": "d" * 64})
+    _insert_snapshot_row(conn, trade_date="2024-01-02")
+
+
+def _insert_snapshot_row(conn, *, trade_date):
+    conn.execute(text("""
+        INSERT INTO backtest_dataset_indicator_snapshot_rows
+            (snapshot_id, source_id, instrument_id, trade_date, source_value_id, source_run_input_id,
+             source_evidence_id, value, status, available_observations, input_prefix_hash,
+             source_evidence_key, source_symbol_id, price_observation_id, identity_snapshot_id,
+             provider_symbol_mapping_id, mapping_status, resolver_version, resolved_at, provider,
+             provider_symbol, adjustment_type, parser_version, observed_at, payload_hash,
+             open, high, low, close, volume, correction_ids, validation_evidence, row_hash)
+        VALUES (1, 1, 1, :trade_date, 1, 1, 1, 1000, 'available', 50,
+                :prefix_hash, :evidence_hash, 1, 1, 1, 1, 'matched', 'resolver-v1', now(),
+                'kiwoom', 'A005930', '1', 'parser-v1', now(), :payload_hash,
+                100, 110, 90, 105, 1000, '[]', '[]', :row_hash)
+    """), {
+        "trade_date": trade_date, "prefix_hash": "1" * 64, "evidence_hash": "f" * 64,
+        "payload_hash": "2" * 64, "row_hash": "3" * 64,
+    })
+
+
+def _assert_member_guard_rejects(conn, statement):
+    params = {
+        "policy_hash": "b" * 64, "input_hash": "c" * 64, "result_hash": "d" * 64,
+        "prefix_hash": "1" * 64, "evidence_hash": "f" * 64, "payload_hash": "2" * 64,
+        "row_hash": "4" * 64,
+    }
+    savepoint = conn.begin_nested()
+    with pytest.raises(DBAPIError) as error:
+        conn.execute(text(statement), params)
+    savepoint.rollback()
+    message = getattr(getattr(error.value.orig, "diag", None), "message_primary", str(error.value.orig))
+    assert "members can only be inserted while building" in message

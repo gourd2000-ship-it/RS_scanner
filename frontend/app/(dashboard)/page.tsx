@@ -38,7 +38,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
+  const pageSize = 50;
   const [sortBy, setSortBy] = useState<DashboardSortField>('rank_in_market');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 

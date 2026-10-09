@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
+import type { CallbackDataParams } from 'echarts/types/dist/shared';
 import type { DailyPriceItem } from '@/types/api';
 
 interface CandlestickChartProps {
@@ -42,10 +43,12 @@ export function CandlestickChart({ data, loading }: CandlestickChartProps) {
         axisPointer: {
           type: 'cross',
         },
-        formatter: (params: any) => {
-          const param = params[0];
+        formatter: (params: CallbackDataParams | CallbackDataParams[]) => {
+          const param = Array.isArray(params) ? params[0] : params;
+          if (!param) return '';
           const dataIndex = param.dataIndex;
           const item = sortedData[dataIndex];
+          if (!item) return '';
 
           return `
             <div style="font-weight: bold; margin-bottom: 4px;">${item.trade_date}</div>
@@ -149,9 +152,10 @@ export function CandlestickChart({ data, loading }: CandlestickChartProps) {
           yAxisIndex: 1,
           data: volumes,
           itemStyle: {
-            color: (params: any) => {
+            color: (params: CallbackDataParams) => {
               const dataIndex = params.dataIndex;
               const item = sortedData[dataIndex];
+              if (!item) return '#3b82f6';
               return Number(item.close) >= Number(item.open) ? '#ef4444' : '#3b82f6';
             },
           },

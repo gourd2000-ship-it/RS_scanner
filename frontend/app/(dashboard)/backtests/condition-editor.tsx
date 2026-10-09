@@ -1,6 +1,6 @@
 'use client';
 
-import { Condition, fields, newRule, operators, Rule } from './form-model';
+import { Condition, defaultThresholds, fields, fieldUnits, newRule, operators, Rule } from './form-model';
 
 export const inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100';
 export const buttonClass = 'rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50';
@@ -8,7 +8,7 @@ export const buttonClass = 'rounded-lg border border-slate-300 bg-white px-3 py-
 export default function ConditionEditor({ node, onChange, label }: { node: Condition; onChange: (node: Condition) => void; label: string }) {
   if (node.type === 'rule') return <div className="grid gap-2 sm:grid-cols-3">
     <label className="text-xs text-slate-600">지표
-      <select aria-label={`${label} 지표`} className={inputClass} value={node.field} onChange={e => onChange({ ...node, field: e.target.value as Rule['field'], value: e.target.value === 'return_n_days' ? '5' : '80' })}>
+      <select aria-label={`${label} 지표`} className={inputClass} value={node.field} onChange={e => { const field = e.target.value as Rule['field']; onChange({ ...node, field, value: defaultThresholds[field] }); }}>
         {Object.entries(fields).map(([key, text]) => <option key={key} value={key}>{text}</option>)}
       </select>
     </label>
@@ -17,7 +17,7 @@ export default function ConditionEditor({ node, onChange, label }: { node: Condi
         {Object.entries(operators).map(([key, text]) => <option key={key} value={key}>{text}</option>)}
       </select>
     </label>
-    <label className="text-xs text-slate-600">기준값 ({node.field === 'return_n_days' ? '%' : node.field === 'close' ? '원' : node.field === 'volume' ? '주' : node.field === 'rank_in_market' ? '위' : '점'})
+    <label className="text-xs text-slate-600">기준값 ({fieldUnits[node.field]})
       <input aria-label={`${label} 기준값`} className={inputClass} type="number" required step="any" min={node.field === 'return_n_days' ? -100 : 0} value={node.value} onChange={e => onChange({ ...node, value: e.target.value })} />
     </label>
     {node.field === 'return_n_days' && <label className="text-xs text-slate-600">수익률 계산 기간 (거래일)

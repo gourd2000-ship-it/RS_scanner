@@ -11,7 +11,7 @@ export class APIError extends Error {
   constructor(
     public status: number,
     message: string,
-    public data?: any
+    public data?: unknown
   ) {
     super(message);
     this.name = 'APIError';
@@ -35,10 +35,13 @@ export async function fetchAPI<T>(
     });
 
     if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
+      const errorData: unknown = await res.json().catch(() => ({}));
+      const detail = errorData && typeof errorData === 'object' && 'detail' in errorData
+        ? errorData.detail
+        : undefined;
       throw new APIError(
         res.status,
-        errorData.detail || `API Error: ${res.status} ${res.statusText}`,
+        typeof detail === 'string' ? detail : detail == null ? `API Error: ${res.status} ${res.statusText}` : JSON.stringify(detail) ?? String(detail),
         errorData
       );
     }
@@ -55,7 +58,9 @@ export async function fetchAPI<T>(
 /**
  * URL 쿼리 파라미터 생성
  */
-export function buildQueryString(params: Record<string, any>): string {
+type QueryParamValue = string | number | boolean | null | undefined;
+
+export function buildQueryString<T extends { [K in keyof T]: QueryParamValue }>(params: T): string {
   const searchParams = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
 import { JobStatusCard, JobsTable, FailuresTable, RefreshIndicator } from './_components';
@@ -36,10 +36,9 @@ export default function OperationsPage() {
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(true);
 
   // Fetch stats
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     setIsRefreshing(true);
     try {
       const data = await getCrawlStats();
@@ -50,10 +49,10 @@ export default function OperationsPage() {
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, []);
 
   // Fetch jobs
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
       const response = await listCrawlJobs(jobsPage, jobsSize, jobStatusFilter || undefined);
@@ -64,10 +63,10 @@ export default function OperationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [jobStatusFilter, jobsPage, jobsSize]);
 
   // Fetch failures
-  const fetchFailures = async () => {
+  const fetchFailures = useCallback(async () => {
     try {
       const response = await listCrawlFailures(failuresPage, failuresSize);
       setFailures(response.items);
@@ -75,33 +74,33 @@ export default function OperationsPage() {
     } catch (error) {
       console.error('Failed to fetch failures:', error);
     }
-  };
+  }, [failuresPage, failuresSize]);
 
-  // Initial load
+  // Defer the initial request until after the first render.
   useEffect(() => {
-    fetchStats();
-    fetchJobs();
-    fetchFailures();
-  }, []);
+    const timeout = window.setTimeout(() => { void fetchStats(); }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [fetchStats]);
 
   // Refetch jobs when page or filter changes
   useEffect(() => {
-    fetchJobs();
-  }, [jobStatusFilter, jobsPage]);
+    const timeout = window.setTimeout(() => { void fetchJobs(); }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [fetchJobs]);
 
   // Refetch failures when page changes
   useEffect(() => {
-    fetchFailures();
-  }, [failuresPage]);
+    const timeout = window.setTimeout(() => { void fetchFailures(); }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [fetchFailures]);
 
   // Auto-refresh stats every 10 seconds
   useEffect(() => {
-    if (!autoRefresh) return;
     const interval = setInterval(() => {
-      fetchStats();
+      void fetchStats();
     }, 10000);
     return () => clearInterval(interval);
-  }, [autoRefresh]);
+  }, [fetchStats]);
 
   const handleRefresh = () => {
     fetchStats();

@@ -13,6 +13,19 @@ interface JobsTableProps {
 
 type SortColumn = 'started_at' | 'status' | 'success_rate' | 'duration_seconds';
 
+function SortIcon({ column, sortColumn, sortDirection }: {
+  column: SortColumn;
+  sortColumn: SortColumn;
+  sortDirection: 'asc' | 'desc';
+}) {
+  if (sortColumn !== column) return null;
+  return sortDirection === 'asc' ? (
+    <ArrowUp className="w-3 h-3 inline ml-1" />
+  ) : (
+    <ArrowDown className="w-3 h-3 inline ml-1" />
+  );
+}
+
 export function JobsTable({ jobs, onJobClick, loading }: JobsTableProps) {
   const [sortColumn, setSortColumn] = useState<SortColumn>('started_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -55,15 +68,6 @@ export function JobsTable({ jobs, onJobClick, loading }: JobsTableProps) {
     }
   };
 
-  const SortIcon = ({ column }: { column: SortColumn }) => {
-    if (sortColumn !== column) return null;
-    return sortDirection === 'asc' ? (
-      <ArrowUp className="w-3 h-3 inline ml-1" />
-    ) : (
-      <ArrowDown className="w-3 h-3 inline ml-1" />
-    );
-  };
-
   if (loading) {
     return (
       <div className="border rounded-lg bg-white p-8 text-center text-gray-500">
@@ -92,26 +96,26 @@ export function JobsTable({ jobs, onJobClick, loading }: JobsTableProps) {
                 className="px-3 py-2 text-left font-medium text-gray-700 cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('started_at')}
               >
-                시작 시각 <SortIcon column="started_at" />
+                시작 시각 <SortIcon column="started_at" sortColumn={sortColumn} sortDirection={sortDirection} />
               </th>
               <th
                 className="px-3 py-2 text-center font-medium text-gray-700 cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('status')}
               >
-                상태 <SortIcon column="status" />
+                상태 <SortIcon column="status" sortColumn={sortColumn} sortDirection={sortDirection} />
               </th>
               <th
                 className="px-3 py-2 text-center font-medium text-gray-700 cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('duration_seconds')}
               >
-                실행 시간 <SortIcon column="duration_seconds" />
+                실행 시간 <SortIcon column="duration_seconds" sortColumn={sortColumn} sortDirection={sortDirection} />
               </th>
               <th className="px-3 py-2 text-center font-medium text-gray-700">처리 종목</th>
               <th
                 className="px-3 py-2 text-center font-medium text-gray-700 cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('success_rate')}
               >
-                성공률 <SortIcon column="success_rate" />
+                성공률 <SortIcon column="success_rate" sortColumn={sortColumn} sortDirection={sortDirection} />
               </th>
             </tr>
           </thead>

@@ -2,7 +2,7 @@
 # RS Scanner 일일 배치 실행 스크립트
 # crontab에 등록하여 매일 자동 실행
 
-set -e
+set -euo pipefail
 
 # 스크립트 디렉토리로 이동
 cd "$(dirname "$0")/.."
@@ -10,19 +10,13 @@ cd "$(dirname "$0")/.."
 # 가상 환경 활성화
 source .venv/bin/activate
 
-# 환경 변수 로드
-export $(grep -v '^#' .env.production | xargs)
+# Python runner parses .env.production and .env without shell word splitting.
 
 # 로그 디렉토리 생성
 mkdir -p logs
 
-# 겹친 cron/수동 실행이 동일 DB와 가격 API를 동시에 처리하지 않도록 직렬화한다.
-LOCK_FILE="$(pwd)/logs/daily_batch.lock"
-exec 9>"$LOCK_FILE"
-if ! flock -n 9; then
-    echo "===== RS Scanner Daily Batch skipped: another batch is running at $(date) ====="
-    exit 0
-fi
+# The runner holds both logs/daily_batch.lock and a PostgreSQL advisory lock
+# across source collection, price validation, RS and all indicator steps.
 
 # 배치 실행 (로그 파일에 기록)
 LOG_FILE="logs/batch_$(date +%Y%m%d_%H%M%S).log"
@@ -30,7 +24,7 @@ LOG_FILE="logs/batch_$(date +%Y%m%d_%H%M%S).log"
 echo "===== RS Scanner Daily Batch Started at $(date) =====" | tee -a "$LOG_FILE"
 
 set +e
-python -m app.main_batch 2>&1 | tee -a "$LOG_FILE"
+python scripts/run_daily_pipeline.py --apply --scheduled 2>&1 | tee -a "$LOG_FILE"
 EXIT_CODE=${PIPESTATUS[0]}
 set -e
 

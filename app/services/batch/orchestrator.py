@@ -69,10 +69,14 @@ class BatchOrchestrator:
         eod_source: BulkEodSource | None = None,
         fallback_source: PriceSource | None = None,
         krx_source: KrxUniverseSource | None = None,
+        indicator_source_skip_reason: str | None = None,
+        indicator_requires_crawl_validation: bool = True,
     ):
         self.source = source
         self.eod_source = eod_source
         self.krx_source = krx_source
+        self.indicator_source_skip_reason = indicator_source_skip_reason
+        self.indicator_requires_crawl_validation = indicator_requires_crawl_validation
         # Keep the argument temporarily for legacy call compatibility, but do
         # not retain or use it.  A daily crawl must not become an automatic
         # Kiwoom (or any other) fallback path.
@@ -86,12 +90,12 @@ class BatchOrchestrator:
         self.started_at: datetime = datetime.utcnow()
         self.target_date: date | None = None
 
-    def run_daily_job(self) -> dict[str, Any]:
+    def run_daily_job(self, *, target_date: date | None = None) -> dict[str, Any]:
         """일일 배치 작업 실행 (단계별 트랜잭션)"""
         logger.info("starting daily batch with checkpointing")
 
         settings = get_settings()
-        target_date = batch_target_date(settings)
+        target_date = target_date or batch_target_date(settings)
         self.target_date = target_date
         market_status = krx_market_day_status(
             target_date,
@@ -175,7 +179,11 @@ class BatchOrchestrator:
                 and get_settings().validation_mode == "enforce"
                 and validation_result.would_block
             )
-            indicator_validation_reason = indicator_validation_skip_reason(validation_result)
+            indicator_validation_reason = self.indicator_source_skip_reason or (
+                indicator_validation_skip_reason(validation_result)
+                if self.indicator_requires_crawl_validation
+                else None
+            )
 
             # Step 5: RS 계산
             if validation_blocked:
@@ -193,8 +201,8 @@ class BatchOrchestrator:
             # persisted for this crawl job.
             ema_result: EmaBatchOutcome | None = None
             if ema_enabled(settings):
-                if validation_blocked:
-                    ema_result = EmaBatchOutcome.skipped("validation_gate_blocked")
+                if indicator_validation_reason is not None:
+                    ema_result = EmaBatchOutcome.skipped(indicator_validation_reason)
                     self._record_ema_outcome(ema_result)
                 else:
                     try:

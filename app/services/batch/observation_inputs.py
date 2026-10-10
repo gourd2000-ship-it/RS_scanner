@@ -58,7 +58,11 @@ def eligible_instrument_ids(
             PriceObservation.adjustment_type == policy.adjustment_type,
             PriceObservation.parser_version.in_(policy.allowed_parser_versions),
             PriceObservation.observed_at <= policy.observation_cutoff,
-            PriceObservation.trade_date <= target_date,
+            # A daily incremental run may only advance an instrument whose
+            # immutable policy evidence includes the requested session. A
+            # stale series stays out of this run rather than receiving a
+            # fabricated unavailable row for another instrument's date.
+            PriceObservation.trade_date == target_date,
         )
         .distinct()
         .order_by(PriceObservationIdentitySnapshot.instrument_id)

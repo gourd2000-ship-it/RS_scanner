@@ -9,10 +9,22 @@ import pytest
 from app.core.config import Settings
 from app.services.batch.atr_adapter import calculate_daily_atr14
 from app.services.batch.context import build_memory_batch_context
+from app.services.batch.ema_adapter import calculate_daily_ema
 from app.services.batch.volume_adapter import calculate_daily_volume_sma50
 
 
 TARGET_DATE = date(2025, 9, 17)
+
+
+def test_ema_skips_when_expected_dates_only_contain_prior_observations(monkeypatch):
+    context = _context_with_read_savepoint()
+    settings = Settings(_env_file=None, ema_enabled=True)
+    monkeypatch.setattr('app.services.batch.ema_adapter.expected_trade_dates',
+                        lambda *_args, **_kwargs: (TARGET_DATE - timedelta(days=1),))
+    monkeypatch.setattr('app.services.batch.ema_adapter.eligible_instrument_ids', _unexpected_call)
+    outcome = calculate_daily_ema(context, target_date=TARGET_DATE, settings=settings)
+    assert outcome.outcome == 'skipped'
+    assert outcome.reason == 'target_date_observations_missing'
 
 
 def _context_with_read_savepoint():

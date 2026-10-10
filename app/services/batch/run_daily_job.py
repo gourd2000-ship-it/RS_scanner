@@ -153,12 +153,12 @@ def run_daily_job(
         # retained as EMA evidence without discarding otherwise valid RS.
         ema_result: EmaBatchOutcome | None = None
         if ema_enabled(settings):
-            ema_result = None if validation_blocked else completed_ema_outcome(context)
+            ema_result = None if indicator_validation_reason is not None else completed_ema_outcome(context)
             if ema_result is None:
                 try:
                     ema_result = (
-                        EmaBatchOutcome.skipped("validation_gate_blocked")
-                        if validation_blocked
+                        EmaBatchOutcome.skipped(indicator_validation_reason)
+                        if indicator_validation_reason is not None
                         else calculate_daily_ema(
                             context,
                             target_date=target_date or context.target_date,

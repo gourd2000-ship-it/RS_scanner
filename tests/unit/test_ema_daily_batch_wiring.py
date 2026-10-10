@@ -1,5 +1,6 @@
 from datetime import date
 from types import SimpleNamespace
+import pytest
 
 from app.core.config import Settings
 from app.models.data_quality import ValidationRun
@@ -11,7 +12,7 @@ from app.services.batch.sync_prices import PriceSyncResult
 from app.services.validation.data_quality import ValidationResult
 
 
-def _settings(*, validation_enabled: bool = False, validation_mode: str = "report_only") -> Settings:
+def _settings(*, validation_enabled: bool = True, validation_mode: str = "report_only") -> Settings:
     return Settings(
         ema_enabled=True,
         validation_enabled=validation_enabled,
@@ -25,6 +26,12 @@ def _patch_direct_batch(monkeypatch, settings: Settings, events: list[str]) -> N
     monkeypatch.setattr("app.services.batch.run_daily_job.sync_benchmarks", lambda *_: {})
     monkeypatch.setattr("app.services.batch.run_daily_job.sync_prices", lambda *_args, **_kwargs: {})
     monkeypatch.setattr("app.services.batch.run_daily_job.ema_enabled", lambda _: True)
+    validation = SimpleNamespace(
+        run=SimpleNamespace(id=3, validation_status="passed", trade_date=date(2025, 9, 17)),
+        would_block=False, to_dict=lambda: {"validation_status": "passed"},
+    )
+    monkeypatch.setattr("app.services.batch.run_daily_job.validate_crawl_job", lambda *_a, **_k: validation)
+    monkeypatch.setattr("app.services.batch.run_daily_job.write_validation_report", lambda _: "report.json")
     monkeypatch.setattr(
         "app.services.batch.run_daily_job.notification_service.send_batch_success_sync",
         lambda **_: None,
@@ -47,6 +54,7 @@ def test_direct_daily_batch_runs_ema_after_rs_and_reuses_the_current_job(monkeyp
         lambda *_args, **_kwargs: events.append("ema") or EmaBatchOutcome.completed(processed=2),
     )
     context = build_memory_batch_context()
+    context.session = object()
     context.target_date = date(2025, 9, 17)
     existing = context.crawl_job_repository.create_job("daily_full")
     context.job_id = existing.id
@@ -81,6 +89,7 @@ def test_direct_daily_batch_keeps_rs_when_ema_fails(monkeypatch):
         ),
     )
     context = build_memory_batch_context()
+    context.session = object()
     context.target_date = date(2025, 9, 17)
 
     result = run_daily_job(context, source=object())
@@ -92,9 +101,10 @@ def test_direct_daily_batch_keeps_rs_when_ema_fails(monkeypatch):
     assert context.checkpoint_repository.get_checkpoint(result["job_id"], "ema").status == "completed_with_errors"
 
 
-def test_direct_daily_batch_records_ema_skip_when_validation_blocks(monkeypatch):
+@pytest.mark.parametrize('mode', ['enforce', 'report_only'])
+def test_direct_daily_batch_records_ema_skip_when_validation_blocks(monkeypatch, mode):
     events: list[str] = []
-    _patch_direct_batch(monkeypatch, _settings(validation_enabled=True, validation_mode="enforce"), events)
+    _patch_direct_batch(monkeypatch, _settings(validation_enabled=True, validation_mode=mode), events)
     validation = SimpleNamespace(
         run=SimpleNamespace(id=3, validation_status="blocked", trade_date=date(2025, 9, 17)),
         would_block=True,
@@ -104,7 +114,7 @@ def test_direct_daily_batch_records_ema_skip_when_validation_blocks(monkeypatch)
     monkeypatch.setattr("app.services.batch.run_daily_job.write_validation_report", lambda _: "report.json")
     monkeypatch.setattr(
         "app.services.batch.run_daily_job.calculate_rs",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("RS must be blocked")),
+        lambda *_args, **_kwargs: {},
     )
     monkeypatch.setattr(
         "app.services.batch.run_daily_job.calculate_daily_ema",
@@ -142,6 +152,9 @@ def test_checkpoint_orchestrator_runs_the_same_ema_adapter_after_rs(monkeypatch)
     monkeypatch.setattr(batch, "_finish_job", lambda **_: None)
 
     def run_step(*, step_name, **_kwargs):
+        if step_name == "validation":
+            return ValidationResult(run=ValidationRun(validator_version='test', mode='report_only',
+                validation_status='passed'), cases=[], metrics={})
         if step_name == "rs":
             events.append("rs")
             return {"KOSPI": [object()]}
@@ -160,8 +173,46 @@ def test_checkpoint_orchestrator_runs_the_same_ema_adapter_after_rs(monkeypatch)
     assert result["ema"]["outcome"] == "completed"
 
 
-def test_checkpoint_orchestrator_skips_ema_when_clean_validation_blocks(monkeypatch):
+def test_pipeline_can_run_source_validated_ema_when_naver_validation_blocks(monkeypatch):
     settings = _settings(validation_enabled=True, validation_mode="enforce")
+    events: list[str] = []
+    monkeypatch.setattr("app.services.batch.orchestrator.get_settings", lambda: settings)
+    monkeypatch.setattr("app.services.batch.orchestrator.batch_target_date", lambda _: date(2025, 9, 17))
+    monkeypatch.setattr("app.services.batch.orchestrator.ema_enabled", lambda _: True)
+    monkeypatch.setattr("app.services.batch.orchestrator.notification_service.send_batch_success_sync", lambda **_: None)
+    monkeypatch.setattr("app.services.batch.orchestrator.notification_service.send_batch_failure_sync", lambda **_: None)
+    batch = BatchOrchestrator(source=object(), indicator_requires_crawl_validation=False)
+    monkeypatch.setattr(batch, "_create_job", lambda: setattr(batch, "job_id", 43))
+    monkeypatch.setattr(batch, "_finish_job", lambda **_: None)
+    monkeypatch.setattr(batch, "_block_step_checkpoint", lambda *_: events.append("rs_blocked"))
+    monkeypatch.setattr(batch, "_record_ema_outcome", lambda outcome: events.append(outcome.outcome))
+    validation = ValidationResult(
+        run=ValidationRun(validator_version="test", mode="enforce", validation_status="blocked"),
+        cases=[], metrics={},
+    )
+
+    def run_step(*, step_name, **_kwargs):
+        if step_name == "validation":
+            return validation
+        if step_name == "ema":
+            return EmaBatchOutcome.completed(processed=2)
+        if step_name == "rs":
+            raise AssertionError("RS must remain blocked")
+        if step_name == "prices":
+            return PriceSyncResult()
+        return [] if step_name == "symbols" else {}
+
+    monkeypatch.setattr(batch, "_run_step", run_step)
+
+    result = batch.run_daily_job()
+
+    assert events == ["rs_blocked"]
+    assert result["ema"]["outcome"] == "completed"
+
+
+@pytest.mark.parametrize('mode', ['enforce', 'report_only'])
+def test_checkpoint_orchestrator_skips_ema_when_clean_validation_blocks(monkeypatch, mode):
+    settings = _settings(validation_enabled=True, validation_mode=mode)
     monkeypatch.setattr("app.services.batch.orchestrator.get_settings", lambda: settings)
     monkeypatch.setattr("app.services.batch.orchestrator.batch_target_date", lambda _: date(2025, 9, 17))
     monkeypatch.setattr("app.services.batch.orchestrator.ema_enabled", lambda _: True)
@@ -189,7 +240,7 @@ def test_checkpoint_orchestrator_skips_ema_when_clean_validation_blocks(monkeypa
     def run_step(*, step_name, **_kwargs):
         if step_name == "validation":
             return validation
-        if step_name == "rs" or step_name == "ema":
+        if step_name == "ema" or (step_name == "rs" and mode == "enforce"):
             raise AssertionError(f"{step_name} must not execute")
         if step_name == "prices":
             return PriceSyncResult()
@@ -199,7 +250,7 @@ def test_checkpoint_orchestrator_skips_ema_when_clean_validation_blocks(monkeypa
 
     result = batch.run_daily_job()
 
-    assert blocked_steps == ["rs"]
+    assert blocked_steps == (["rs"] if mode == "enforce" else [])
     assert ema_outcomes == [EmaBatchOutcome.skipped("validation_gate_blocked")]
     assert result["ema"]["outcome"] == "skipped"
 

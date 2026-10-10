@@ -81,7 +81,14 @@ GET /api/v1/backtests/indicators/atr14?code=005930&start=2026-01-01&end=2026-03-
 
 ## 일상 배치와 감사
 
-일상 수집은 `python -m app.main_batch`로 실행한다. 명부만 갱신할 때는 `--symbols-only`를 사용한다. 배치 실패는 재시도 대상·오류 원인을 보존하며, 실패를 정상 거래일로 기록하지 않는다.
+운영 일상 수집은 `scripts/run_daily_pipeline.py`를 사용한다. 이 진입점은 장 마감 뒤 대상 거래일을 확정하고, Kiwoom 정책 원본을 append-only로 갱신한 뒤 Naver 일일 가격 검증, RS, EMA 5·20·50·200, 거래량 MA50, ATR14를 한 잠금 안에서 실행한다. 기준일 overlap·identity mapping·예상 거래일이 불완전한 Kiwoom 종목은 해당 실행의 지표 대상에서 제외하고 보고서에 남긴다. 대상일의 Kiwoom 원본과 identity가 확인된 종목만 세 지표를 저장한다. Naver 품질 판정이 통과하지 않으면 RS는 발행하지 않는다. canonical Naver 가격은 Kiwoom 원본 갱신으로 수정하지 않는다.
+
+```bash
+APP_ENV=production .venv/bin/python scripts/run_daily_pipeline.py \
+  --apply --scheduled
+```
+
+`--apply` 없이 실행하면 원본 대상과 예상 행을 포함한 계획만 쓴다. `--source-only`는 immutable Kiwoom 관측과 identity snapshot만 갱신한다. 계획 파일은 같은 대상의 재개 근거이며, manifest hash가 달라지면 적용을 거부한다. cron은 호스트 시간대가 UTC이면 평일 07:30, KST이면 평일 16:30에 위 명령을 실행한다. 명부만 갱신하는 수동 작업에는 기존 `python -m app.main_batch --symbols-only`를 사용한다.
 
 역사 OHLCV의 기준선 감사는 읽기 전용으로 실행한다.
 
@@ -196,21 +203,20 @@ checkpoint의 검증된 실패 표기만 복구하며 별도 reconciliation repo
 
 ## 일일 Volume MA50·ATR14 실행
 
-일일 지표는 `VOLUME_SMA50_ENABLED=false`, `ATR14_ENABLED=false`가 기본이다.
-운영에서 켜기 전에는 별도 운영 결정, 현재 품질 보고서의 통과 판정, 격리 PostgreSQL의
-계산·재시도·rebuild 검증이 모두 필요하다. 2026-10-08 보관 보고서 `job_137`은
+일일 지표는 기본 비활성이며, 운영 파이프라인에서는 EMA·Volume MA50·ATR14를 함께
+명시적으로 활성화한다. 각 지표의 source policy는 `kiwoom`, adjustment type `1`, parser
+`kiwoom-history-v1`로 고정한다. `VALIDATION_MODE=enforce`를 사용해 품질 판정이 차단되면
+RS도 발행하지 않는다. 2026-10-08 보관 보고서 `job_137`은
 `blocked`다. 대상 206건이 입력 validation에서 실패했고, 그 안에 양수 OHLC 위반
 188건과 OHLC 순서 모순 18건이 있다. 보고서에는 원문 payload와 공급자 귀속 근거가
 없으므로 공급자 오류로 단정하거나 가격을 보정하지 않는다. 이 보관 보고서는 운영
 DB를 실시간 조회한 결과가 아니다.
 
-두 지표는 일일 가격 단계 다음의 독립 단계다. `passed` 또는
-`passed_with_warnings` validation에서만 해당 정책(provider, adjustment type, parser
-version)을 명시한 계산을 시작한다. validation이 없거나 `blocked`이면 각 지표는
-`validation_unavailable` 또는 `validation_gate_blocked` 사유로 건너뛰고 자신의
-`volume_sma50` 또는 `atr14` checkpoint에 오류 상태를 남긴다. `report_only` 모드라도
-판정 상태가 `blocked`이면 지표를 계산하지 않는다. 한 지표의 실패는 다른 지표, RS,
-EMA 결과를 취소하지 않는다.
+세 지표는 Kiwoom 정책 원본과 identity가 대상일에 확인된 종목에서만 같은 실행 묶음으로
+계산한다. Naver validation은 RS 발행을 통제하며, Kiwoom 원본의 overlap·OHLCV·identity
+검증을 통과한 지표 입력을 취소하지 않는다. 원본 불일치·overlap 누락 종목은 해당 실행에서
+제외 목록으로 기록하고 이전 지표 generation을 유지한다. 이 운영 스케줄에서는 차단된
+실행의 RS를 발행하지 않는다.
 
 validation이 통과해도 지표 source policy에 맞는 `target_date` 관측이 하나도 없으면
 이전 거래일 입력만 계산해 성공 처리하지 않는다. `target_date_observations_missing`으로

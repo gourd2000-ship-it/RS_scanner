@@ -1,0 +1,210 @@
+{
+  "applied": true,
+  "plan_path": "reports/operations/indicator_source_apply_20261008.plan.json",
+  "source": {
+    "failed": 49,
+    "failures": [
+      {
+        "instrument_id": 67,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 416,
+        "reason": "source_overlap_missing"
+      },
+      {
+        "instrument_id": 461,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 476,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 667,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 898,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 913,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 970,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 988,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1003,
+        "reason": "source_overlap_missing"
+      },
+      {
+        "instrument_id": 1047,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1067,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1125,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1362,
+        "reason": "source_overlap_missing"
+      },
+      {
+        "instrument_id": 1365,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1373,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1380,
+        "reason": "source_overlap_missing"
+      },
+      {
+        "instrument_id": 1382,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1383,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1385,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1529,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1601,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1653,
+        "reason": "source_overlap_missing"
+      },
+      {
+        "instrument_id": 1709,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1779,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1875,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1876,
+        "reason": "source_overlap_missing"
+      },
+      {
+        "instrument_id": 1897,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1914,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1920,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1943,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1969,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 1985,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 2028,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 2137,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 2164,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 2204,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 2308,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 2334,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 2400,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 2408,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 2436,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 2448,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 2644,
+        "reason": "source_overlap_missing"
+      },
+      {
+        "instrument_id": 2652,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 2654,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 2658,
+        "reason": "source_overlap_missing"
+      },
+      {
+        "instrument_id": 2678,
+        "reason": "source_revision_requires_review"
+      },
+      {
+        "instrument_id": 2740,
+        "reason": "source_revision_requires_review"
+      }
+    ],
+    "manifest_hash": "2921ab1329ea770c9a973d13e93524803f2ac1f94e1d4b9e8d7ce309146fb8c0",
+    "observations_created": 44541,
+    "processed": 2126,
+    "target_date": "2026-10-08"
+  },
+  "target_date": "2026-10-08"
+}

@@ -1,0 +1,13 @@
+{
+  "applied": true,
+  "plan_path": "reports/operations/indicator_source_sample_apply_20261008.plan.json",
+  "source": {
+    "failed": 0,
+    "failures": [],
+    "manifest_hash": "5a0908c14a49ca66cb3f3e760b4a307962af3a4033d14ae5395a29fe3962560c",
+    "observations_created": 105,
+    "processed": 5,
+    "target_date": "2026-10-08"
+  },
+  "target_date": "2026-10-08"
+}
